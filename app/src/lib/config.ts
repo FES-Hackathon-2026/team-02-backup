@@ -10,6 +10,7 @@
  */
 
 const KEY_STORAGE = 's2s.apiKey'
+const USER_STORAGE = 's2s.userId'
 
 export const API_BASE: string =
   import.meta.env.VITE_FS_API_BASE ?? 'https://app-foodsharing-hackathon.azurewebsites.net'
@@ -50,4 +51,27 @@ export function hasCustomKey(): boolean {
 
 export function hasAnyKey(): boolean {
   return getApiKey() !== ''
+}
+
+/* ------------------------------------------------------------------
+   Session: which of the team's test users is currently acting.
+   The API has no accounts — a "session" is a validated team key plus a
+   chosen user id, both kept in this browser only.
+   ------------------------------------------------------------------ */
+
+export function getActiveUserId(): number | null {
+  const raw = read(USER_STORAGE)
+  if (raw === null) return null
+  const parsed = Number.parseInt(raw, 10)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
+
+export function setActiveUserId(id: number | null): void {
+  write(USER_STORAGE, id === null ? null : String(id))
+}
+
+/** Forget the chosen user and any pasted key, returning to the login screen. */
+export function signOut(): void {
+  write(USER_STORAGE, null)
+  write(KEY_STORAGE, null)
 }

@@ -6,9 +6,11 @@ interface Props {
   onClose: () => void
   /** called after the key changed so the app can reload its data */
   onKeyChange: () => void
+  /** clears the stored key and user, returning to the login screen */
+  onSignOut: () => void
 }
 
-export default function SettingsSheet({ onClose, onKeyChange }: Props) {
+export default function SettingsSheet({ onClose, onKeyChange, onSignOut }: Props) {
   const [value, setValue] = useState(getApiKey())
   const [saved, setSaved] = useState(false)
 
@@ -59,6 +61,17 @@ export default function SettingsSheet({ onClose, onKeyChange }: Props) {
             Reset to the built-in key
           </button>
         )}
+      </div>
+
+      <h2>Session</h2>
+      <div className="card">
+        <p className="small muted" style={{ marginTop: 0 }}>
+          Signing out forgets the key and the selected user in this browser. Nothing is
+          changed on the server.
+        </p>
+        <button className="btn ghost" onClick={onSignOut}>
+          Sign out
+        </button>
       </div>
 
       <button className="btn ghost" onClick={onClose}>
