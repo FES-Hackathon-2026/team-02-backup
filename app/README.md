@@ -123,10 +123,9 @@ from a subpath, Vercel and Render from a domain root.
 
 ### Option A — Vercel (recommended if the repo stays private)
 
-`vercel.json` at the repo root configures everything. Import the repo at
-vercel.com, then add `VITE_FS_API_KEY` under Settings → Environment Variables.
-Leave the Root Directory as the repo root; the build command enters `app/`
-itself.
+`app/vercel.json` configures everything. Import the repo at vercel.com, set
+**Root Directory to `app`**, and add `VITE_FS_API_KEY` under Environment
+Variables. Vercel then detects Vite and picks up the config automatically.
 
 * Works from a **private** repo on the free Hobby plan.
 * Every pull request gets its own preview URL — useful when several people are
@@ -144,7 +143,7 @@ stored in the repo).
 
 * Also works from a **private** repo on the free tier.
 * Static sites do not spin down — that only affects Render's web services.
-* Delete `.github/workflows/deploy.yml` and `vercel.json`.
+* Delete `.github/workflows/deploy.yml` and `app/vercel.json`.
 
 ### Option C — GitHub Pages (the committed default)
 
