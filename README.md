@@ -2,6 +2,14 @@
 
 Dieses Repository bündelt die Beispieldaten des Verkehrsverbunds und die Dokumentation der Foodsharing Hackathon API. Die Dokumentation zur Vytal API ist extern verlinkt.
 
+> **Unser Prototyp liegt in [`app/`](app/)** — „Save2Share", eine mobile-first PWA
+> (React + Vite). Start: `cd app && npm install && npm run dev`. Details,
+> Struktur und Deployment stehen in der [App-README](app/README.md).
+> Live: <https://fes-hackathon-2026.github.io/team-02/>
+>
+> Die Dateien unterhalb von `Foodsharing API/` und `Mobilitätsdaten/` sind die
+> unveränderte Vorlage der Organisation.
+
 ## Foodsharing Hackathon API
 
 Die API stellt Teamnutzer, Essenskörbe, Abholanfragen, Abholhistorien und Fairteiler-Standorte bereit. Nutzer, Angebote und Abholungen sind fiktive Testdaten; die Standortdaten beziehen sich auf Frankfurt am Main.
