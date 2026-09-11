@@ -114,25 +114,65 @@ sources, but verify them before quoting a number on stage.
 
 ## Deployment
 
-Pushing to `main` runs `.github/workflows/deploy.yml`, which builds the app and
-publishes `app/dist` to GitHub Pages:
+The build is plain static output, so any static host works. Config for three is
+committed — **pick one**, and delete the config for the others so failed builds
+do not clutter the repo.
 
-<https://fes-hackathon-2026.github.io/team-02/>
+`BASE_PATH` is the only thing that differs between them: GitHub Pages serves
+from a subpath, Vercel and Render from a domain root.
 
-One-time repository setup:
+### Option A — Vercel (recommended if the repo stays private)
+
+`vercel.json` at the repo root configures everything. Import the repo at
+vercel.com, then add `VITE_FS_API_KEY` under Settings → Environment Variables.
+Leave the Root Directory as the repo root; the build command enters `app/`
+itself.
+
+* Works from a **private** repo on the free Hobby plan.
+* Every pull request gets its own preview URL — useful when several people are
+  building screens at once.
+* Delete `.github/workflows/deploy.yml`, since Vercel's Git integration
+  replaces it. Keep `ci.yml`.
+* The Hobby plan is for non-commercial use. A hackathon project qualifies;
+  deploying under a company account would not.
+
+### Option B — Render
+
+`render.yaml` at the repo root. New → Blueprint, connect the repo, and set
+`VITE_FS_API_KEY` when prompted (it is marked `sync: false`, so it is never
+stored in the repo).
+
+* Also works from a **private** repo on the free tier.
+* Static sites do not spin down — that only affects Render's web services.
+* Delete `.github/workflows/deploy.yml` and `vercel.json`.
+
+### Option C — GitHub Pages (the committed default)
+
+Pushing to `main` runs `.github/workflows/deploy.yml`, which builds and
+publishes `app/dist` to <https://fes-hackathon-2026.github.io/team-02/>.
 
 1. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
 2. *(optional)* **Settings → Secrets and variables → Actions → New secret**,
-   name `FS_API_KEY`, value the team key. Without it the deployed app simply
-   asks each visitor for a key.
-3. The repo must be public for Pages on a free org plan — which also matches
-   the open-source requirement.
+   name `FS_API_KEY`. Without it the deployed app asks each visitor for a key.
+3. **The repository must be public.** Pages cannot publish from a private repo
+   except on GitHub Enterprise Cloud. Before making it public, check with the
+   organisers whether the partner datasets under `Mobilitätsdaten/` may be
+   redistributed — and note that `Foodsharing API/KEYS.txt` becomes readable
+   by anyone.
 
 `BASE_PATH` is derived from the repository name in the workflow, so renaming the
-repo does not break asset paths. For a custom domain, set `BASE_PATH=/`.
+repo does not break asset paths.
+
+### On any host
+
+`VITE_*` variables are inlined into the JavaScript bundle at build time and are
+therefore readable by anyone who opens the site. That is acceptable for the
+hackathon team key, which is already committed in `Foodsharing API/KEYS.txt`.
+Never put a real secret in one.
 
 Pull requests run `.github/workflows/ci.yml` — type-check, build, and a check
-that the output is actually servable.
+that the output is actually servable. That runs regardless of which host you
+pick.
 
 ## Licence
 
