@@ -1,0 +1,827 @@
+SERVICE: Foodsharing API
+================================================================================
+Total files: 5
+================================================================================
+
+Path: /Users/altayhennig/Downloads/Hackathon team 2 110926 1645/Foodsharing API/API-GUIDE.md
+==================================================
+
+# API-Guide
+
+Technische Referenz zur API-Version **2.4.0**. Datenmodell: [SCHEMA.md](SCHEMA.md).
+Verfügbare Daten: [DATABASE.md](DATABASE.md). Testnutzer: [TEAM-USERS.md](TEAM-USERS.md).
+
+**Basis-URL:** `https://app-foodsharing-hackathon.azurewebsites.net`
+**Swagger:** [`/docs`](https://app-foodsharing-hackathon.azurewebsites.net/docs)
+**ReDoc:** [`/redoc`](https://app-foodsharing-hackathon.azurewebsites.net/redoc)
+
+## 1. Spezifikation
+
+[openapi.json](openapi.json) beschreibt die API im OpenAPI-3.1-Format: Pfade,
+Parameter, Request- und Response-Schemata sowie deklarierte Statuscodes.
+Weitere Fehlerfälle stehen in Abschnitt 8. Die aktuelle Spezifikation ist
+unter `/openapi.json` verfügbar.
+
+```bash
+curl https://app-foodsharing-hackathon.azurewebsites.net/openapi.json
+```
+
+Swagger unter `/docs` zeigt die Endpunkte mit Eingabefeldern und Antworten.
+**Try it out** führt einen Aufruf mit den eingegebenen Werten aus.
+
+## 2. Authentifizierung und Nutzerauswahl
+
+Geschützte Endpunkte erwarten den von der Organisation vergebenen Team-Key:
+
+```text
+X-API-Key: team_01_...
+```
+
+In Swagger setzt **Authorize** den Key ohne Präfix als `X-API-Key`.
+Öffentlich sind Fairteiler-Liste und -Detail, `/`, `/ready`, `/docs`, `/redoc`
+und `/openapi.json`.
+
+Jedes Team hat zwei Testnutzer. `GET /users` listet die eigenen Nutzer.
+Für nutzerbezogene Aktionen wählt `X-User-ID: <id>` einen von ihnen; ohne Header
+ist bei jedem Request der Nutzer mit `is_default: true` aktiv.
+Die Auswahl wird nicht für spätere Aufrufe gespeichert.
+Nutzer anderer Teams und fiktive Beispielpersonen können nicht als handelnder
+Nutzer ausgewählt werden (`404`).
+Ein nicht ganzzahliger oder kleiner als 1 gesetzter `X-User-ID` ergibt `422`.
+
+`X-User-ID` gilt für `/users/me`, `/users/me/approve`, `/users/me/pickups`, das
+Anbieten von Körben, das Anfragen und Ändern einer Anfrage sowie `POST /pickups`.
+Bei `/users/{user_id}` und `/users/{user_id}/verification` bestimmt die Pfad-ID
+unabhängig vom Header den Zielnutzer. Nutzerlisten, Sample und lesende Korb-Endpunkte
+verwenden den Auswahlheader ebenfalls nicht.
+
+Nutzerprofile, Verifikationsdaten und persönliche Historien sind auf das eigene
+Team beschränkt. Körbe sind teamübergreifend lesbar, einschließlich
+`created_by_user_id` und Anfrageübersichten mit `requester_id`, `status` und
+`requested_at`. Ein gültiger Key allein erlaubt keine fremden Statusänderungen.
+
+## 3. Verifikation und Abholberechtigung
+
+Körbe und Fairteiler können alle Teamnutzer ohne Quiz oder Verifikation abholen.
+Nur Geschäftsrettungen erfordern `is_verified: true`.
+
+| Status | Geschäftsrettung |
+|--------|------------------|
+| `quiz_pending` | `403`, `quiz_not_passed` |
+| `trial_pending` | `403`, `trial_pickups_incomplete` |
+| `approval_pending` | `403`, `awaiting_approval` |
+| `verified` | erlaubt |
+
+Der reguläre Verifikationsablauf besteht aus Quiz, Einführungsabholungen und Freigabe.
+Die API simuliert diese Schritte: `quiz_passed`, `trial_pickups_completed` und
+`mentor_approved` können mit `PATCH /users/{user_id}/verification` gesetzt werden.
+Die erforderliche Anzahl steht in `trial_pickups_required` (Default drei).
+`POST /users/me/approve` setzt die Freigabe und berechnet die Verifikation neu.
+Ein explizites `is_verified` hat bei Test-PATCHes weiterhin Vorrang.
+
+Neue Korb- und Fairteiler-Abholungen zählen **nicht** als Einführungsabholungen.
+Alle neuen Abholungen, auch Geschäftsrettungen, haben `was_trial: false` und erhöhen
+`pickups_completed`. Vorhandene historische Trial-Markierungen und Zähler werden
+bei der Umstellung nicht verändert. Testzähler können weiterhin unabhängig von der
+Historie bearbeitet werden.
+
+`may_pick_up` ist für Körbe/Fairteiler immer true. `may_pick_up_from_business`
+entspricht `is_verified`. Das bestehende Feld `may_earn_rewards` entspricht ebenfalls
+`is_verified`; es berechnet oder vergibt keine Belohnung.
+
+### Geschäftsrettung ausprobieren (Bash)
+
+```bash
+BASE=https://app-foodsharing-hackathon.azurewebsites.net
+KEY=team_01_...
+curl -H "X-API-Key: $KEY" "$BASE/users"
+curl -H "X-API-Key: $KEY" "$BASE/businesses"
+
+USER_ID=31  # Tatsächliche ID aus GET /users
+BUSINESS_ID=1  # Tatsächliche ID aus GET /businesses
+curl -X PATCH -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"quiz_passed":true,"trial_pickups_completed":3,"mentor_approved":true}' \
+  "$BASE/users/$USER_ID/verification"
+curl -X POST -H "X-API-Key: $KEY" -H "X-User-ID: $USER_ID" \
+  "$BASE/businesses/$BUSINESS_ID/pickups"
+curl -H "X-API-Key: $KEY" -H "X-User-ID: $USER_ID" "$BASE/users/me/pickups"
+```
+
+Geschäfte sind fiktive Demo-Standorte, keine realen foodsharing-Kooperationspartner.
+Die Sandbox bildet keine Warenbestände oder Abholtermine ab. Der POST benötigt
+keinen Body; jeder erfolgreiche Aufruf erfasst eine separate Rettung (`201`).
+Die aktuelle Verifikation wird unter einer Nutzersperre erneut geprüft; bei
+fehlender Verifikation folgt `403` mit `detail.error`, `detail.message` und dem
+eigenen `detail.verification`. Ein unbekanntes Geschäft ergibt für einen
+verifizierten Nutzer `404`.
+
+## 4. Endpunkte und Parameter
+
+### Öffentlich
+
+| Methode | Pfad | Verhalten |
+|---------|------|-----------|
+| `GET` | `/food-share-points` | Ohne Koordinaten alle gespeicherten Standorte, nach Name sortiert; mit Koordinaten Umkreissuche |
+| `GET` | `/food-share-points/{food_share_point_id}` | Einzelner Standort oder `404` |
+| `GET` | `/` | `status`, `docs` und API-`version` |
+| `GET` | `/ready` | Bereitschaftsstatus: `200` mit `status` und `build_id`, sonst `503` mit `detail` |
+
+`lat` und `lon` sind bei der Fairteiler-Liste optional, müssen aber zusammen
+angegeben werden (`422` bei nur einem Wert).
+`distance_km` hat dort Default 10, Minimum 0,1 und Maximum 100; ohne Koordinaten wird
+kein Distanzfilter angewendet. Mit Koordinaten ist die Antwort nach Distanz sortiert.
+
+### Mit Team-Key
+
+| Methode | Pfad | Verhalten |
+|---------|------|-----------|
+| `GET` | `/users` | Eigene Teamnutzer, nach ID sortiert |
+| `GET` | `/users/{user_id}` | Eigener Teamnutzer |
+| `PATCH` | `/users/{user_id}` | Testzustand dieses Nutzers bearbeiten |
+| `GET` | `/users/me` | Ausgewählter Nutzer und Verifikationszustand |
+| `PATCH` | `/users/me` | Testzustand des ausgewählten Nutzers bearbeiten |
+| `GET` / `PATCH` | `/users/{user_id}/verification` | Verifikationszustand direkt lesen oder bearbeiten |
+| `POST` | `/users/me/approve` | Simulierte Freigabe speichern und Verifikation berechnen |
+| `GET` | `/users/me/pickups` | Historie des ausgewählten Nutzers |
+| `GET` | `/pickups/sample` | Pseudonymisierte Abholungen von Nutzern ohne Team |
+| `POST` | `/pickups` | Korb/Fairteiler ohne Verifikation abholen; Erfolg: `201` |
+| `GET` | `/businesses` | Fiktive Demo-Geschäfte, nach ID sortiert |
+| `POST` | `/businesses/{business_id}/pickups` | Geschäftsrettung nur mit Verifikation; Erfolg: `201` |
+| `GET` | `/baskets/nearby` | Freie, noch nicht abgelaufene Körbe im Umkreis |
+| `GET` | `/baskets/{basket_id}` | Korb einschließlich Anfrageübersicht |
+| `POST` | `/baskets` | Korb anbieten, ohne Verifikation; Erfolg: `201` |
+| `POST` | `/baskets/{basket_id}/requests` | Korb ohne Verifikation reservieren; Erfolg: `201` |
+| `PATCH` | `/baskets/{basket_id}/requests/{requester_id}/status` | Anfrage-Status ändern |
+
+Die Korbsuche erfordert `lat` und `lon`; `distance_km` hat Default 5, Minimum 0,1
+und Maximum 50. Sie schließt Körbe mit vorhandener Abholung oder offener Anfrage
+aus und sortiert nach Distanz. Eigene freie Körbe können in der Suche erscheinen.
+Korbdetails sind auch für reservierte, abgeholte oder abgelaufene Körbe lesbar.
+
+`POST /baskets` erwartet `title` (1–200 Zeichen), `lat` und `lon`. Optional sind
+`description`, `food_types` und `expires_in_hours` (1–168, Default 48). Besitzer ist
+der ausgewählte Nutzer; Ablaufzeit und Erstellungszeit setzt der Server.
+
+`POST /pickups` erwartet genau eine Quelle: `{"food_share_point_id": 1}` oder
+`{"basket_id": 1}`. Beide, keine Quelle oder unbekannte Body-Felder ergeben `422`.
+Abholzeit und Nutzer stammen vom Server beziehungsweise aus der Nutzerauswahl.
+
+`POST /baskets/{basket_id}/requests` erwartet einen JSON-Body; `{}` ist zulässig,
+`message` ist optional. Nur eine Anfrage pro Nutzer und Korb ist möglich, auch nach
+einem abgeschlossenen, abgelehnten oder stornierten Versuch.
+
+## 5. Aufrufbeispiele für Abholungen
+
+Für die folgenden Korb- und Fairteiler-Beispiele reicht ein gültiger Team-Key.
+`BASE` und `KEY` entsprechen den dort definierten Bash-Variablen.
+
+```bash
+# Abholung an einem gespeicherten Fairteiler
+curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+     -d '{"food_share_point_id": 1}' "$BASE/pickups"
+
+# Verfügbare Körbe lesen
+curl -H "X-API-Key: $KEY" "$BASE/baskets/nearby?lat=50.11&lon=8.68&distance_km=30"
+
+# BID: ID eines freien, fremden Korbs aus der Antwort
+BID=123
+curl -X POST -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+     -d '{"message":"Abholung vereinbart"}' "$BASE/baskets/$BID/requests"
+
+MYID=$(curl -s -H "X-API-Key: $KEY" "$BASE/users/me" \
+       | python -c "import sys,json;print(json.load(sys.stdin)['id'])")
+curl -X PATCH -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+     -d '{"status":"picked_up"}' "$BASE/baskets/$BID/requests/$MYID/status"
+
+curl -H "X-API-Key: $KEY" "$BASE/users/me/pickups"
+```
+
+Alternativ erfolgt die Korb-Abholung direkt über `POST /pickups` mit `basket_id`.
+Eine vorherige Anfrage ist dafür nicht zwingend nötig. Fairteiler-Abholungen sind
+wiederholt möglich; jeder erfolgreiche POST erzeugt ein neues Ereignis.
+
+## 6. Berechtigungen bei Statuswechseln
+
+| Zielstatus | Berechtigter Nutzer | Erlaubter Ausgangsstatus |
+|------------|---------------------|------------------------|
+| `accepted` | Anbieter des Korbs | `pending` |
+| `rejected` | Anbieter des Korbs | `pending`, `accepted` |
+| `cancelled` | Anfragender | `pending`, `accepted` |
+| `picked_up` | Anbieter oder Anfragender | `pending`, `accepted` |
+
+Der erste Request setzt den Korb von `available` auf `requested` und reserviert ihn
+für genau diesen Nutzer. Das gilt auch gegenüber anderen Nutzern desselben Teams.
+Ablehnung oder Stornierung geben den Korb frei, sofern keine weitere offene Anfrage
+vorliegt; bei bereits erreichtem Ablauf wird der Korb dabei auf `expired` gesetzt.
+
+`rejected`, `cancelled` und `picked_up` sind Endzustände. Weitere Änderungen ergeben
+`409`. Auch ein wiederholtes `accepted` ergibt `409`. Beim Abholabschluss werden
+die Reservierung und die Ablaufzeit geprüft; eine Verifikation ist nicht erforderlich.
+Eine separate Annahme vor `picked_up` ist nicht nötig.
+
+Die direkte Korb-Abholung schließt eine eigene offene Anfrage mit ab. Eigene Körbe
+ergeben `400`; abgelaufene, bereits abgeholte oder für andere Nutzer reservierte
+Körbe ergeben `409`. Eine eigene geschlossene Anfrage verhindert auch den direkten
+Abschluss. Bei `expires_at <= jetzt` ist der Korb abgelaufen.
+
+Ein Korb kann nur einmal abgeholt werden, auch bei gleichzeitigen Aufrufen oder
+einem Wechsel zwischen den beiden Abschlusswegen. Ein weiterer Abschluss ergibt
+`409`. Bei erfolgreichem Abschluss werden Korb und gegebenenfalls Anfrage als
+abgeholt markiert; die Abholung erscheint in der Historie und erhöht den passenden
+Nutzerzähler.
+
+Am Status-Endpunkt erfolgt die Existenzprüfung vor der Prüfung des Akteurs und
+diese vor der Prüfung des Anfragezustands (`404` → `403` → `409`). Das ist keine
+allgemeine Fehlerreihenfolge für andere Endpunkte oder alle Abschlussprüfungen.
+
+## 7. Abholhistorien
+
+| Eigenschaft | `/users/me/pickups` | `/pickups/sample` |
+|-------------|---------------------|-------------------|
+| Datenumfang | Ausgewählter Teamnutzer | Alle Nutzer ohne Teamzugehörigkeit |
+| Identifikation | `id` der Abholung, keine `user_id` | `person`-Pseudonym, keine Abholungs- oder Nutzer-ID |
+| `limit` | Default 100, 1–500 | Default 200, 1–1000 |
+| `offset` | Default 0, mindestens 0 | Default 0, mindestens 0 |
+| Quellenfilter | keiner | `source=basket`, `source=food_share_point` oder `source=business` |
+| Sortierung | Neueste Abholung zuerst; bei gleichem Zeitpunkt höhere Abholungs-ID zuerst | ebenso |
+
+Die gemeinsamen fachlichen Felder sind:
+
+| Feld | Bedeutung |
+|------|-----------|
+| `source` | `basket`, `food_share_point` oder `business` |
+| `picked_up_at` | Zeitpunkt der erfassten Abholung |
+| `was_trial` | Historische Trial-Markierung; bei allen neuen Rettungen false |
+| `food_share_point_id`, `food_share_point_name` | Fairteiler-Quelle, sonst `null` |
+| `business_id`, `business_name` | Geschäftsquelle, sonst `null` |
+| `basket_id`, `basket_title`, `basket_created_at`, `basket_expires_at`, `food_types` | Korb-Quelle, sonst `null` |
+| `lat`, `lon` | Koordinaten der Quelle |
+
+Quellangaben werden beim Lesen aus Korb, Fairteiler oder Geschäft ergänzt.
+Das Sample ersetzt das Feld `id` der persönlichen Historie durch `person`.
+Pseudonyme wie `person_001` bleiben innerhalb eines unveränderten Bestands an
+Beispielpersonen über Seiten und Quellenfilter hinweg gleich. Sie sind keine
+Nutzer-IDs. Alle Teamnutzer sind aus dem Sample ausgeschlossen.
+
+Eine persönliche Historie kann bereits Probeabholungen enthalten oder leer sein.
+Testzähler lassen sich unabhängig davon ändern. Eigenschaften des Beispieldatensatzes
+stehen in [DATABASE.md](DATABASE.md).
+
+## 8. Fehler und Datentypen
+
+| Status | Typische Bedeutung |
+|--------|--------------------|
+| `400` | Eigenen Korb anfragen oder abholen |
+| `401` | `X-API-Key` fehlt, ist unbekannt oder deaktiviert |
+| `403` | Akteur darf den Status nicht setzen oder Geschäftsverifikation fehlt |
+| `404` | Ressource nicht vorhanden oder Zielnutzer gehört nicht zum eigenen Team |
+| `409` | Korb nicht verfügbar, Anfrage bereits vorhanden/geschlossen oder betroffener Zähler bei 2.147.483.647 |
+| `422` | Ungültige Parameter oder Body-Felder; bei PATCH auch unzulässiges `null` |
+| `503` | Dienst bei `/ready` nicht bereit |
+
+Zeitstempel sind Zeichenketten im ISO-8601-Format, zum Beispiel
+`2026-09-08T09:00:00Z`. Test-PATCHes erfordern eine explizite Zeitzone;
+ein Offset wie `+02:00` ist ebenfalls zulässig.
+
+Koordinaten müssen innerhalb `lat: -90…90`, `lon: -180…180` liegen. Die
+bereitgestellten Standortdaten liegen im Raum Frankfurt; neu angebotene Körbe
+sind nicht auf Frankfurt beschränkt.
+`expires_at` ist die technische Verfügbarkeitsgrenze eines Korbs, keine Aussage
+über die tatsächliche Genießbarkeit der Lebensmittel.
+
+────────────────────────────────────────────────────────────────────────────────
+
+Path: /Users/altayhennig/Downloads/Hackathon team 2 110926 1645/Foodsharing API/TEAM-USERS.md
+==================================================
+
+# Zwei Testnutzer pro Team
+
+Jedes Team erhält zwei Testnutzer mit einem gemeinsamen API-Key:
+
+- **User 1:** Standardnutzer des Keys; kann bereits gutgeschriebene Probeabholungen
+  und die zugehörige Historie enthalten.
+- **User 2:** zusätzlicher Testnutzer, der zunächst mit leeren Zählern und nicht
+  bestandenem Quiz bereitsteht.
+
+Flags, Zähler, Namen und Zeitstempel sind editierbar. Den aktuellen Zustand beider
+Nutzer liefert `GET /users`; zum Anlegen weiterer Nutzer gibt es keinen Endpunkt.
+
+## Nutzer finden und auswählen
+
+Die folgenden Beispiele verwenden Bash. `KEY` ist ein Platzhalter für den
+vergebenen Team-Key, `USER2_ID` für die tatsächliche ID aus der Nutzerliste.
+
+```bash
+BASE=https://app-foodsharing-hackathon.azurewebsites.net
+KEY=team_01_...
+curl -H "X-API-Key: $KEY" "$BASE/users"
+```
+
+Die Antwort listet die Teamnutzer nach ID. Jeder Eintrag enthält `id`,
+`display_name`, `team_id`, `team_name`, `is_default`, `joined_at`, beide Zähler und
+`verification`. `team_name` ist das Label des verwendeten Keys. `is_default: true`
+kennzeichnet den Nutzer, der ohne Auswahlheader aktiv ist.
+
+Der optionale Header `X-User-ID` wählt einen handelnden Nutzer für den jeweiligen
+Request. Ohne Header gilt erneut der Standardnutzer; eine frühere Auswahl wird
+nicht gespeichert.
+
+```bash
+USER2_ID=22  # Beispiel-ID; tatsächlichen Wert aus GET /users einsetzen
+curl -H "X-API-Key: $KEY" -H "X-User-ID: $USER2_ID" "$BASE/users/me"
+```
+
+Die Auswahl gilt für `/users/me`, `/users/me/approve`, `/users/me/pickups`, das
+Anbieten von Körben, Anfragen, Anfrage-Statusänderungen und Abholungen,
+auch `POST /businesses/{business_id}/pickups`.
+Berechtigungen beziehen sich auf den ausgewählten Nutzer: Ein Korb von User 1
+ist für User 2 ein fremder Korb, auch bei identischem Team-Key.
+
+`GET /users/{user_id}` liest gezielt einen Nutzer des eigenen Teams. Fremde Nutzer
+und fiktive Beispielpersonen ergeben `404`, auch bei Auswahl über `X-User-ID`. Der Auswahlheader
+verlangt eine ganze Zahl ab 1, sonst `422`.
+
+Nutzerlisten, Sample und lesende Korb-Endpunkte verwenden `X-User-ID` nicht.
+Bei Endpunkten mit konkreter Nutzer-ID im Pfad bestimmt allein diese den Zielnutzer.
+
+## Testzustände frei bearbeiten
+
+Der Bereich **Verification** in Swagger enthält:
+
+- `GET /users/{user_id}/verification`: Verifikationszustand eines eigenen Teamnutzers.
+- `PATCH /users/{user_id}/verification`: Teständerung dieses Verifikationszustands.
+
+Die Pfad-ID stammt aus `GET /users`. `X-User-ID` wird hier nicht verwendet.
+Swagger übernimmt den Team-Key über **Authorize** ohne Präfix; **Try it out** führt
+den jeweiligen Request aus. Beispielbody für die Standardschwelle drei:
+
+```json
+{
+  "quiz_passed": true,
+  "trial_pickups_completed": 3,
+  "mentor_approved": true
+}
+```
+
+Die Antwort enthält direkt einen `VerificationState`, ohne umgebenden
+`verification`-Block. `trial_pickups_required` enthält die erforderliche
+Probeabholungszahl; dieses Feld ist über die API nicht editierbar.
+In der Sandbox wird das Erfüllen der Einführungsabholungen hier über
+`trial_pickups_completed` simuliert. Körbe und Fairteiler sind ohne Verifikation
+zugänglich und erhöhen diesen Zähler nicht. Für Geschäftsrettungen muss
+`may_pick_up_from_business` beziehungsweise `is_verified` true sein.
+
+`PATCH /users/{user_id}` und `PATCH /users/me` erlauben zusätzlich Name,
+Beitrittszeitpunkt und regulären Abholzähler. Beispiel:
+
+```bash
+curl -X PATCH -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"display_name":"Abholer B","is_verified":true,"pickups_completed":20}' \
+  "$BASE/users/$USER2_ID"
+```
+
+| Feld | Erlaubte Werte | Verification-PATCH |
+|------|----------------|--------------------|
+| `display_name` | Text bis 100 Zeichen oder `null` | nein |
+| `joined_at` | Zeitstempel mit Zeitzone, z. B. `2026-09-08T09:00:00Z` | nein |
+| `quiz_passed`, `mentor_approved`, `is_verified` | `true` oder `false` | ja |
+| `quiz_passed_at`, `mentor_approved_at`, `verified_at` | Zeitstempel mit Zeitzone oder `null` | ja |
+| `trial_pickups_completed` | Ganze Zahl von 0 bis 2.147.483.647 | ja |
+| `pickups_completed` | Ganze Zahl von 0 bis 2.147.483.647 | nein |
+
+Alle Felder sind optional. Explizites `null` ist nur bei `display_name` und den drei
+Zeitstempeln mit erlaubtem Leerwert möglich, nicht bei Flags, Zählern oder `joined_at`.
+Alternativ akzeptiert die API `trial_pickups_count` für `trial_pickups_completed`
+und `pickups_completed_count` für `pickups_completed`.
+`id`, `team_id`, Keys und andere unbekannte Felder ergeben `422`.
+
+Nicht angegebene Eingabefelder bleiben erhalten; automatisch abgeleitete Werte
+können sich nach folgenden Regeln ändern:
+
+- Ein geändertes Quiz- oder Freigabe-Flag setzt beziehungsweise löscht seinen
+  Zeitstempel, sofern kein expliziter Zeitstempel einschließlich `null` vorliegt.
+- Ein PATCH mit Quiz-, Freigabe- oder Probeabholzähler-Feld berechnet die
+  Verifikation neu, auch wenn der übermittelte Feldwert dem gespeicherten entspricht.
+- Ein explizites `is_verified` hat im selben PATCH Vorrang. Ein Wechsel auf true
+  setzt normalerweise `verified_at`; ein Wechsel auf false löscht es. Ein explizites
+  `verified_at`, auch `null`, hat Vorrang vor dieser Automatik.
+- Ein PATCH nur mit `verified_at` erhält `is_verified`. Reine Änderungen von Name,
+  Beitrittszeit oder regulärem Zähler lösen ebenfalls keine Neuberechnung aus.
+- Eine spätere Freigabe oder ein weiterer PATCH mit Verifikationseingaben
+  berechnet die Verifikation wieder regulär.
+
+Damit sind auch widersprüchliche Testzustände möglich. Bei `is_verified: true`
+gilt der Nutzer unabhängig von Quiz und Probeabholzähler als für Geschäftsrettungen berechtigt.
+Das Antwortfeld `may_earn_rewards` entspricht diesem Flag; es löst keine
+Belohnungsvergabe aus.
+
+**Zähleränderungen verändern keine Abholhistorie.** Sie erzeugen und löschen keine
+Ereignisse. Spätere Abholungen erhöhen den regulären Zähler `pickups_completed`; bei dessen
+Maximum wird eine neue Abholung mit `409` abgelehnt. Die tatsächlichen Ereignisse
+stehen unter `/users/me/pickups` für die jeweilige Nutzerauswahl.
+
+Beide Teamnutzer bleiben aus dem Sample ausgeschlossen. Körbe und ihre
+Anfrageübersichten sind dagegen für alle gültigen Team-Keys lesbar. Die Isolation
+von Nutzerprofilen und Historien bedeutet keine vollständige Unsichtbarkeit von
+Korb-Aktivitäten. Berechtigungen: [API-GUIDE.md](API-GUIDE.md#6-berechtigungen-bei-statuswechseln).
+
+Beispiel zum Zurücksetzen von Onboarding-Flags und Zählern:
+
+```bash
+curl -X PATCH -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
+  -d '{"quiz_passed":false,"mentor_approved":false,"is_verified":false,"trial_pickups_completed":0,"pickups_completed":0}' \
+  "$BASE/users/$USER2_ID"
+```
+
+Die Historie bleibt dabei erhalten. Ausdrücklich zu löschende Zeitstempel können
+zusätzlich als `null` mitgegeben werden, insbesondere bei zuvor widersprüchlichen
+Testzuständen mit bereits auf false stehenden Flags.
+
+────────────────────────────────────────────────────────────────────────────────
+
+Path: /Users/altayhennig/Downloads/Hackathon team 2 110926 1645/Foodsharing API/DATABASE.md
+==================================================
+
+# Verfügbare Daten
+
+Die API enthält Teamnutzer, Essenskörbe, Abholanfragen, Abholhistorien und
+Fairteiler-Standorte und fiktive Geschäfte. Nutzer, Angebote und Abholungen sind fiktive Testdaten.
+Die Standortdaten beziehen sich auf Fairteiler und Abgabestellen in Frankfurt am Main.
+
+Feldnamen und Datentypen: [SCHEMA.md](SCHEMA.md).
+Endpunkte und Parameter: [API-GUIDE.md](API-GUIDE.md).
+
+## Übersicht
+
+| Daten | Endpunkt | Sichtbarkeit |
+|-------|----------|--------------|
+| Demo-Geschäfte | `GET /businesses` | Alle gültigen Team-Keys |
+| Zwei eigene Testnutzer | `GET /users` | Eigenes Team |
+| Aktuell ausgewählter Nutzer | `GET /users/me` | Eigenes Team |
+| Verifikationszustand | `GET /users/{user_id}/verification` | Eigenes Team |
+| Persönliche Abholhistorie | `GET /users/me/pickups` | Ausgewählter Teamnutzer |
+| Gemeinsame Beispielabholungen | `GET /pickups/sample` | Alle gültigen Team-Keys |
+| Verfügbare Körbe im Umkreis | `GET /baskets/nearby` | Alle gültigen Team-Keys |
+| Korbdetails und Anfrageübersicht | `GET /baskets/{basket_id}` | Alle gültigen Team-Keys |
+| Fairteiler-Liste und einzelne Standorte | `GET /food-share-points`, `GET /food-share-points/{food_share_point_id}` | Öffentlich |
+
+Der aktuelle Umfang der Körbe und Abholungen ergibt sich aus den API-Antworten.
+Angebote können inzwischen reserviert, abgeholt oder abgelaufen sein.
+
+## Persönliche Abholhistorie
+
+`GET /users/me/pickups` liefert die tatsächlichen Abholereignisse des ausgewählten
+Teamnutzers. Jeder erfolgreiche Abholabschluss ergänzt ein Ereignis. Eine Historie
+kann leer sein oder bereits gutgeschriebene Probeabholungen enthalten.
+
+Die Antwort enthält eine `id` für jede Abholung. `was_trial: true` kennzeichnet
+eine Probeabholung, `was_trial: false` eine reguläre Abholung. Spätere Änderungen
+der Verifikation schreiben diesen Wert nicht um. Neue Rettungen aller drei Quellen
+haben `was_trial: false`; sie erhöhen ausschließlich den regulären Zähler.
+Neue Seeds erzeugen keine Fairteiler-Ereignisse für simuliertes Trial-Guthaben.
+Ältere Trial-Einträge bleiben bei Migration und Neustarts erhalten.
+
+`pickups_completed` und `trial_pickups_completed` im Nutzerprofil sind unabhängig
+editierbare Testzähler. Sie können deshalb von der Anzahl der Historieneinträge
+abweichen. Eine Zähleränderung erzeugt und löscht keine Abholungen.
+
+## Gemeinsamer Beispieldatensatz
+
+`GET /pickups/sample` liefert historische Abholungen fiktiver Personen ohne
+Teamzugehörigkeit. Der Datensatz enthält Fairteiler- und Korb-Abholungen sowie
+Probeabholungen und reguläre Abholungen. Eigene und fremde Team-Abholungen sind
+ausgeschlossen, auch wenn ein Teamnutzer keinen eigenen API-Key hat.
+
+Die fachlichen Felder entsprechen der persönlichen Historie. Statt einer
+Abholungs-`id` steht im Sample jedoch `person`, zum Beispiel `person_007`.
+Eine `user_id` ist in keiner der beiden Antworten enthalten. Die IDs der
+zugehörigen Körbe, Fairteiler oder Geschäfte bleiben sichtbar. Der Filter
+`source=business` zeigt Geschäftsrettungen; er kann beim Beispieldatensatz leer sein.
+
+Ein `person`-Wert bleibt bei unverändertem Bestand an Beispielpersonen über
+Seiten und Quellenfilter hinweg gleich. Er ist kein für `/users/{user_id}` oder
+`X-User-ID` verwendbarer Wert. Profile und Verifikationszustände dieser Personen
+sind mit Team-Keys nicht zugänglich.
+
+Die historischen Testdaten bilden keinen vollständigen Lebenslauf einer Person
+ab. Abholzeitpunkte können beispielsweise vor dem angegebenen Beitritt liegen.
+Aus den Testdaten ergeben sich keine gemessenen Aussagen über reales Abholverhalten.
+
+### Aufrufbeispiele (Bash)
+
+```bash
+BASE=https://app-foodsharing-hackathon.azurewebsites.net
+KEY=team_01_...
+
+# Erste Seite aller Beispielabholungen
+curl -H "X-API-Key: $KEY" "$BASE/pickups/sample?limit=200&offset=0"
+
+# Nur Korb-Abholungen
+curl -H "X-API-Key: $KEY" "$BASE/pickups/sample?source=basket&limit=1000"
+
+# Nur Fairteiler-Abholungen
+curl -H "X-API-Key: $KEY" "$BASE/pickups/sample?source=food_share_point&limit=1000"
+
+# Persönliche Historie eines ausgewählten Teamnutzers
+USER_ID=22  # Tatsächliche ID aus GET /users
+curl -H "X-API-Key: $KEY" -H "X-User-ID: $USER_ID" "$BASE/users/me/pickups"
+```
+
+Beide Historien liefern die neuesten Ereignisse zuerst und unterstützen `limit`
+und `offset`. Die persönliche Historie erlaubt bis zu 500 Einträge pro Aufruf,
+das Sample bis zu 1000. Der `source`-Filter ist nur beim Sample verfügbar.
+
+## Fairteiler
+
+Die Standortdaten enthalten Namen und Koordinaten von Fairteilern und
+Abgabestellen im Raum Frankfurt. Beschreibung, Adresse und Öffnungszeiten können
+`null` sein; bei den bereitgestellten Standorten sind diese Angaben nicht hinterlegt.
+Eine Unterscheidung zwischen Kühlschrank und Regal ist nicht enthalten.
+Die Einträge sind keine Bestätigung aktueller Öffnungs- oder Betriebszeiten.
+
+Ohne Koordinaten liefert `GET /food-share-points` die Standorte nach Name sortiert.
+Mit `lat` und `lon` werden Standorte innerhalb von `distance_km` nach Entfernung
+sortiert. Die Antwort enthält dann die berechnete `distance_km`; ohne
+Umkreissuche ist dieses Feld `null`.
+
+## Demo-Geschäfte
+
+Drei ausdrücklich fiktive Geschäfte in Frankfurt stehen in `GET /businesses`.
+Die Migration ergänzt sie auch in bestehenden Datenbanken und erhält bestehende
+Team-Schlüssel, Zustände und Historien. Geschäftsrettungen erscheinen mit
+`source: business`, `business_id`, `business_name` und Koordinaten in der Historie.
+Es gibt keine Warenbestände oder Terminbuchung; jeder erfolgreiche POST ist ein
+eigenes Ereignis und setzt Verifikation voraus.
+
+## Körbe und Anfragen
+
+Ein Korb hat einen Titel, einen Abholort, einen Status und eine Ablaufzeit. Optional
+sind Beschreibung und Lebensmittelarten (`food_types`). Beispielangebote liegen
+im Raum Frankfurt; neue Angebote können beliebige gültige Koordinaten verwenden.
+
+Die Umkreissuche liefert nur freie, noch nicht abgelaufene Körbe. Die Detailansicht
+bleibt auch bei reservierten, abgeholten oder abgelaufenen Körben verfügbar.
+`expires_at` ist die Verfügbarkeitsgrenze für API-Abholungen, keine Aussage über
+die tatsächliche Genießbarkeit der Lebensmittel.
+
+Anfragen beschreiben die Reservierung eines Korbs. Erst der Abholabschluss erzeugt
+ein Abholereignis. Ein offener Request reserviert den Korb für den Anfragenden;
+Statusänderungen sind abhängig vom Zielstatus dem Anbieter oder Anfragenden erlaubt.
+Die vollständigen Regeln stehen im [API-Guide](API-GUIDE.md#6-berechtigungen-bei-statuswechseln).
+
+## Teamübergreifende Sichtbarkeit
+
+Nutzerprofile, Verifikation und persönliche Historien sind nur innerhalb des
+eigenen Teams zugänglich. Körbe und Anfrageübersichten sind mit jedem gültigen
+Key lesbar. Dabei sind Anbieter-ID und Anfragenden-ID sichtbar. Diese IDs erlauben
+keinen Zugriff auf fremde Nutzerprofile und keine Auswahl als handelnder Nutzer.
+
+────────────────────────────────────────────────────────────────────────────────
+
+Path: /Users/altayhennig/Downloads/Hackathon team 2 110926 1645/Foodsharing API/SCHEMA.md
+==================================================
+
+# API-Datenobjekte
+
+Referenz der JSON-Felder in Requests und Antworten der Foodsharing Hackathon API.
+Die vollständige maschinenlesbare Beschreibung steht in [openapi.json](openapi.json).
+Endpunkte, Parameter und Fehler: [API-GUIDE.md](API-GUIDE.md).
+
+## Datentypen und Beziehungen
+
+`integer` bezeichnet eine ganze Zahl, `number` eine Zahl mit möglichen Nachkommastellen,
+`boolean` die Werte `true` und `false`. `string[]` ist eine Liste von Zeichenketten.
+`null` bedeutet, dass für ein Feld kein Wert vorliegt.
+
+Zeitstempel sind Zeichenketten im ISO-8601-Format. Bei editierbaren Zeitstempeln ist
+eine Zeitzone erforderlich, zum Beispiel `2026-09-08T09:00:00Z` oder
+`2026-09-08T11:00:00+02:00`.
+
+| Objekt | Zusammenhang |
+|--------|--------------|
+| Teamnutzer | Handelt über den gemeinsamen Team-Key und optional `X-User-ID` |
+| Korb | Angebot eines Nutzers; kann von einem anderen Nutzer angefragt oder abgeholt werden |
+| Abholanfrage | Verbindet einen Anfragenden mit einem Korb |
+| Abholung | Abgeschlossenes Ereignis an genau einer Quelle: Korb, Fairteiler oder Geschäft |
+| Fairteiler | Standort, an dem mehrere Abholungen erfasst werden können |
+
+## Nutzer (UserMeResponse)
+
+Antwort von `GET /users/me`, `GET /users/{user_id}`, Nutzer-PATCHes und
+`POST /users/me/approve`. `GET /users` liefert eine Liste dieser Objekte.
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `id` | integer | Nutzer-ID; für Pfadparameter und `X-User-ID` |
+| `team_id` | integer | Zugehöriges Team |
+| `team_name` | string oder null | Team-Label des verwendeten Keys |
+| `display_name` | string oder null | Editierbarer Name des Testnutzers |
+| `is_default` | boolean | Dieser Nutzer ist ohne Auswahlheader aktiv |
+| `joined_at` | Zeitstempel | Angegebener Beitrittszeitpunkt |
+| `pickups_completed` | integer | Zähler regulärer Abholungen |
+| `trial_pickups_completed` | integer | Zähler der Probeabholungen |
+| `verification` | VerificationState | Verifikation und aktuelle Abholberechtigung |
+
+Die Zähler können für Tests unabhängig von den tatsächlichen Abholereignissen
+geändert werden. Identität und Teamzugehörigkeit sind nicht editierbar.
+Alle editierbaren Felder und PATCH-Regeln stehen in [TEAM-USERS.md](TEAM-USERS.md).
+
+## Verifikation (VerificationState)
+
+In Nutzerantworten steht dieses Objekt unter `verification`.
+`GET/PATCH /users/{user_id}/verification` liefern es direkt.
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `status` | string | `quiz_pending`, `trial_pending`, `approval_pending` oder `verified` |
+| `is_verified` | boolean | Nutzer ist verifiziert; per Test-PATCH auch explizit setzbar |
+| `quiz_passed` | boolean | Quiz als bestanden markiert |
+| `quiz_passed_at` | Zeitstempel oder null | Zeitpunkt des bestandenen Quiz |
+| `trial_pickups_completed` | integer | Probeabholungszähler |
+| `trial_pickups_required` | integer | Erforderliche Probeabholungen für die reguläre Verifikation |
+| `mentor_approved` | boolean | Simulierte Freigabe liegt vor |
+| `mentor_approved_at` | Zeitstempel oder null | Zeitpunkt der Freigabe |
+| `verified_at` | Zeitstempel oder null | Zeitpunkt der Verifikation |
+| `may_pick_up` | boolean | Körbe/Fairteiler abholen; für alle Teamnutzer true |
+| `may_pick_up_from_business` | boolean | Geschäftsrettung erlaubt; entspricht `is_verified` |
+| `may_earn_rewards` | boolean | Entspricht `is_verified`; löst keine Belohnungsvergabe aus |
+| `next_step` | string | Beschreibung des nächsten Schritts im Verifikationsablauf |
+
+Ein `is_verified: true` hat bei der Statusermittlung Vorrang vor Quiz und
+Probeabholungszähler. Die API unterstützt dadurch auch absichtlich widersprüchliche
+Testzustände. Bei eigenen Verifikationsfehlern steht das Objekt unter
+`detail.verification`; andere `403`-Antworten müssen es nicht enthalten.
+
+## Korb (BasketSummary und BasketDetail)
+
+`GET /baskets/nearby` liefert eine Liste von `BasketSummary`-Objekten.
+`GET /baskets/{basket_id}` und `POST /baskets` liefern `BasketDetail`.
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `id` | integer | Korb-ID |
+| `title` | string | Titel des Angebots |
+| `description` | string oder null | Beschreibung |
+| `lat` | number | Breitengrad des Abholorts |
+| `lon` | number | Längengrad des Abholorts |
+| `food_types` | string[] oder null | Lebensmittelarten; keine feste Werteliste |
+| `status` | string | `available`, `requested`, `picked_up` oder `expired` |
+| `created_by_user_id` | integer oder null | Anbieter-ID |
+| `created_at` | Zeitstempel | Zeitpunkt des Angebots |
+| `expires_at` | Zeitstempel | Ab hier sind API-Abholungen gesperrt |
+| `distance_km` | number oder null | Entfernung zum Suchpunkt; außerhalb einer Umkreissuche `null` |
+| `pickup_requests` | PickupRequestSummary[] | Nur in `BasketDetail`: Anfrageübersicht, gegebenenfalls leere Liste |
+
+Ein gespeicherter Status `available` allein garantiert noch keine Verfügbarkeit:
+Auch `expires_at` begrenzt die Abholung. Die Umkreissuche liefert ausschließlich
+freie, noch nicht abgelaufene Körbe.
+
+### Korb anbieten (BasketCreate)
+
+`POST /baskets` akzeptiert folgende Felder:
+
+| Feld | Pflicht | Werte |
+|------|---------|-------|
+| `title` | ja | Text, 1–200 Zeichen |
+| `lat` | ja | Zahl von -90 bis 90 |
+| `lon` | ja | Zahl von -180 bis 180 |
+| `description` | nein | Text oder `null` |
+| `food_types` | nein | Liste von Texten oder `null` |
+| `expires_in_hours` | nein | Ganze Zahl von 1 bis 168; Default 48 |
+
+Anbieter ist der ausgewählte Teamnutzer. ID, Erstellungszeit, Status und Ablaufzeit
+werden von der API vergeben.
+
+## Abholanfragen
+
+### Anfrageübersicht (PickupRequestSummary)
+
+Einträge in `BasketDetail.pickup_requests`:
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `requester_id` | integer | Anfragender Nutzer |
+| `status` | string | `pending`, `accepted`, `rejected`, `cancelled` oder `picked_up` |
+| `requested_at` | Zeitstempel | Zeitpunkt der Anfrage |
+
+### Anfrage erstellen (PickupRequestCreate und PickupRequestResponse)
+
+`POST /baskets/{basket_id}/requests` erwartet einen JSON-Body.
+`message` ist optional und enthält einen Text oder `null`; `{}` ist ebenfalls zulässig.
+Der Anfragende ist der ausgewählte Nutzer. Die Antwort enthält:
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `id` | integer | ID der Anfrage |
+| `basket_id` | integer | Angefragter Korb |
+| `requester_id` | integer | Anfragender Nutzer |
+| `status` | string | Nach erfolgreicher Erstellung `pending` |
+| `message` | string oder null | Übermittelte Nachricht |
+| `requested_at` | Zeitstempel | Zeitpunkt der Anfrage |
+
+### Status ändern (PickupStatusUpdate und PickupStatusResponse)
+
+`PATCH /baskets/{basket_id}/requests/{requester_id}/status` erwartet `status` mit
+`accepted`, `rejected`, `cancelled` oder `picked_up`. Im Pfad steht die Nutzer-ID
+des Anfragenden, nicht die ID der Anfrage. Die Antwort enthält:
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `basket_id` | integer | Betroffener Korb |
+| `requester_id` | integer | Anfragender Nutzer |
+| `status` | string | Neuer Status |
+| `updated_at` | Zeitstempel | Zeitpunkt des Statuswechsels |
+| `pickup_id` | integer oder null | ID der bei `picked_up` erfassten Abholung; sonst `null` |
+| `was_trial` | boolean | Bei neuen Korbabschlüssen immer false |
+
+Die erlaubten Übergänge und Akteure stehen im
+[API-Guide](API-GUIDE.md#6-berechtigungen-bei-statuswechseln).
+
+## Abholungen (PickupResponse und SamplePickupResponse)
+
+`POST /pickups` und `POST /businesses/{business_id}/pickups` liefern `PickupResponse`.
+`GET /users/me/pickups` liefert eine Liste dieser Objekte;
+`GET /pickups/sample` eine Liste von `SamplePickupResponse`.
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `id` | integer | Abholungs-ID; nur in `PickupResponse` |
+| `person` | string | Pseudonym der Beispielperson; nur in `SamplePickupResponse` |
+| `source` | string | `basket`, `food_share_point` oder `business` |
+| `picked_up_at` | Zeitstempel | Zeitpunkt der Abholung |
+| `was_trial` | boolean | Historische Trial-Markierung; alle neuen Rettungen haben false |
+| `food_share_point_id` | integer oder null | ID der Fairteiler-Quelle |
+| `food_share_point_name` | string oder null | Name der Fairteiler-Quelle |
+| `business_id` | integer oder null | ID der Geschäftsquelle |
+| `business_name` | string oder null | Name der Geschäftsquelle |
+| `basket_id` | integer oder null | ID der Korb-Quelle |
+| `basket_title` | string oder null | Titel des Quellkorbs |
+| `basket_created_at` | Zeitstempel oder null | Zeitpunkt des Korbangebots |
+| `basket_expires_at` | Zeitstempel oder null | Ablaufzeit des Quellkorbs |
+| `food_types` | string[] oder null | Lebensmittelarten des Quellkorbs |
+| `lat` | number oder null | Breitengrad der Quelle |
+| `lon` | number oder null | Längengrad der Quelle |
+
+Felder anderer Quellen sind `null`; bei Geschäftsrettungen sind beispielsweise
+Korb- und Fairteiler-Felder einschließlich `food_types` leer. Die Antworten enthalten keine
+`user_id`. Im Sample ersetzt `person` die Abholungs-`id`.
+
+### Abholung erfassen (PickupCreate)
+
+`POST /pickups` akzeptiert genau eine der beiden Quellen:
+
+```json
+{"food_share_point_id": 1}
+```
+
+oder:
+
+```json
+{"basket_id": 123}
+```
+
+Beide Quellen gleichzeitig, keine Quelle oder zusätzliche Body-Felder ergeben
+`422`. Nutzer und Abholzeitpunkt werden durch die Nutzerauswahl und die API bestimmt.
+Korb-ID und Fairteiler-ID in den Beispielen sind durch vorhandene IDs zu ersetzen.
+
+## Fairteiler (FoodSharePointResponse)
+
+Antwort von `GET /food-share-points/{food_share_point_id}`;
+`GET /food-share-points` liefert eine Liste dieser Objekte.
+
+| Feld | Typ | Bedeutung |
+|------|-----|-----------|
+| `id` | integer | Standort-ID |
+| `name` | string | Name des Fairteilers oder der Abgabestelle |
+| `description` | string oder null | Beschreibung, falls vorhanden |
+| `address` | string oder null | Adresse, falls vorhanden |
+| `lat` | number | Breitengrad |
+| `lon` | number | Längengrad |
+| `opening_hours` | string oder null | Öffnungszeiten, falls vorhanden |
+| `region_id` | integer | Kennung der Standortregion |
+| `distance_km` | number oder null | Entfernung zum Suchpunkt; ohne Umkreissuche `null` |
+
+## Geschäft (BusinessResponse)
+
+`GET /businesses` liefert eine Liste fiktiver Demo-Geschäfte mit `id` (integer),
+`name` (string), `lat` und `lon` (number). Der Katalog benötigt einen Team-Key,
+aber keine Verifikation. `POST /businesses/{business_id}/pickups` benötigt einen
+verifizierten ausgewählten Nutzer und keinen Body.
+
+## Dienststatus
+
+`GET /` liefert `status: "ok"`, `docs: "/docs"` und `version` mit der API-Version.
+`GET /ready` liefert bei Bereitschaft `status: "ready"` und `build_id`, eine
+technische Kennung der bereitgestellten API. Andernfalls folgt `503` mit einer
+Fehlermeldung unter `detail`.
+
+────────────────────────────────────────────────────────────────────────────────
+
+Path: /Users/altayhennig/Downloads/Hackathon team 2 110926 1645/Foodsharing API/KEYS.txt
+==================================================
+
+team_02_88829cd2c44749b796a70dfbf7dce344
+
+Backup:team_09_968113ab356661ccb44554382cf539e8
+────────────────────────────────────────────────────────────────────────────────
+
