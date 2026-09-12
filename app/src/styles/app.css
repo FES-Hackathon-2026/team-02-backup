@@ -760,6 +760,13 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .level-water-badge { position: absolute; z-index: 1; bottom: -3px; right: -3px; background: var(--card); border: 2px solid var(--paper); border-radius: 50%; width: 27px; height: 27px; display: grid; place-items: center; color: var(--blue-deep); font-size: 14px; font-weight: 700; }
 @keyframes level-water-drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .level-wave { animation: none; will-change: auto; }.level-water-fill { transition: none; } }
+/* The second line of a one-line card. It must be its own line — dropping
+   display:block runs it straight onto the title — and it must stay ONE line:
+   these subtitles carry real names from partner APIs ("Abgabestelle
+   Reparatur-Café Heddernheim") that would otherwise wrap and push the row to
+   double height. */
+.card-sub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .nearby-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .nearby-grid .card { padding: 11px; min-width: 0; }
 .nearby-grid .thumb { width: 100%; height: 62px; margin-bottom: 8px; border: 0; }
