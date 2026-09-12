@@ -25,7 +25,14 @@ function hash(bytes) {
   return h >>> 0
 }
 
-const F = (key, category, subtype, confidence, volume, reuse, reasoning) => ({
+/**
+ * `visible` is the whole-frame sweep a real provider now returns. The
+ * fixtures carry it too, because mock is the stage insurance: if the offline
+ * path silently lacked the field, a demo on bad venue wifi would show a
+ * feature that looks missing rather than one that is simply not live.
+ * Defaults to the object itself, which is the honest single-object answer.
+ */
+const F = (key, category, subtype, confidence, volume, reuse, reasoning, visible) => ({
   key,
   category,
   subtype,
@@ -33,6 +40,7 @@ const F = (key, category, subtype, confidence, volume, reuse, reasoning) => ({
   estimated_volume_m3: volume,
   reusable_probability: reuse,
   reasoning,
+  visible_objects: visible ?? [subtype],
 })
 
 /**
@@ -45,10 +53,11 @@ export const FIXTURES = {
       'Vier Beine, eine Rückenlehne und eine durchgehende Sitzfläche — das ist ein Stuhl.',
       'Die Oberfläche wirkt gebraucht, aber nicht gebrochen: das Gestell trägt noch.',
     ]),
-    F('sofa', 'moebel', 'Zweisitzer-Sofa', 0.83, 1.4, 0.52, [
+    F('sofa', 'moebel', 'Zweisitzer-Sofa', 0.83, 2.0, 0.52, [
       'Gepolsterte Armlehnen und eine durchgehende Sitzfläche für zwei Personen.',
       'Der Bezug ist fleckig, das Gestell aber gerade — reparabel, nur nicht mehr schön.',
-    ]),
+      'Hauptstück ist das Sofa; die Stühle davor sind beim Volumen mitgezählt.',
+    ], ['Zweisitzer-Sofa', '2 Holzstühle', 'Umzugskarton']),
     F('kuehlschrank', 'elektro', 'Kühlschrank', 0.91, 0.55, 0.4, [
       'Hohe weiße Box mit durchgehender Tür und Griffleiste, typisch für ein Kühlgerät.',
       'Kühlgeräte enthalten Kältemittel und dürfen nicht in den Restmüll.',

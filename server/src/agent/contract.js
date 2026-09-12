@@ -172,7 +172,36 @@ function toReasoning(value) {
     .map((s) => s.replace(/\s+/g, ' ').trim())
     .filter((s) => s.length > 3)
     .map((s) => (s.length > 220 ? `${s.slice(0, 217)}…` : s))
-    .slice(0, 4)
+    // Three, not four. Two more lines are appended by code below — the
+    // hazard override and the routing rule — and the final cap is five.
+    // At four the routing explanation, the one line that is not a guess,
+    // was the one that fell off the end.
+    .slice(0, 3)
+}
+
+/**
+ * The whole-frame sweep the prompt asks for first.
+ *
+ * Kept short and deduplicated. This is not a second classification — it is
+ * the evidence that the model looked past the middle of the picture, and it
+ * is what makes an under-counted volume visible to the person instead of
+ * silently wrong.
+ */
+function toVisibleObjects(value) {
+  const list = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+  const seen = new Set()
+  const out = []
+  for (const entry of list) {
+    if (typeof entry !== 'string') continue
+    const clean = entry.replace(/\s+/g, ' ').trim()
+    if (clean === '' || clean.length > 40) continue
+    const key = clean.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(clean)
+    if (out.length === 8) break
+  }
+  return out
 }
 
 const asSubtype = (value, category) => {
@@ -294,6 +323,8 @@ export function normalize(raw, { mode }) {
     cat.reuse,
   )
 
+  const visibleObjects = toVisibleObjects(pick('visible_objects', 'visibleObjects', 'objekte'))
+
   const reasoning = toReasoning(pick('reasoning', 'begruendung', 'reasons'))
   if (reasoning.length === 0) {
     reasoning.push(
@@ -328,6 +359,13 @@ export function normalize(raw, { mode }) {
     reusableProbability,
     estimatedVolumeM3,
   })
+  // Said out loud whenever the picture held more than one thing, because
+  // the volume above is their sum and a person checking a collection size
+  // has no other way to see what was counted.
+  if (visibleObjects.length > 1) {
+    reasoning.push(`Im Bild erkannt: ${visibleObjects.join(', ')} — das Volumen zählt sie zusammen.`)
+  }
+
   // The routing rule is always spelled out, whatever the model said — it is
   // the one line in here that comes from code and not from a guess.
   reasoning.push(decided.why)
@@ -343,7 +381,12 @@ export function normalize(raw, { mode }) {
     estimatedVolumeM3,
     estimatedVolumeLabel: `${fmt(estimatedVolumeM3)} m³`,
     reusableProbability,
-    reasoning: reasoning.slice(0, 5),
+    // Trim from the FRONT. Everything code appended — the hazard override,
+    // the sweep, the routing rule — sits at the end, and those are the lines
+    // that must never be the ones dropped.
+    reasoning: reasoning.slice(-5),
+    /** Every disposable object the model reported seeing, main one included. */
+    visibleObjects,
     suggestedRoute: decided.route,
     /** What the model wanted, kept only when it disagrees — shown as a hint. */
     modelSuggestedRoute: ROUTE_IDS.includes(modelRoute) ? modelRoute : null,

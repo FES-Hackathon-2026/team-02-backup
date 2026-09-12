@@ -5,10 +5,18 @@ import Icon from '../components/Icon'
 import { api, ApiError, type ScanMode, type ScanResult } from '../lib/client'
 import { de } from '../lib/de'
 
+/**
+ * The three pills are a ROUTING choice, not a hint about the object: the
+ * mode decides what the result becomes before the shutter is pressed.
+ * Sperrmüll is the only one where the route is computed — from volume and
+ * reusability — so its framing tip is the one that has to get the whole pile
+ * into the picture. Fundstück always becomes a Quest, Wissen always the
+ * disposal rule, and their tips can ask for a tighter frame instead.
+ */
 const MODI = [
-  { id: 'sperrmuell', label: 'Sperrmüll' },
-  { id: 'fundstueck', label: 'Fundstück melden' },
-  { id: 'wissen', label: 'Was ist das?' },
+  { id: 'sperrmuell', label: 'Sperrmüll', hint: 'Alles ins Bild, was mit weg soll — auch Kleinteile' },
+  { id: 'fundstueck', label: 'Fundstück melden', hint: 'Fundstück mit etwas Umgebung aufnehmen' },
+  { id: 'wissen', label: 'Was ist das?', hint: 'Objekt möglichst formatfüllend aufnehmen' },
 ] as const
 
 const RULE = '3px solid #fff'
@@ -158,7 +166,6 @@ export default function Scan() {
   const [modus, setModus] = useState<ScanMode>(MODI[0].id)
   const [phase, setPhase] = useState<Phase>('live')
   const [lage, setLage] = useState<KameraLage>('startet')
-  const [front, setFront] = useState(false)
   const [versuch, setVersuch] = useState(0)
   const [lampe, setLampe] = useState(false)
   const [hatLampe, setHatLampe] = useState(false)
@@ -169,7 +176,7 @@ export default function Scan() {
   const [hinweis, setHinweis] = useState(false)
   const [ortDa, setOrtDa] = useState(false)
 
-  /* Camera. Restarted when the person flips front/back, stopped on leave —
+  /* Camera. Restarted on a retry, stopped on leave —
      an orphaned stream keeps the recording light on. */
   useEffect(() => {
     let stream: MediaStream | null = null
@@ -189,7 +196,7 @@ export default function Scan() {
     navigator.mediaDevices
       .getUserMedia({
         video: {
-          facingMode: front ? 'user' : { ideal: 'environment' },
+          facingMode: { ideal: 'environment' },
           // A hint, not a demand: a phone that cannot do this still starts,
           // and the capture is downscaled afterwards anyway.
           width: { ideal: 1920 },
@@ -221,7 +228,7 @@ export default function Scan() {
       trackRef.current = null
       stream?.getTracks().forEach((t) => t.stop())
     }
-  }, [front, versuch])
+  }, [versuch])
 
   /* The torch is a constraint on the live track, so it is applied here rather
      than at capture time — the person sees it come on before they shoot. */
@@ -374,7 +381,6 @@ export default function Scan() {
           height: '100%',
           objectFit: 'cover',
           opacity: kamera === 'an' && phase !== 'busy' ? 1 : 0,
-          transform: front ? 'scaleX(-1)' : undefined,
           transition: 'opacity .25s',
         }}
       />
@@ -485,7 +491,7 @@ export default function Scan() {
           ) : (
             <>
               <Icon name="spark" size={16} stroke={1.9} />
-              Ganzes Objekt ins Bild — den Rest übernimmt ReMain
+              {MODI.find((m) => m.id === modus)?.hint}
             </>
           )}
         </div>
@@ -564,7 +570,14 @@ export default function Scan() {
 
           {/* Torch where the device has one, camera flip where it does not —
               one slot, so the shutter stays centred either way. */}
-          {hatLampe && !front ? (
+          {/* Torch only. There used to be a camera flip in this slot when the
+              device had no torch, and it was a control that could only make
+              the result worse: bulky waste is never in front of the selfie
+              camera, that sensor is the lower-resolution one, and the torch
+              does not work with it. A slot that changes identity between
+              phones is also the opposite of predictable. Now it is the torch
+              or an equally sized gap, so the shutter stays centred. */}
+          {hatLampe ? (
             <button
               onClick={() => setLampe((l) => !l)}
               disabled={phase === 'busy'}
@@ -586,26 +599,7 @@ export default function Scan() {
               <Icon name="spark" size={21} />
             </button>
           ) : (
-            <button
-              onClick={() => setFront((f) => !f)}
-              disabled={phase === 'busy' || kamera !== 'an'}
-              aria-label="Kamera wechseln"
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 13,
-                border: 'none',
-                background: 'rgba(255,255,255,.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#dce9f2',
-                opacity: kamera === 'an' ? 1 : 0.45,
-                padding: 0,
-              }}
-            >
-              <Icon name="scan" size={21} />
-            </button>
+            <span style={{ width: 46, height: 46 }} aria-hidden="true" />
           )}
         </div>
 
