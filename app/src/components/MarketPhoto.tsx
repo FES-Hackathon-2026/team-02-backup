@@ -16,8 +16,16 @@ export default function MarketPhoto({ item, size = 92, credits = false }: { item
   const original = upload && !failed.includes(upload)
   const src = original ? upload : example ? `/images/market/${example.file}.jpg` : null
   return <span className="market-photo" style={{ width: size, flex: 'none' }}>
+    <span className="market-photo-frame">
     {t(src && !failed.includes(src) ? <img src={src} alt={t(original ? item.title : `${example.alt} — Kategoriebeispiel, nicht dieser Gegenstand`)} loading="lazy" width={size} height={size} onError={() => setFailed(previous => [...previous, src])} /> : <Thumb icon="camera" size={size} />)}
-    {t(!original && <span className="xs mut">{t(src && !failed.includes(src) ? 'Beispielfoto' : 'Kein Foto verfügbar')}</span>)}
+    {/* The marker sits ON the picture, not under it.
+        It has to exist — this is a category stock photo, not the thing being
+        offered, and a list that implies otherwise is lying about the one
+        detail a person actually judges. But as a caption it wrapped to two
+        lines beneath an 82px thumbnail and dragged the whole row out of
+        alignment. A corner badge says the same thing and costs no height. */}
+    {t(!original && <span className="market-photo-badge xs">{t(src && !failed.includes(src) ? 'Beispiel' : 'Kein Foto')}</span>)}
+    </span>
     {t(credits && !original && example && <span className="photo-credit xs mut"><a href={`https://commons.wikimedia.org/wiki/File:${encodeURIComponent(example.title)}`} target="_blank" rel="noreferrer">{t("Foto: ")}{t(example.author)}</a> {t(" · ")}<a href={`https://creativecommons.org/licenses/by-sa/${example.license}/`} target="_blank" rel="noreferrer">{t("CC BY-SA ")}{t(example.license)}</a><br />{t("Kategoriebeispiel; Ausschnitt für die Anzeige.")}</span>)}
   </span>
 }

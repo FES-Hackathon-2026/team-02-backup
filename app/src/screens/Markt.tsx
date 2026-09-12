@@ -183,7 +183,6 @@ export default function Markt() {
         </button>
       }
     >
-      <p className="sm mut" style={{ margin: 0 }}>{t("Gebrauchtes finden, kostenlos weitergeben oder reparieren lassen.")}</p>
 
       <Segment modus={modus} onChange={setModus} offen={wartetAufDich || undefined} />
 
@@ -230,8 +229,7 @@ export default function Markt() {
       {t(modus === 'betriebe' && (
         <>
           <p className="xs mut" style={{ lineHeight: 1.5, margin: 0 }}>
-            {t(betriebe.data?.places.length ?? 0)} {t(" Reparaturbetriebe im Umkreis von 12 km.")}{t(' ')}
-            <Tag von="api">{t("OpenStreetMap")}</Tag>
+            {t(betriebe.data?.places.length ?? 0)} {t(" Reparaturbetriebe im Umkreis von 12 km.")}
           </p>
 
           {t(betriebe.loading && (
@@ -543,7 +541,7 @@ function AnbietenSheet({
         </div>
 
         <p className="xs mut" style={{ marginTop: 0, lineHeight: 1.5 }}>
-          {t("Kostenlos abzugeben. Gutgeschrieben wird erst, wenn ihr beide die Übergabe bestätigt.")}</p>
+          {t("Kostenlos abzugeben. Punkte nach beidseitiger Bestätigung.")}</p>
 
         <div className="col" style={{ gap: 14 }}>
           <label className="col" style={{ gap: 6 }}>
@@ -575,7 +573,7 @@ function AnbietenSheet({
           </div>
 
           <div className="col" style={{ gap: 6 }}>
-            <span className="lbl">{t("Was fehlt? Ein Tag, kein Aufsatz.")}</span>
+            <span className="lbl">{t("Was fehlt?")}</span>
             <div className="chips">
               {t(defekte.map((d) => (
                 <button
@@ -623,7 +621,7 @@ function AnbietenSheet({
               <span className="xs mut">
                 {t(photoId
                   ? 'Wird verkleinert übertragen — ohne EXIF.'
-                  : 'Hilft enorm. Optional.')}
+                  : 'Optional')}
               </span>
             </div>
             <button

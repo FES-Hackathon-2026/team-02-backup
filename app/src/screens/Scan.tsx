@@ -175,7 +175,6 @@ export default function Scan() {
   const [dauer, setDauer] = useState(0)
   const [fehler, setFehler] = useState<string | null>(null)
   const [hinweis, setHinweis] = useState(false)
-  const [ortDa, setOrtDa] = useState(false)
 
   /* Camera. Restarted on a retry, stopped on leave —
      an orphaned stream keeps the recording light on. */
@@ -250,7 +249,6 @@ export default function Scan() {
     navigator.geolocation?.getCurrentPosition(
       (p) => {
         ortRef.current = { lat: p.coords.latitude, lon: p.coords.longitude }
-        setOrtDa(true)
       },
       () => undefined,
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 60_000 },
@@ -343,7 +341,7 @@ export default function Scan() {
   }
 
   const glas = {
-    background: 'rgba(9,16,22,.5)',
+    background: 'var(--scan-veil)',
     borderColor: 'rgba(255,255,255,.16)',
     color: '#fff',
   }
@@ -355,7 +353,7 @@ export default function Scan() {
         margin: '0 auto',
         minHeight: '100dvh',
         position: 'relative',
-        background: '#0b131a',
+        background: 'var(--scan-ground)',
         color: '#fff',
         display: 'flex',
         flexDirection: 'column',
@@ -435,7 +433,7 @@ export default function Scan() {
             margin: '0 18px',
             padding: '13px 15px',
             borderRadius: 15,
-            background: 'rgba(9,16,22,.82)',
+            background: 'var(--scan-panel)',
             border: '1px solid rgba(255,255,255,.16)',
             fontSize: 14,
             lineHeight: 1.5,
@@ -464,7 +462,7 @@ export default function Scan() {
           flexDirection: 'column',
           gap: 16,
           background:
-            'linear-gradient(180deg, rgba(8,15,21,0) 0%, rgba(8,15,21,.88) 34%)',
+            'linear-gradient(180deg, rgba(16,32,44,0) 0%, rgba(16,32,44,.9) 34%)',
         }}
       >
         <div
@@ -484,12 +482,7 @@ export default function Scan() {
               {t("Der Agent schaut sich das an … ")}{t(dauer.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }))} {t(" s")}</>
           ) : phase === 'error' ? (
             <span style={{ color: '#ffd9d2' }}>{t(fehler)}</span>
-          ) : (
-            <>
-              <Icon name="spark" size={16} stroke={1.9} />
-              {t(MODI.find((m) => m.id === modus)?.hint)}
-            </>
-          ))}
+          ) : null)}
         </div>
 
         <div className="chips" style={{ justifyContent: 'center' }}>
@@ -581,7 +574,7 @@ export default function Scan() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: lampe ? '#0b131a' : '#dce9f2',
+                color: lampe ? 'var(--scan-ground)' : '#dce9f2',
                 padding: 0,
               }}
             >
@@ -596,11 +589,12 @@ export default function Scan() {
             thing from the person, so each one gets its own sentence — and the
             two that a retry can actually fix get a button. */}
         <div className="xs" style={{ textAlign: 'center', color: '#8499a8' }}>
-          {t(lage === 'an' ? (
-            ortDa
-              ? 'Foto und Standort gehen zur Erkennung an den Server.'
-              : 'Das Foto geht zur Erkennung an den Server — ohne Standort.'
-          ) : lage === 'startet' ? (
+            {/* Nothing while the camera is live: what happens to the photo is
+                said in full behind the ⓘ, and repeating it under the shutter
+                was a line nobody needed twice. A camera that is NOT live still
+                explains itself — that text is the only thing standing between
+                a person and an unexplained black rectangle. */}
+            {t(lage === 'an' ? null : lage === 'startet' ? (
             'Kamera startet …'
           ) : (
             <>

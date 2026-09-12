@@ -2,6 +2,7 @@ import { t, getLocale } from './../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import DecisionSheet from '../components/DecisionSheet'
 import Icon from '../components/Icon'
 import Map, { type MapMarker } from '../components/Map'
 import Screen from '../components/Screen'
@@ -55,6 +56,7 @@ export default function Quests() {
 
   const [tab, setTab] = useState<Tab>('offen')
   const [radius, setRadius] = useState<number>(RADIUS[2])
+  const [filterOpen, setFilterOpen] = useState(false)
   const [pos, setPos] = useState<{ lat: number; lon: number } | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
@@ -144,26 +146,35 @@ export default function Quests() {
     >
       {t(scan && <Melden scan={scan} onDone={() => { open.reload(); mine.reload(); void refresh() }} />)}
 
-      <div className="chips scroll">
+      {/* Same shape as the market: a segmented control for WHICH list, and a
+          filter sheet for HOW MUCH of it. The two used to share one scrolling
+          chip strip, where "Offen" and "3 km" looked like alternatives to each
+          other and the last option was off the right edge — a filter you
+          cannot see is a filter nobody sets. */}
+      <div className="market-segments" aria-label={t("Quest-Bereiche")}>
         {t(TABS.map((tabOption) => (
           <button
             key={tabOption.id}
-            className="chip"
+            className="market-segment"
             aria-pressed={tabOption.id === tab}
-            onClick={() => {
-              setTab(tabOption.id)
-              setSelected(null)
-            }}
+            onClick={() => { setTab(tabOption.id); setSelected(null) }}
           >
             {t(tabOption.label)}
             {t(tabOption.id === 'pruefen' && reviewable.length > 0 && ` · ${reviewable.length}`)}
           </button>
         )))}
-        <span className="sep" />
-        {t(RADIUS.map((r) => (
-          <button key={r} className="chip" aria-pressed={r === radius} onClick={() => setRadius(r)}>
-            {t(r)} {t(" km")}</button>
-        )))}
+      </div>
+
+      <div className="market-search-row">
+        <span className="grow sm mut">{t(`Umkreis ${radius} km`)}</span>
+        <button
+          className="market-filter-trigger"
+          aria-haspopup="dialog"
+          onClick={() => setFilterOpen(true)}
+        >
+          <Icon name="filter" size={20} />{t("Filter")}
+          {t(radius !== 10 && <span>{t(1)}</span>)}
+        </button>
       </div>
 
       <Map
@@ -177,8 +188,10 @@ export default function Quests() {
         height={350}
       />
 
-      <p className="xs mut" style={{ margin: '-4px 2px 0' }}>
-        {t("Karte und Orte: OpenStreetMap (ODbL).")}</p>
+        {/* No second attribution line. Leaflet's own control already renders
+            "© OpenStreetMap contributors" inside the map, and that control is
+            what satisfies the ODbL credit — Map.tsx never turns it off. This
+            line repeated the same obligation in smaller type. */}
 
       {t(note && (
         <div className="card tight" style={{ borderColor: 'var(--alert)' }}>
@@ -377,6 +390,26 @@ export default function Quests() {
           }))}
         </div>
       ))}
+      {t(filterOpen && (
+        <DecisionSheet title={t("Quests filtern")} onClose={() => setFilterOpen(false)}>
+          <span className="lbl">{t("Umkreis")}</span>
+          <div className="chips" style={{ marginTop: 8 }}>
+            {t(RADIUS.map((r) => (
+              <button
+                key={r}
+                className="chip"
+                aria-pressed={r === radius}
+                onClick={() => { setRadius(r); setSelected(null) }}
+              >
+                {t(r)}{t(" km")}
+              </button>
+            )))}
+          </div>
+          <button className="btn primary" style={{ marginTop: 14 }} onClick={() => setFilterOpen(false)}>
+            {t("Fertig")}
+          </button>
+        </DecisionSheet>
+      ))}
     </Screen>
   )
 }
@@ -472,7 +505,9 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
   }
 
   return (
-    <div className="card" style={{ gap: 11 }}>
+    // `gap` needs a flex container; on a plain .card (a block) it is inert,
+    // which is why every field in this form was touching the next one.
+    <div className="card col" style={{ gap: 11 }}>
       <span className="row" style={{ gap: 11, alignItems: 'flex-start' }}>
         <img
           src={`/api/photos/${scan.photoId}`}
@@ -482,8 +517,8 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
         <span className="grow">
           <b className="sm" style={{ display: 'block' }}>
             {t("Als Quest melden")}</b>
-          <span className="xs mut">
-            {t("Dein Foto wird das Vorher-Bild. Wer es wegräumt, fotografiert dieselbe Stelle noch einmal — daraus entsteht der Nachweis.")}</span>
+            <span className="xs mut">
+              {t("Dein Foto ist das Vorher-Bild.")}</span>
         </span>
       </span>
 
@@ -515,8 +550,19 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
       >
         {t(busy ? 'wird gemeldet …' : 'Melden')}
       </button>
-      <p className="xs mut" style={{ margin: 0 }}>
-        {t("Der Standort kommt aus deinem Foto. Ohne ihn kann niemand hingehen und niemand gegenprüfen — deshalb ist er Pflicht.")}</p>
+
+        {/* Back to the result, not out of the flow. The scan arrived here
+            because "Als Quest melden" was chosen on /erkannt, and changing
+            your mind should return you to that choice with the other routes
+            still on it — dropping the scan would mean photographing the
+            thing again. */}
+        <button
+          className="btn ghost"
+          disabled={busy}
+          onClick={() => navigate(`/erkannt/${encodeURIComponent(scan.photoId)}`)}
+        >
+          {t("Andere Aktion wählen")}
+        </button>
     </div>
   )
 }
