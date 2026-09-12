@@ -151,8 +151,12 @@ export default function Wissen() {
           )}
 
           {/* 3 — booking, when that is the answer */}
+          {/* /abholung, not /mitteilungen: the notifications screen reads
+              neither `category` nor `photo`, so this button used to open a
+              notification list and silently drop the category the person had
+              just looked up. */}
           {eintrag.route === 'pickup' && (
-            <button className="btn primary" onClick={() => navigate(`/mitteilungen?category=${eintrag.id}`)}>
+            <button className="btn primary" onClick={() => navigate(`/abholung?category=${encodeURIComponent(eintrag.id)}`)}>
               <Icon name="truck" size={19} />
               Abholung anmelden
             </button>
