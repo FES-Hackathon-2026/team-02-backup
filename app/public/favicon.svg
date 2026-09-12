@@ -1,15 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
-  <rect width="128" height="128" rx="30" fill="#1F5C82"/>
-  <g class="brand-cycle" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M27 51a39 39 0 0 1 73-4" stroke="#FFFFFF" stroke-width="7"/>
-    <path d="m88 45 14 4 2-14" stroke="#FFFFFF" stroke-width="7"/>
-    <path d="M101 77a39 39 0 0 1-73 4" stroke="#F0BB45" stroke-width="7"/>
-    <path d="m40 83-14-4-2 14" stroke="#F0BB45" stroke-width="7"/>
-  </g>
-  <g class="brand-parcel" stroke="#1F5C82" stroke-width="3.5" stroke-linejoin="round">
-    <path d="m64 43 21 12v25L64 92 43 80V55Z" fill="#D6E6F1"/>
-    <path d="m43 55 21 12 21-12-21-12Z" fill="#FFFFFF"/>
-    <path d="M64 67v25m0-25L43 55m21 12 21-12"/>
-    <path d="m54 49 21 12v9" stroke="#7FA8C4"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Save2Share">
+  <rect x="6" y="6" width="88" height="88" rx="22" fill="#0f7a5a"/>
+  <line x1="27" y1="73" x2="73" y2="27" stroke="#fff" stroke-width="5.8" stroke-linecap="round"/>
+  <circle cx="27" cy="73" r="10.5" fill="#fff"/>
+  <circle cx="27" cy="73" r="4.7" fill="#0f7a5a"/>
+  <circle cx="73" cy="27" r="10.5" fill="#fff"/>
+  <circle cx="73" cy="27" r="4.7" fill="#0f7a5a"/>
 </svg>
