@@ -451,17 +451,24 @@ a.card {
 }
 
 /* Destructive, and the only place outside a provenance tag that uses the
-   alert colour. Left as an outline until the confirm step, so the filled
-   version appears exactly once: on the press that cannot be undone. */
-.btn.ghost.danger {
-  color: var(--alert);
-  border-color: var(--alert);
-}
-
+   alert colour. The filled version appears exactly once: on the press that
+   cannot be undone. */
 .btn.danger {
   background: var(--alert);
   border-color: var(--alert);
   color: var(--on-alert);
+}
+
+/* Outlined until that confirm step.
+   `background` is restated here on purpose. .btn.danger above sets it at the
+   same specificity as .btn.ghost and comes later, so it would otherwise win
+   the fill — while this rule, being more specific, still wins the text
+   colour. That combination paints --alert on --alert: the label is rendered,
+   and invisible. Both properties belong together in one rule. */
+.btn.ghost.danger {
+  background: transparent;
+  color: var(--alert);
+  border-color: var(--alert);
 }
 
 /* "Mit Google anmelden" — Google's own spec, not ours. The neutral border,
