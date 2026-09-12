@@ -1,39 +1,74 @@
 # Render Blueprint — https://render.com/docs/blueprint-spec
 #
-# Use this INSTEAD of vercel.json, not alongside it. Connect the repo under
-# Render -> New -> Blueprint and it picks this file up automatically.
+# ONE web service that runs the API and serves the built client from the same
+# origin. Not a static site: ReMain has a backend (server/), and a static
+# deploy gives you a frontend where every /api call 404s.
 #
-# Static sites on Render's free tier do not spin down (that only affects web
-# services) and deploy from private repositories.
+# Connect the repo under Render -> New -> Blueprint; this file is picked up
+# automatically.
+#
+# Two things to know about the free plan before demo day:
+#
+#   1. A free web service SPINS DOWN after 15 minutes idle and takes ~50s to
+#      wake. Open the URL five minutes before you present.
+#   2. Free plans have no persistent disk, so the SQLite file is lost on every
+#      redeploy and the seed rebuilds it. Reference data (districts, the 1011
+#      real OSM places) comes back identically; anything a judge did during a
+#      live demo does not. DO NOT REDEPLOY WHILE THE JURY IS TESTING.
+#      To keep data across deploys, add a disk (paid) and point DATABASE_FILE
+#      at its mount path.
 
 services:
   - type: web
-    name: save2share
-    runtime: static
-    rootDir: app
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    name: remain
+    runtime: node
+    plan: free
+    region: frankfurt
+    # The client is built first, then the server serves app/dist from the same
+    # origin — which is why there is no CORS config anywhere in this project.
+    buildCommand: >-
+      cd app && npm ci && npm run build &&
+      cd ../server && npm ci
+    startCommand: cd server && npm start
+    healthCheckPath: /api/health
 
     envVars:
-      # Render serves from the domain root, unlike GitHub Pages (/team-02/).
-      - key: BASE_PATH
-        value: /
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+
+      # Signs the session cookie. generateValue makes Render create a random
+      # one and keep it — never put a real secret in this file.
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # The foodsharing team key. Server-side only: it used to be
+      # VITE_FS_API_KEY, which Vite compiled into the public bundle.
       # sync: false means "prompt me in the dashboard, do not store it here".
-      # Leave it unset and the app asks each visitor for a key instead.
-      - key: VITE_FS_API_KEY
+      - key: FS_API_KEY
         sync: false
+      - key: FS_API_BASE
+        value: https://app-foodsharing-hackathon.azurewebsites.net
 
-    # Harmless today (tab state only, no router). Keeps deep links working if
-    # react-router is added later.
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+      # Where demo content is seeded. Set these to the hackathon room before
+      # the jury arrives, or they open an empty map.
+      - key: VENUE_LAT
+        value: "50.1109"
+      - key: VENUE_LON
+        value: "8.6821"
 
-    headers:
-      - path: /assets/*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
-      - path: /index.html
-        name: Cache-Control
-        value: no-cache
+      # Vision model for the scan agent. Unset, the server picks whichever
+      # provider has a key and falls back to the offline fixtures when none
+      # does — so setting ANTHROPIC_API_KEY in the dashboard is all it takes
+      # to get real classifications. Set LLM_PROVIDER=mock to force fixtures.
+      - key: LLM_PROVIDER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_VISION_MODEL
+        sync: false

@@ -1,0 +1,69 @@
+<div class="scr">
+  <header class="nav solid">
+    <button class="icobtn" style="border:none;background:transparent;width:32px">{{ico:back,22}}</button>
+    <div class="nav-t">Essen retten<small>foodsharing · live</small></div>
+  </header>
+
+  <div class="body" style="gap:12px">
+    <div class="chips">
+      <span class="chip on">Auf meinem Weg</span>
+      <span class="chip">Fairteiler</span>
+      <span class="chip">Körbe</span>
+    </div>
+
+    <div class="card" style="border-color:var(--blue);background:var(--sky2)">
+      <div class="between" style="align-items:flex-start;margin-bottom:10px">
+        <div class="grow">
+          <div class="row" style="gap:7px">
+            <b class="h2">Brot und Obst</b>
+            <span class="tag warn">läuft in 4 h ab</span>
+          </div>
+          <p class="xs mut" style="margin:4px 0 0">Fairteiler Bockenheim · 6 Min Umweg auf deinem Heimweg</p>
+        </div>
+        <span class="coin" style="height:28px;font-size:13.5px">+45</span>
+      </div>
+      <div class="sep" style="margin-bottom:10px"></div>
+      <div class="col" style="gap:7px">
+        <div class="between xs"><span class="mut">Gerettet</span><span style="font-weight:600">ca. 1,8 kg <span class="tag inp">deine Angabe</span></span></div>
+        <div class="between xs"><span class="mut">Vermieden</span><span style="font-weight:600">3,42 kg CO₂e <span class="tag est">Schätzung</span></span></div>
+        <div class="between xs"><span class="mut">Anfahrt</span><span style="font-weight:600">0,9 km Umweg · U-Bahn <span class="tag est">−0,07 kg</span></span></div>
+      </div>
+      <button class="btn primary" style="margin-top:13px;height:46px">Rettung anfragen</button>
+    </div>
+
+    <div class="col" style="gap:9px">
+      <div class="card tight" style="display:flex;align-items:center;gap:11px">
+        <span style="width:38px;height:38px;border-radius:11px;background:var(--sky);color:var(--blue-deep);display:flex;align-items:center;justify-content:center;flex:none">{{ico:pin,20}}</span>
+        <span class="grow">
+          <b class="sm" style="display:block">Fairteiler Ostend</b>
+          <span class="xs mut">2,1 km · zuletzt vor 20 Min befüllt</span>
+        </span>
+        <span class="tag api">API</span>
+      </div>
+      <div class="card tight" style="display:flex;align-items:center;gap:11px">
+        <span style="width:38px;height:38px;border-radius:11px;background:var(--sky);color:var(--blue-deep);display:flex;align-items:center;justify-content:center;flex:none">{{ico:market,20}}</span>
+        <span class="grow">
+          <b class="sm" style="display:block">Korb: Gemüsekiste</b>
+          <span class="xs mut">Nordend · 3,4 km · reserviert</span>
+        </span>
+        <span class="tag api">API</span>
+      </div>
+      <div class="card tight" style="display:flex;align-items:center;gap:11px;opacity:.7">
+        <span style="width:38px;height:38px;border-radius:11px;background:var(--paper);color:var(--ink3);display:flex;align-items:center;justify-content:center;flex:none">{{ico:truck,20}}</span>
+        <span class="grow">
+          <b class="sm" style="display:block">Geschäftsrettung Bäckerei</b>
+          <span class="xs mut">braucht foodsharing-Verifizierung</span>
+        </span>
+        <span class="tag warn">gesperrt</span>
+      </div>
+    </div>
+
+    <div class="card flat tight" style="background:transparent;border-style:dashed">
+      <p class="xs mut" style="margin:0;line-height:1.55">
+        <b style="color:var(--ink)">Keine Punkte fürs Horten.</b> Ab der dritten Rettung am selben Ort und Tag
+        zählt nur noch die Hälfte, und eine Autofahrt, die mehr CO₂ kostet als die Rettung spart,
+        bringt null.
+      </p>
+    </div>
+  </div>
+</div>

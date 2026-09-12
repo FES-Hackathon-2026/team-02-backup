@@ -1,0 +1,436 @@
+import { Link, useNavigate } from 'react-router-dom'
+
+import Icon, { type IconName } from '../components/Icon'
+import Screen from '../components/Screen'
+import { Bar, Coin, Label, Tag, type Herkunft } from '../components/ui'
+import { useApi, type Impact, type Season } from '../lib/client'
+import { de } from '../lib/de'
+import { useSession } from '../lib/session'
+
+/**
+ * Wirkung — what one person has actually caused, and what the city has.
+ *
+ * The whole screen is built around one rule: a number and its provenance
+ * are never separated. The three blocks under „Dein Beitrag" are the three
+ * tiers, in that order and visibly apart — bestätigt from the ledger, deine
+ * Angabe typed by the person, Schätzung computed from assumptions we print.
+ * Mixing them into one grid of pretty figures would be the easy version and
+ * also the dishonest one.
+ *
+ * The server does all of the arithmetic (`GET /api/impact`). Nothing here
+ * adds up a point, and the CO₂ figure opens the receipts it was summed from.
+ */
+
+const kg = (value: number, digits = 1) =>
+  value.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+
+const zahl = (value: number) => value.toLocaleString('de-DE')
+
+const BADGE_ICON: Record<string, IconName> = {
+  check: 'check',
+  spark: 'spark',
+  clock: 'clock',
+}
+
+export default function Wirkung() {
+  const navigate = useNavigate()
+  const { me } = useSession()
+  const impact = useApi<Impact>('/api/impact')
+  const season = useApi<Season>('/api/season')
+
+  if (!me) return null
+
+  const data = impact.data
+  const city = season.data?.city
+  const saison = season.data?.season
+  const problem = impact.error ?? season.error
+
+  return (
+    <Screen
+      title="Wirkung"
+      sub={`${me.name} · ${me.district.name}`}
+      tabs
+      action={
+        <button
+          className="icobtn"
+          onClick={() => navigate('/integrationen')}
+          aria-label="Woher diese Zahlen kommen"
+        >
+          <Icon name="info" size={21} />
+        </button>
+      }
+    >
+      {problem && (
+        <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
+          <Icon name="info" size={18} className="ico" />
+          <span className="sm grow">
+            {problem.status === 0 ? de.state.offline : problem.message}
+          </span>
+          <button
+            className="btn sm"
+            onClick={() => {
+              impact.reload()
+              season.reload()
+            }}
+          >
+            {de.action.retry}
+          </button>
+        </div>
+      )}
+
+      {impact.loading && !data && (
+        <div className="empty">
+          <span className="spinner" />
+          <p className="sm mut">{de.state.loading}</p>
+        </div>
+      )}
+
+      {data && (
+        <>
+          {/* --- bestätigt ------------------------------------------------ */}
+          <div className="card">
+            <div className="between" style={{ marginBottom: 12 }}>
+              <p className="lbl" style={{ margin: 0 }}>
+                Dein Beitrag
+              </p>
+              <Tag von="api" icon />
+            </div>
+
+            <div
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 12 }}
+            >
+              <Stat wert={zahl(data.confirmed.actions)} label="bestätigte Aktionen" stark />
+              <Stat wert={zahl(data.confirmed.xp)} label="XP gesamt" stark />
+              <Stat wert={zahl(data.confirmed.coins)} label="Münzen frei" />
+            </div>
+
+            {data.confirmed.kinds.length > 0 && (
+              <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 13 }}>
+                {data.confirmed.kinds.map((k) => (
+                  <Label key={k.kind}>
+                    {k.count}× {k.label}
+                  </Label>
+                ))}
+              </div>
+            )}
+
+            {data.confirmed.actions === 0 && (
+              <p className="sm mut" style={{ margin: '11px 0 0', lineHeight: 1.5 }}>
+                Hier steht noch nichts, weil du noch nichts gemacht hast. Ein Foto von etwas, das
+                am Gehweg steht, ist der kürzeste Weg zur ersten Zeile.
+              </p>
+            )}
+
+            <div className="sep" style={{ margin: '13px 0 11px' }} />
+            <div className="between" style={{ marginBottom: 6 }}>
+              <span className="xs mut">
+                Level {data.confirmed.level} · noch{' '}
+                {zahl(Math.max(0, data.confirmed.levelEnd - data.confirmed.xp))} XP bis Level{' '}
+                {data.confirmed.level + 1}
+              </span>
+            </div>
+            <Bar
+              value={data.confirmed.xp - data.confirmed.levelStart}
+              max={Math.max(1, data.confirmed.levelEnd - data.confirmed.levelStart)}
+            />
+          </div>
+
+          {/* --- Schätzung ------------------------------------------------ */}
+          <div className="card">
+            <div className="between" style={{ marginBottom: 10 }}>
+              <p className="lbl" style={{ margin: 0 }}>
+                CO₂e vermieden
+              </p>
+              <Tag von="estimate" icon />
+            </div>
+
+            <div className="row" style={{ alignItems: 'baseline', gap: 7 }}>
+              <span className="num" style={{ fontSize: 30, color: 'var(--blue-deep)' }}>
+                {kg(data.estimated.netCo2, 1)}
+              </span>
+              <span className="sm mut">kg CO₂e netto</span>
+            </div>
+
+            <p className="xs mut" style={{ margin: '9px 0 0', lineHeight: 1.55 }}>
+              {data.estimated.formula}. Anfahrt wird abgezogen, nicht weggelassen.
+            </p>
+
+            {data.estimated.note && (
+              <p className="xs mut" style={{ margin: '7px 0 0', lineHeight: 1.55 }}>
+                {data.estimated.note}
+              </p>
+            )}
+
+            {data.estimated.contributions.length > 0 && (
+              <>
+                <div className="sep" style={{ margin: '12px 0 10px' }} />
+                <p className="xs mut" style={{ margin: '0 0 8px' }}>
+                  Woraus sich das zusammensetzt — jede Zeile führt zu ihrem Nachweis:
+                </p>
+                <div className="col" style={{ gap: 7 }}>
+                  {data.estimated.contributions.map((c) => (
+                    <Link
+                      key={c.actionId}
+                      to={`/nachweis/${c.actionId}`}
+                      className="between"
+                      style={{ gap: 10, textDecoration: 'none', color: 'inherit' }}
+                    >
+                      <span className="sm grow" style={{ minWidth: 0 }}>
+                        {c.title ?? c.label}
+                      </span>
+                      <span className="sm num" style={{ color: 'var(--ink2)', flex: 'none' }}>
+                        {c.netCo2 >= 0 ? '+' : '−'}
+                        {kg(Math.abs(c.netCo2), 2)} kg
+                      </span>
+                      <Icon name="chevron" size={16} className="ico" />
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {data.estimated.assumptions.length > 0 && (
+              <>
+                <div className="sep" style={{ margin: '12px 0 10px' }} />
+                <p className="xs mut" style={{ margin: '0 0 7px' }}>
+                  Gerechnet mit diesen offengelegten Annahmen:
+                </p>
+                <div className="col" style={{ gap: 6 }}>
+                  {data.estimated.assumptions.map((a) => (
+                    <p key={a.id} className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
+                      <b style={{ color: 'var(--ink2)' }}>
+                        {a.label}: {a.value.toLocaleString('de-DE')} {a.unit}
+                      </b>{' '}
+                      — {a.source}
+                    </p>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* --- deine Angabe --------------------------------------------- */}
+          {(data.stated.volumeM3 > 0 ||
+            data.stated.handedOver > 0 ||
+            data.stated.questsReported > 0) && (
+            <div className="card">
+              <div className="between" style={{ marginBottom: 11 }}>
+                <p className="lbl" style={{ margin: 0 }}>
+                  Von dir angegeben
+                </p>
+                <Tag von="input" />
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
+                  gap: 12,
+                }}
+              >
+                <Stat wert={`${kg(data.stated.volumeM3, 1)} m³`} label="zur Abholung gemeldet" />
+                <Stat wert={zahl(data.stated.handedOver)} label="Dinge weitergegeben" />
+                <Stat wert={zahl(data.stated.questsReported)} label="Quests gemeldet" />
+              </div>
+              <p className="xs mut" style={{ margin: '10px 0 0', lineHeight: 1.5 }}>
+                Das Volumen hast du selbst angegeben. Wir haben es nicht nachgemessen und geben
+                es deshalb nicht als gemessenen Wert aus.
+              </p>
+            </div>
+          )}
+
+          {/* --- Wochen in Folge ------------------------------------------ */}
+          <div className="card tight row" style={{ gap: 12 }}>
+            <Spot icon="clock" />
+            <span className="grow">
+              <b className="sm" style={{ display: 'block' }}>
+                {data.streak.weeks === 0
+                  ? 'Noch keine Woche in Folge'
+                  : `${data.streak.weeks} ${data.streak.weeks === 1 ? 'Woche' : 'Wochen'} in Folge aktiv`}
+              </b>
+              <span className="xs mut">
+                {data.streak.note ??
+                  (data.streak.sinceLabel
+                    ? `ununterbrochen seit ${data.streak.sinceLabel}`
+                    : 'Eine Aktion pro Woche genügt — belohnt wird Regelmäßigkeit, nicht Menge.')}
+              </span>
+            </span>
+            <Tag von="api" />
+          </div>
+
+          {/* --- Frankfurt zusammen --------------------------------------- */}
+          {city && saison && (
+            <button className="card sky" onClick={() => navigate('/stadtteile')}>
+              <div className="between" style={{ marginBottom: 8 }}>
+                <b className="h3">Frankfurt diese Woche</b>
+                <Tag von="api" icon />
+              </div>
+              <div className="row" style={{ alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
+                <span className="num" style={{ fontSize: 24, color: 'var(--blue-deep)' }}>
+                  {zahl(city.weekXp)}
+                </span>
+                <span className="sm mut">von {zahl(city.goalXp)} XP Wochenziel</span>
+              </div>
+              <Bar value={city.weekXp} max={city.goalXp} />
+
+              <p className="xs mut" style={{ margin: '9px 0 0', lineHeight: 1.5, textAlign: 'left' }}>
+                {city.formula}
+              </p>
+
+              <div
+                className="row"
+                style={{ gap: 10, paddingTop: 11, marginTop: 11, borderTop: '1px solid var(--sky)' }}
+              >
+                <span className="grow" style={{ textAlign: 'left' }}>
+                  <b className="sm" style={{ display: 'block' }}>
+                    Saison {saison.number} · Woche {saison.week} von {saison.weeks}
+                  </b>
+                  <span className="xs mut">
+                    noch {saison.daysLeft} {saison.daysLeft === 1 ? 'Tag' : 'Tage'}, dann beginnt
+                    die Stadtteil-Tabelle neu — XP und Münzen bleiben
+                  </span>
+                </span>
+                <Icon name="chevron" size={19} className="ico" />
+              </div>
+            </button>
+          )}
+
+          {/* --- Abzeichen ------------------------------------------------ */}
+          <div>
+            <p className="lbl" style={{ marginBottom: 10 }}>
+              Abzeichen
+            </p>
+            <div className="col" style={{ gap: 9 }}>
+              {data.badges.map((b) => (
+                <div key={b.id} className="card tight row" style={{ gap: 12 }}>
+                  <span
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 13,
+                      background: b.earned ? 'var(--sky)' : 'var(--paper)',
+                      border: b.earned ? 'none' : '1.5px dashed var(--line)',
+                      color: b.earned ? 'var(--blue-deep)' : 'var(--ink3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 'none',
+                    }}
+                  >
+                    <Icon name={BADGE_ICON[b.icon] ?? 'star'} size={21} />
+                  </span>
+                  <span className="grow" style={{ minWidth: 0 }}>
+                    <b className="sm" style={{ display: 'block' }}>
+                      {b.title}
+                    </b>
+                    <span className="xs mut">{b.note}</span>
+                  </span>
+                  {b.earned ? (
+                    <Tag von="api" icon>
+                      erreicht
+                    </Tag>
+                  ) : (
+                    <span className="xs mut num" style={{ flex: 'none' }}>
+                      {b.value}/{b.goal}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* --- Münzen --------------------------------------------------- */}
+          {/* The row lives inside the button: `button.card` is display:block
+              in the design system, so a `row` class on the button itself
+              would be ignored. */}
+          <button className="card tight" onClick={() => navigate('/belohnungen')}>
+            <span className="row" style={{ gap: 11 }}>
+              <span
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 12,
+                  background: 'var(--gold-soft)',
+                  color: 'var(--gold-ink)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flex: 'none',
+                }}
+              >
+                <Icon name="star" size={21} stroke={2} />
+              </span>
+              <span className="grow" style={{ textAlign: 'left' }}>
+                <b className="sm" style={{ display: 'block' }}>
+                  Münzen einlösen
+                </b>
+                <span className="xs mut">
+                  {data.confirmed.coins === 0
+                    ? 'Noch nichts zu holen — die erste Aktion bringt die ersten Münzen.'
+                    : 'Kaffee, Kurzstrecke, Reparaturbonus'}
+                </span>
+              </span>
+              <Coin>{data.confirmed.coins}</Coin>
+            </span>
+          </button>
+
+          <div className="card dashed tight">
+            <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
+              {data.note}
+            </p>
+          </div>
+        </>
+      )}
+    </Screen>
+  )
+}
+
+function Stat({
+  wert,
+  label,
+  von,
+  stark = false,
+}: {
+  wert: string
+  label: string
+  von?: Herkunft
+  stark?: boolean
+}) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div
+        className="num"
+        style={{ fontSize: 24, color: stark ? 'var(--blue-deep)' : 'var(--ink2)' }}
+      >
+        {wert}
+      </div>
+      <div className="xs mut" style={{ marginTop: 2, lineHeight: 1.3 }}>
+        {label}
+      </div>
+      {von && (
+        <div style={{ marginTop: 5 }}>
+          <Tag von={von} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Spot({ icon }: { icon: IconName }) {
+  return (
+    <span
+      style={{
+        width: 38,
+        height: 38,
+        borderRadius: 11,
+        background: 'var(--sky)',
+        color: 'var(--blue-deep)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 'none',
+      }}
+    >
+      <Icon name={icon} size={20} />
+    </span>
+  )
+}

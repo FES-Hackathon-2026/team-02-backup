@@ -1,0 +1,691 @@
+<title>ReMain 8-Stunden-Runbook</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --paper:#F1F5F8; --card:#FFFFFF; --ink:#10202C; --ink2:#526575; --ink3:#8C9CA8;
+    --line:#DBE5EC; --line2:#EAF1F6;
+    --blue:#7FA8C4; --blue-deep:#1F5C82; --blue-ink:#14435F; --sky:#D6E6F1; --sky2:#EAF2F8;
+    --gold:#8A6410; --gold-soft:#FBF0D4;
+    --slate:#5F6280; --slate-soft:#ECEEF5;
+    --stone:#7C6F61; --stone-soft:#F1EDE7;
+    --alert:#B03A2B; --alert-soft:#FAE7E3;
+    --sh:0 1px 1px rgba(16,32,44,.04), 0 6px 18px rgba(16,32,44,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#0C151C; --card:#141F28; --ink:#E4EDF3; --ink2:#9AAEBB; --ink3:#748693;
+      --line:#22303B; --line2:#1A252E;
+      --blue:#6E9DBC; --blue-deep:#7FC3EE; --blue-ink:#A9D8F5; --sky:#152C3C; --sky2:#101E28;
+      --gold:#F0C95C; --gold-soft:#2C2410;
+      --slate:#9EA2C4; --slate-soft:#1E2030;
+      --stone:#B7A894; --stone-soft:#241F19;
+      --alert:#EC8E78; --alert-soft:#2D1713;
+      --sh:0 1px 1px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0C151C; --card:#141F28; --ink:#E4EDF3; --ink2:#9AAEBB; --ink3:#748693;
+    --line:#22303B; --line2:#1A252E;
+    --blue:#6E9DBC; --blue-deep:#7FC3EE; --blue-ink:#A9D8F5; --sky:#152C3C; --sky2:#101E28;
+    --gold:#F0C95C; --gold-soft:#2C2410;
+    --slate:#9EA2C4; --slate-soft:#1E2030;
+    --stone:#B7A894; --stone-soft:#241F19;
+    --alert:#EC8E78; --alert-soft:#2D1713;
+    --sh:0 1px 1px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.28);
+  }
+
+  *,*::before,*::after { box-sizing:border-box; }
+  body {
+    background:var(--paper); color:var(--ink);
+    font-family:'Schibsted Grotesk','Segoe UI',system-ui,sans-serif;
+    font-size:16px; line-height:1.6; letter-spacing:-0.004em;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1160px; margin:0 auto; padding-block:40px 72px; padding-left:20px; padding-right:20px; }
+  .grid { display:grid; grid-template-columns:1fr; gap:40px; }
+  @media (min-width:1040px) { .grid { grid-template-columns:196px minmax(0,1fr); gap:56px; } }
+
+  nav.idx { display:none; }
+  @media (min-width:1040px) {
+    nav.idx { display:block; position:sticky; top:40px; align-self:start; }
+    nav.idx ol { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+    nav.idx a { display:flex; gap:9px; align-items:baseline; padding:3px 0; color:var(--ink2); text-decoration:none; font-size:13.5px; }
+    nav.idx a:hover { color:var(--blue-deep); }
+    nav.idx b { font-variant-numeric:tabular-nums; color:var(--ink3); font-weight:600; width:16px; flex:none; }
+    nav.idx .grp { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3); margin:20px 0 7px; }
+  }
+
+  h1 { font-family:'Bricolage Grotesque','Schibsted Grotesk',system-ui,sans-serif; font-weight:700;
+       font-size:clamp(36px,6.5vw,52px); line-height:1; letter-spacing:-0.04em; margin:0; text-wrap:balance; }
+  h2 { font-size:clamp(20px,3.2vw,25px); font-weight:700; letter-spacing:-0.025em; margin:0; text-wrap:balance; }
+  h3 { font-size:16.5px; font-weight:700; letter-spacing:-0.015em; margin:0; }
+  p { margin:0; max-width:68ch; }
+  .lead { font-size:18px; color:var(--ink2); max-width:58ch; }
+  .eyebrow { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3); margin:0; }
+  .mut { color:var(--ink2); }
+  .sm { font-size:14.5px; }
+  a { color:var(--blue-deep); }
+  a:focus-visible { outline:2px solid var(--blue-deep); outline-offset:3px; border-radius:4px; }
+
+  section { display:flex; flex-direction:column; gap:16px; }
+  .sects { display:flex; flex-direction:column; gap:52px; }
+  hr { border:0; border-top:1px solid var(--line); margin:0; }
+
+  ul, ol { margin:0; padding-left:1.15em; max-width:68ch; }
+  li { margin-bottom:6px; }
+  li::marker { color:var(--ink3); }
+
+  header.top { display:flex; flex-direction:column; gap:16px; margin-bottom:44px; }
+  .meta { display:flex; flex-wrap:wrap; gap:8px; }
+
+  .tag { display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:6px;
+         font-size:11.5px; font-weight:700; white-space:nowrap; }
+  .t-api { background:var(--sky); color:var(--blue-ink); }
+  .t-inp { background:var(--slate-soft); color:var(--slate); }
+  .t-est { background:var(--stone-soft); color:var(--stone); }
+  .t-warn { background:var(--alert-soft); color:var(--alert); }
+  .t-plain { background:var(--line2); color:var(--ink2); }
+  .t-gold { background:var(--gold-soft); color:var(--gold); }
+  .clock { background:var(--blue-deep); color:var(--paper); font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+  :root[data-theme="dark"] .clock, :root:not([data-theme="light"]) .clock { color:#0C151C; }
+
+  .tw { overflow-x:auto; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+  table { border-collapse:collapse; width:100%; min-width:520px; font-size:14.5px; }
+  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line2); vertical-align:top; }
+  thead th { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+             color:var(--ink3); background:var(--sky2); border-bottom:1px solid var(--line); }
+  tbody tr:last-child td { border-bottom:0; }
+  td.num, th.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  tr.hl td { background:var(--sky2); font-weight:600; }
+
+  .phase { display:grid; grid-template-columns:48px minmax(0,1fr); gap:18px; }
+  @media (max-width:520px) { .phase { grid-template-columns:40px minmax(0,1fr); gap:14px; } }
+  .pn { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+        font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:700; font-size:18px;
+        font-variant-numeric:tabular-nums; flex:none; background:var(--blue-deep); color:var(--paper); }
+  :root[data-theme="dark"] .pn, :root:not([data-theme="light"]) .pn { color:#0C151C; }
+  .pn.opt { background:transparent; border:1.5px solid var(--blue); color:var(--blue-deep); }
+  .phase > div:last-child { display:flex; flex-direction:column; gap:12px; min-width:0; }
+  .ptitle { display:flex; flex-wrap:wrap; align-items:center; gap:9px; }
+  .goal { font-size:16px; color:var(--ink2); max-width:64ch; }
+  .goal b { color:var(--ink); }
+
+  .done { background:var(--sky2); border:1px solid var(--sky); border-radius:11px; padding:12px 14px;
+          font-size:14.5px; max-width:68ch; }
+  .done b { color:var(--blue-ink); }
+  .out { font-size:14px; color:var(--ink2); max-width:68ch; }
+  .out b { color:var(--ink); }
+
+  .note { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:15px 17px;
+          box-shadow:var(--sh); display:flex; flex-direction:column; gap:9px; max-width:70ch; }
+  .note.warn { background:var(--alert-soft); border-color:transparent; box-shadow:none; }
+  .note.warn p, .note.warn li, .note.warn b, .note.warn h3 { color:var(--alert); }
+  .note.go { background:var(--sky2); border-color:var(--sky); box-shadow:none; }
+
+  .cols { display:grid; grid-template-columns:1fr; gap:14px; }
+  @media (min-width:680px) { .cols.three { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  .tier { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+          display:flex; flex-direction:column; gap:8px; box-shadow:var(--sh); }
+  .tier p { font-size:14.5px; color:var(--ink2); }
+
+  code { font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace; font-size:13px;
+         background:var(--line2); padding:1px 5px; border-radius:4px; }
+  pre { margin:0; overflow-x:auto; background:var(--card); border:1px solid var(--line);
+        border-radius:12px; padding:15px 17px; font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+        font-size:12.5px; line-height:1.65; color:var(--ink2); }
+  pre b { color:var(--ink); font-weight:600; }
+
+  .check { list-style:none; padding-left:0; }
+  .check li { display:flex; gap:10px; align-items:flex-start; }
+  .check li::before { content:""; width:15px; height:15px; border:1.5px solid var(--blue); border-radius:4px;
+                      flex:none; margin-top:5px; }
+</style>
+
+<div class="wrap">
+<div class="grid">
+
+  <nav class="idx" aria-label="Inhalt">
+    <div class="grp">Vorbereitung</div>
+    <ol>
+      <li><a href="#demo"><b></b>Demo-Pfad</a></li>
+      <li><a href="#preflight"><b></b>Pre-Flight</a></li>
+      <li><a href="#zeitplan"><b></b>Zeitplan</a></li>
+    </ol>
+    <div class="grp">Phasen</div>
+    <ol>
+      <li><a href="#p1"><b>1</b>Shell</a></li>
+      <li><a href="#p2"><b>2</b>Backend</a></li>
+      <li><a href="#p3"><b>3</b>Engine</a></li>
+      <li><a href="#p4"><b>4</b>Scan-Agent</a></li>
+      <li><a href="#p5"><b>5</b>FES</a></li>
+      <li><a href="#cp"><b>⏸</b>Checkpoint</a></li>
+      <li><a href="#p6"><b>6</b>Markt</a></li>
+      <li><a href="#p7"><b>7</b>Quests</a></li>
+      <li><a href="#p8"><b>8</b>Route</a></li>
+      <li><a href="#p9"><b>9</b>food + Vytal</a></li>
+      <li><a href="#p10"><b>10</b>Wirkung</a></li>
+      <li><a href="#pitch"><b>▶</b>Demo-Probe</a></li>
+    </ol>
+    <div class="grp">Grundlage</div>
+    <ol>
+      <li><a href="#integration"><b></b>Integrationen</a></li>
+      <li><a href="#regeln"><b></b>Regelwerk</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="top">
+      <p class="eyebrow">Team 02 · Frankfurt Impact Challenge</p>
+      <h1>ReMain in acht Stunden</h1>
+      <p class="lead">Ein Foto, das zur richtigen Handlung führt. Zehn Phasen mit Stoppuhr,
+        einer Streichleiter und einem Demo-Pfad, der am Ende vollständig funktioniert.</p>
+      <div class="meta">
+        <span class="tag clock">8:00 h</span>
+        <span class="tag t-plain">Stand 12.09.2026</span>
+        <span class="tag t-plain">Quelle: docs/PLAN.md</span>
+      </div>
+    </header>
+
+    <div class="sects">
+
+      <section>
+        <div class="note warn">
+          <h3>Realitätscheck</h3>
+          <p class="sm">In acht Stunden entsteht keine vollständige Plattform. Es entsteht
+            <b>ein Pfad, der komplett funktioniert</b>, plus so viel Breite drumherum, wie die Uhr
+            zulässt. Jede Phase unten ist gegenüber der Vollversion bewusst beschnitten — was draußen
+            bleibt, steht ausdrücklich dabei, damit niemand aus Versehen Zeit dort verbrennt.</p>
+        </div>
+      </section>
+
+      <section id="demo">
+        <h2>Der Demo-Pfad</h2>
+        <p>Das hier ist das Produkt. Alles andere ist Beiwerk. Zuerst aufschreiben, dann bauen — jede
+          Phase hat nur dann eine Daseinsberechtigung, wenn sie diesem Ablauf dient.</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th class="num">#</th><th>Was das Jurymitglied tut</th><th class="num">Phase</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>QR scannen, Name und Stadtteil eingeben, drin</td><td class="num">2</td></tr>
+              <tr><td class="num">2</td><td>Foto von einem Gegenstand im Raum machen</td><td class="num">4</td></tr>
+              <tr><td class="num">3</td><td>Sieht „Stuhl · Möbel · 87 % · hier ist warum" und drei Wege</td><td class="num">4</td></tr>
+              <tr><td class="num">4</td><td>Bucht die Sperrmüll-Abholung, sieht Termin und Gutschrift</td><td class="num">5</td></tr>
+              <tr><td class="num">5</td><td>Öffnet die Quest-Karte, sieht eine echte Quest im Raum</td><td class="num">7</td></tr>
+              <tr><td class="num">6</td><td>Übernimmt sie, macht das Nachher-Foto, sieht die Prüfbegründung</td><td class="num">7</td></tr>
+              <tr class="hl"><td class="num">7</td><td><b>Zweites Handy</b> bekommt die Gegenprüfung, antwortet — Gutschrift wird frei</td><td class="num">7</td></tr>
+              <tr><td class="num">8</td><td>Tippt die Punktzahl an → Nachweis: woher jede Zahl kommt</td><td class="num">3</td></tr>
+              <tr><td class="num">9</td><td>Löst Münzen gegen einen Gutschein ein, Code erscheint</td><td class="num">10</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sm"><b>Ohne 2, 3, 4, 7 und 10 gibt es keine Demo.</b> Das ist die Reihenfolge der
+          Prioritäten, wenn etwas schiefgeht.</p>
+      </section>
+
+      <hr>
+
+      <section id="preflight">
+        <h2>Pre-Flight — jetzt sofort, parallel zu Phase 1</h2>
+        <p>Diese fünf Dinge blockieren später und dauern zusammen zehn Minuten.</p>
+        <ul class="check sm">
+          <li><b>Groq-Account</b> → API-Key (kostenlos, Vision-Modell). Ersatz: OpenRouter.
+            Modellnamen in der aktuellen Modellliste des Anbieters nachsehen — die ändern sich.</li>
+          <li><b>Postgres</b> → Supabase-Projekt oder Render-Postgres, Connection-String kopieren.</li>
+          <li><b>Render</b> mit dem Repo verbinden.</li>
+          <li><b>Venue-Koordinaten</b> — Breite und Länge des Hackathon-Raums.
+            <b>Alles</b> wird darum herum geseedet; ohne das steht die Jury vor einer leeren Karte.</li>
+          <li><b>Drei Telefone</b> griffbereit, mindestens eins nicht das eigene.</li>
+        </ul>
+
+        <div class="note warn">
+          <h3>Schlüssel</h3>
+          <p class="sm">Alle Schlüssel in <code>server/.env</code>. <b>Kein einziger bekommt ein
+            <code>VITE_</code>-Prefix</b> — alles mit diesem Prefix schreibt Vite beim Build in das
+            JavaScript-Bundle und ist damit öffentlich lesbar. Das gilt auch für den
+            foodsharing-Team-Key, der heute genau so im Bundle steht.</p>
+        </div>
+
+<pre>DATABASE_URL=postgres://...
+LLM_PROVIDER=groq            <b># groq | mock</b>
+GROQ_API_KEY=...
+GROQ_VISION_MODEL=...        <b># aktuelle Modellliste prüfen</b>
+FS_API_KEY=team_02_...
+FS_API_BASE=https://app-foodsharing-hackathon.azurewebsites.net
+SESSION_SECRET=...
+VENUE_LAT=50.1...
+VENUE_LON=8.6...</pre>
+
+        <h3>Stack — nicht mehr diskutieren, es läuft die Uhr</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Schicht</th><th>Wahl</th></tr></thead>
+            <tbody>
+              <tr><td>Frontend</td><td>vorhandenes <code>app/</code> (React 19 + Vite + TS) + <code>react-router-dom</code> + <code>leaflet</code></td></tr>
+              <tr><td>Backend</td><td><code>server/</code> — Fastify, ein Prozess, liefert auch das gebaute Frontend aus</td></tr>
+              <tr><td>Datenbank</td><td>Postgres, <code>pg</code> + <b>eine</b> <code>schema.sql</code> beim Start. Keine Migrationstools</td></tr>
+              <tr><td>Fotos</td><td>clientseitig auf ≤ 1280 px verkleinert, als <code>bytea</code> in Postgres</td></tr>
+              <tr><td>LLM</td><td>zwei Adapter: <code>groq</code> und <code>mock</code>. Mehr nicht</td></tr>
+              <tr><td>Karte</td><td>Leaflet + OSM-Kacheln, Attribution sichtbar</td></tr>
+              <tr><td>Hosting</td><td>ein Render-Web-Service</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <p class="sm"><b>Render Free Tier schläft nach 15 Minuten ein</b> und braucht dann rund
+            50 Sekunden zum Aufwachen. <b>Fünf Minuten vor der Präsentation die URL aufrufen.</b>
+            Auf den Wecker schreiben.</p>
+        </div>
+
+        <h3>Aufteilung im Team</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th class="num">Personen</th><th>Aufteilung</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>Strikt der Reihe nach. Ab Checkpoint 3:55 nur noch 7 und 10</td></tr>
+              <tr><td class="num">2</td><td><b>A:</b> 2 → 3 → 4 → 9 (Server, Engine, Agent) · <b>B:</b> 1 → 5 → 6 → 10 (Screens) · beide zusammen 7</td></tr>
+              <tr><td class="num">3+</td><td>zusätzlich <b>C:</b> Phase 7 vorbereiten (Leaflet, dHash), danach Testen und Demo-Probe</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="zeitplan">
+        <h2>Zeitplan</h2>
+        <div class="tw">
+          <table>
+            <thead><tr><th class="num">Zeit</th><th>Phase</th><th class="num">Dauer</th></tr></thead>
+            <tbody>
+              <tr><td class="num">0:00 – 0:45</td><td><b>1</b> Shell und Design-System</td><td class="num">45 min</td></tr>
+              <tr><td class="num">0:45 – 1:35</td><td><b>2</b> Backend, Datenbank, Identität</td><td class="num">50 min</td></tr>
+              <tr><td class="num">1:35 – 2:15</td><td><b>3</b> Engine: Wirkung, Belohnung, Nachweis</td><td class="num">40 min</td></tr>
+              <tr><td class="num">2:15 – 3:10</td><td><b>4</b> Scan-Agent</td><td class="num">55 min</td></tr>
+              <tr><td class="num">3:10 – 3:55</td><td><b>5</b> FES: Abholung und Kalender</td><td class="num">45 min</td></tr>
+              <tr class="hl"><td class="num">3:55 – 4:10</td><td><b>Checkpoint</b> — deployen, auf echtem Handy testen, Streichliste ziehen</td><td class="num">15 min</td></tr>
+              <tr><td class="num">4:10 – 4:50</td><td><b>6</b> Reparatur-Markt</td><td class="num">40 min</td></tr>
+              <tr><td class="num">4:50 – 6:00</td><td><b>7</b> Quests auf echter Karte</td><td class="num">70 min</td></tr>
+              <tr><td class="num">6:00 – 6:30</td><td><b>8</b> Route und Mobilität</td><td class="num">30 min</td></tr>
+              <tr><td class="num">6:30 – 7:05</td><td><b>9</b> foodsharing und Vytal</td><td class="num">35 min</td></tr>
+              <tr><td class="num">7:05 – 7:45</td><td><b>10</b> Wirkung, Rangliste, Store, Feinschliff</td><td class="num">40 min</td></tr>
+              <tr class="hl"><td class="num">7:45 – 8:00</td><td><b>Demo-Probe und Pitch</b></td><td class="num">15 min</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <h3>Streichleiter</h3>
+          <p class="sm">Wer beim Checkpoint hinten liegt, streicht <b>in dieser Reihenfolge: 8 → 6 → 9.</b>
+            Jede gestrichene Phase wird eine Folie mit einem Screenshot aus dem Design-Canvas —
+            „gebaut ist das hier, geplant ist das da" ist eine ehrliche und starke Aussage.
+            <b>7 und 10 werden nie gestrichen</b>, sie sind die Geschichte.</p>
+        </div>
+
+        <div class="note go">
+          <h3>Unverhandelbar, auch wenn die Zeit knapp wird</h3>
+          <ol class="sm">
+            <li><code>LLM_PROVIDER=mock</code> funktioniert und ist getestet — ohne Netz, ohne Rate-Limit</li>
+            <li>Die App ist geseedet und nie leer</li>
+            <li>Der Nachweis funktioniert für mindestens eine Aktion</li>
+            <li>Der Dienst ist zur Präsentation wach</li>
+          </ol>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="p1" class="phase">
+        <div><span class="pn">1</span></div>
+        <div>
+          <div class="ptitle"><h2>Shell und Design-System</h2><span class="tag clock">0:00 – 0:45</span></div>
+          <p class="goal">Ziel: <b>die App sieht fertig aus, bevor sie etwas kann.</b></p>
+          <ul class="sm">
+            <li>Mainwasser-Tokens aus <code>design/parts/_shared.css</code> → <code>app/src/styles/tokens.css</code></li>
+            <li>Schriften per Google-Fonts-<code>&lt;link&gt;</code> — Schibsted Grotesk, Bricolage Grotesque</li>
+            <li>Icons als React-Komponenten — die Pfade liegen fertig in <code>design/build.mjs</code></li>
+            <li>Komponenten: <code>Card</code>, <code>Chip</code>, <code>Button</code>, <code>Tag</code>
+              (drei Herkunftsstufen), <code>Coin</code>, <code>Bar</code>, <code>Sheet</code>, <code>TabBar</code></li>
+            <li><code>react-router-dom</code>, fünf Tabs mit Unterrouten</li>
+            <li>Deutsche Strings in <code>app/src/lib/de.ts</code> — ein Objekt, keine Bibliothek</li>
+            <li>Bestehendes <code>Login.tsx</code> weiterverwenden, nicht neu schreiben</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> selbst gehostete Schriften, Dark-Mode-Feinschliff,
+            Installations-Prompt, Animationen, Leerzustände.</p>
+          <div class="done"><b>Fertig, wenn:</b> alle fünf Tabs auf einem echten Handy über das LAN
+            navigierbar sind.</div>
+        </div>
+      </section>
+
+      <section id="p2" class="phase">
+        <div><span class="pn">2</span></div>
+        <div>
+          <div class="ptitle"><h2>Backend, Datenbank, Identität</h2><span class="tag clock">0:45 – 1:35</span></div>
+          <p class="goal">Ziel: <b>die Jury benutzt die App auf ihren eigenen Geräten und sieht sich
+            gegenseitig.</b></p>
+          <ul class="sm">
+            <li><code>server/</code> mit Fastify: <code>/api/*</code> plus Auslieferung von <code>app/dist</code></li>
+            <li><b>Eine</b> <code>schema.sql</code>, beim Start ausgeführt. Elf Tabellen:
+              <code>users, districts, photos, actions, quests, quest_submissions, peer_reviews,
+              market_items, pickups, ledger_entries, redemptions</code></li>
+            <li><b>Identität ohne Hürde:</b> Name und Stadtteil, Gerät bekommt ein signiertes Cookie.
+              Kein Passwort, keine E-Mail</li>
+            <li><code>POST /api/photos</code> — Größe und Typ prüfen, EXIF verwerfen bis auf Zeit und
+              Koordinaten</li>
+            <li>foodsharing-<b>Proxy</b> <code>/api/food/*</code> — Key raus aus dem Bundle</li>
+            <li><b>Seed rund um die Venue-Koordinaten:</b> 6 Quests, 8 Marktartikel, Abfuhrzyklen für
+              4 Stadtteile, 4 Gutscheine. Die App darf nie leer sein</li>
+            <li>Deploy auf Render, öffentliche URL, QR-Code ausdrucken</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Rollen jenseits von <code>citizen</code>, Migrationswerkzeuge,
+            Object Storage, Rate-Limiting.</p>
+          <div class="done"><b>Fertig, wenn:</b> zwei Telefone sich über die öffentliche URL anmelden,
+            dieselben Quests sehen und ein Neustart nichts löscht.</div>
+        </div>
+      </section>
+
+      <section id="p3" class="phase">
+        <div><span class="pn">3</span></div>
+        <div>
+          <div class="ptitle"><h2>Engine: Wirkung, Belohnung, Nachweis</h2><span class="tag clock">1:35 – 2:15</span></div>
+          <p class="goal">Ziel: <b>die Glaubwürdigkeit</b> — kommt vor den Features, damit alles daran
+            andockt.</p>
+          <ul class="sm">
+            <li><code>server/src/engine/</code> ist die einzige Stelle, an der Punkte entstehen.
+              Der Client rechnet nie</li>
+            <li><code>assumptions.ts</code> — alle Faktoren an einem Ort, jeder mit Quelle</li>
+            <li><code>impact.ts</code> — Netto-Rechnung, portiert aus <code>app/src/lib/impact.ts</code>
+              (existiert schon, spart 20 Minuten)</li>
+            <li><code>rewards.ts</code> — Nachweisstufen, Tageslimit 3, Wiederholungsdämpfer,
+              Exactly-once über Ereignis-ID</li>
+            <li><code>ledger_entries</code> <b>append-only</b>: jede Gutschrift eine Zeile mit Grund,
+              Herkunftsstufe und Aktionsverweis</li>
+            <li><code>GET /api/receipt/:actionId</code> und <b>Nachweis-Screen</b> mit ausgeschriebener
+              Formel</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Saisons, Fehler-Provokations-Screen, Perzentilrechnung
+            (kommt in Phase 10).</p>
+          <div class="done"><b>Fertig, wenn:</b> man eine beliebige XP-Zahl antippen kann und beim
+            Nachweis mit der Formel landet.</div>
+        </div>
+      </section>
+
+      <section id="p4" class="phase">
+        <div><span class="pn">4</span></div>
+        <div>
+          <div class="ptitle"><h2>Scan-Agent</h2><span class="tag clock">2:15 – 3:10</span></div>
+          <p class="goal">Ziel: <b>ein Foto, drei mögliche Wege, immer mit Begründung.</b></p>
+          <ul class="sm">
+            <li>Kamera-Screen, clientseitiges Verkleinern, Upload</li>
+            <li><code>POST /api/scan</code> → Adapter <code>groq</code> <b>oder</b> <code>mock</code>,
+              gesteuert über <code>LLM_PROVIDER</code></li>
+            <li>Antwort strikt als JSON-Schema: <code>category, subtype, confidence,
+              estimated_volume_m3, reusable_probability, reasoning[], suggested_route</code></li>
+            <li><b><code>mock</code> ist Bühnensicherheit, kein Notnagel.</b> Deterministische Fixtures,
+              von Anfang an mitgebaut und getestet. Ein Schalter zeigt, welcher Anbieter antwortet</li>
+            <li>Ergebnis-Screen: Kategorie, Konfidenz, <b>Begründung im Klartext</b>, Herkunftsstufe
+              „Schätzung", drei Wege mit Punktvorschau, „Falsch erkannt?" mit Protokollierung</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Ollama, OpenRouter, Gefahrstofflogik, mehrere Objekte in einem Bild.</p>
+          <div class="done"><b>Fertig, wenn:</b> das Foto eines Stuhls in unter sechs Sekunden zu
+            „Möbel, 87 %" plus drei Wegen führt — und mit <code>LLM_PROVIDER=mock</code> im Flugmodus
+            genauso.</div>
+        </div>
+      </section>
+
+      <section id="p5" class="phase">
+        <div><span class="pn">5</span></div>
+        <div>
+          <div class="ptitle"><h2>FES: Abholung und Kalender</h2><span class="tag clock">3:10 – 3:55</span></div>
+          <p class="goal">Ziel: <b>von „steht auf dem Gehweg" zu „ist angemeldet" in unter einer
+            Minute.</b></p>
+          <ul class="sm">
+            <li><b>Sperrmüll-Buchung:</b> Adresse aus GPS, von der Person bestätigt → Bezirk →
+              Kategorie und Volumen aus der Klassifikation → freie Termine → Buchung → Referenznummer</li>
+            <li><b>Abfuhrkalender als Liste</b> — je Bezirk Rest, Bio, Papier, Gelbe Tonne, Sperrmüll</li>
+            <li>Der Agent trägt die Buchung selbst ein und markiert sie als <b>„eingetragen"</b>,
+              nicht als „bestätigt". Der Unterschied bleibt sichtbar</li>
+            <li><code>integrations/fes/INTEGRATION.md</code>: vier Methoden — <code>categories</code>,
+              <code>slots</code>, <code>book</code>, <code>cancel</code> — und was FES liefern müsste,
+              damit der echte Dienst andockt</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> ICS-Export, Monatsraster, Wertstoffhöfe auf der Karte,
+            Stornierung im UI, Erinnerungen.</p>
+          <div class="done"><b>Fertig, wenn:</b> eine Buchung existiert, im Kalender steht und im
+            Nachweis als „simuliert" ausgewiesen ist.</div>
+        </div>
+      </section>
+
+      <section id="cp">
+        <div class="note warn">
+          <h3>⏸ Checkpoint · 3:55 – 4:10</h3>
+          <ol class="sm">
+            <li>Auf Render deployen und <b>auf einem echten Handy</b> durchklicken, nicht im Simulator.</li>
+            <li>Demo-Pfad Schritte 1 bis 4 komplett durchspielen.</li>
+            <li><b>Streichliste ziehen.</b> Hinter dem Plan: 8 streichen. Weiter hinten: 6. Noch weiter: 9.</li>
+            <li>Erst danach weiterbauen. Ein übersprungener Checkpoint rächt sich um 7:30.</li>
+          </ol>
+        </div>
+      </section>
+
+      <section id="p6" class="phase">
+        <div><span class="pn opt">6</span></div>
+        <div>
+          <div class="ptitle"><h2>Reparatur-Markt</h2><span class="tag clock">4:10 – 4:50</span><span class="tag t-plain">streichbar</span></div>
+          <p class="goal">Ziel: <b>das Ding mit dem kleinen Defekt landet bei jemandem, der es
+            reparieren kann.</b></p>
+          <ul class="sm">
+            <li>Anbieten direkt aus dem Scan; der Agent schlägt Kategorie und Wiederverwendbarkeit vor</li>
+            <li>Defekt-Tags statt Freitext: <code>Pumpe defekt</code>, <code>Akku schwach</code>,
+              <code>Lehne lose</code></li>
+            <li>Liste mit Filter nach Kategorie und Entfernung</li>
+            <li>Ablauf: einstellen → reservieren → <b>beide bestätigen die Übergabe</b> → erst dann
+              Gutschrift für beide Seiten</li>
+            <li>Keine Preise, kein Weiterverkauf in der App</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Betriebsansicht, Sammelrouten, Kartenansicht,
+            7-Tage-Automatik, Chat.</p>
+          <div class="done"><b>Fertig, wenn:</b> zwei Telefone eine Übergabe abschließen und beide
+            korrekt gutgeschrieben bekommen.</div>
+        </div>
+      </section>
+
+      <section id="p7" class="phase">
+        <div><span class="pn">7</span></div>
+        <div>
+          <div class="ptitle"><h2>Quests auf echter Karte</h2><span class="tag clock">4:50 – 6:00</span><span class="tag t-api">Herzstück</span></div>
+          <p class="goal">Ziel: <b>melden, übernehmen, nachweisen, gegenprüfen.</b></p>
+          <ul class="sm">
+            <li><b>Leaflet + OSM-Kacheln</b>, Umkreisfilter, sichtbare Attribution</li>
+            <li><b>Melden:</b> Foto, Position und Kategorie aus dem Agenten</li>
+            <li><b>Übernehmen:</b> die Quest gehört für zwei Stunden der Person, die sie übernimmt —
+              damit nicht drei Leute umsonst hinlaufen</li>
+            <li><b>Nachweis — hier liegt der Unterschied.</b> Nicht das Modell entscheidet, sondern
+              vier Signale zusammen:
+              <ol>
+                <li>perzeptueller Hash (dHash) Vorher/Nachher — derselbe Ort?</li>
+                <li>GPS-Abstand zum Meldepunkt</li>
+                <li>Zeitabstand zum Quest-Start</li>
+                <li>Modell-Vergleich mit Begründung im Klartext</li>
+              </ol>
+              Die <b>Regeln entscheiden</b>, das Modell liefert eine Einschätzung. Genau das ist der
+              Unterschied zwischen „die KI sagt ja" und einem belastbaren Nachweis — und genau danach
+              fragt die Aufgabe</li>
+            <li><b>Gegenprüfung:</b> wer im Umkreis ist, bekommt eine Frage — ja, nein, kann ich nicht
+              sehen. Anonym, zwei übereinstimmende Antworten geben frei, +15 XP</li>
+            <li>Nicht die eigene Quest prüfen, nicht zweimal dieselbe</li>
+            <li>Statuskette sichtbar: gemeldet → übernommen → eingereicht → bestätigt</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Marker-Cluster, Push-Nachrichten (nur In-App-Hinweis),
+            zufällige Auswahl der Prüfenden, Quest-Kategorien jenseits von Müll.</p>
+          <div class="done"><b>Fertig, wenn:</b> drei Telefone melden → erledigen → gegenprüfen und alle
+            drei im Nachweis dieselbe Begründung sehen.</div>
+        </div>
+      </section>
+
+      <section id="p8" class="phase">
+        <div><span class="pn opt">8</span></div>
+        <div>
+          <div class="ptitle"><h2>Route und Mobilität</h2><span class="tag clock">6:00 – 6:30</span><span class="tag t-plain">zuerst streichbar</span></div>
+          <p class="goal">Ziel: <b>der Weg zur Aktion ist Teil der Wirkung, nicht ihr blinder Fleck.</b></p>
+          <ul class="sm">
+            <li><code>scripts/build-mobility-data.mjs</code>: GTFS entpacken,
+              <code>haltestellen_avg.csv</code> und <code>tagesgang_avg.csv</code> einlesen → kompakte
+              JSON-Dateien nach <code>data/</code>. Achtung: AFZ ist cp1252 mit Dezimalkomma, die
+              EFA-Originalzeilen haben Koordinaten im Rohformat — beides steht im Datenkatalog</li>
+            <li>Nächste Haltestellen und nächste Abfahrten aus GTFS</li>
+            <li><b>Vier Routenoptionen</b> zur Aktion mit Zeit, CO₂-Differenz und Punktwirkung.
+              Auto zeigt offen <b>0 XP und warum</b></li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Ride2Impact-GPS-Abgleich (wird eine Folie),
+            Gemeinschafts-Mobilitätsansicht, E-Scooter-Daten.</p>
+          <div class="done"><b>Fertig, wenn:</b> eine Quest drei Routen mit ehrlichen CO₂-Zahlen aus
+            den echten GTFS-Daten zeigt.</div>
+        </div>
+      </section>
+
+      <section id="p9" class="phase">
+        <div><span class="pn opt">9</span></div>
+        <div>
+          <div class="ptitle"><h2>foodsharing und Vytal</h2><span class="tag clock">6:30 – 7:05</span><span class="tag t-plain">streichbar</span></div>
+          <p class="goal">Ziel: <b>die beiden echten Schnittstellen sauber anschließen.</b></p>
+          <p class="sm"><b>foodsharing (live):</b></p>
+          <ul class="sm">
+            <li>Fairteiler und Körbe im Umkreis über den Proxy, sortiert nach <b>Relevanz</b> —
+              Netto-Wirkung pro Aufwandsminute mit Ablauf gewichtet, nicht nach Entfernung</li>
+            <li>Ablauf: anfragen → Abholung abschließen → Historie</li>
+            <li>Verifikationszustand abbilden: Geschäftsrettungen bleiben gesperrt, solange
+              <code>is_verified</code> false ist — <b>mit Erklärung statt stiller Fehlermeldung</b></li>
+            <li>Fehlerfälle bewusst behandeln: 400 eigener Korb, 409 vergeben, 403 fehlende Verifikation</li>
+          </ul>
+          <p class="sm"><b>Vytal:</b></p>
+          <ul class="sm">
+            <li>Aktiver Behälter, Rückgabefrist, Rückgabe scannen</li>
+            <li><b>Genau einmal</b> belohnt, abgesichert über <code>event_id</code></li>
+            <li>Ohne Sandbox-Zugang identische Ereignisform, im Nachweis als „simuliert" markiert</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> „Auf meinem Weg"-Umwegrechnung (einfache Entfernung reicht),
+            Vytal-Partnerkarte, foodsharing-Korb anbieten.</p>
+          <div class="done"><b>Fertig, wenn:</b> eine echte foodsharing-Abholung über die Live-API
+            abgeschlossen ist und im Nachweis mit <code>pickup_id</code> und Server-Zeitstempel als
+            <b>„bestätigt"</b> steht. Das ist der einzige Punkt im Produkt, an dem eine externe
+            Schnittstelle unser Wort bestätigt — den zeigt ihr der Jury.</div>
+        </div>
+      </section>
+
+      <section id="p10" class="phase">
+        <div><span class="pn">10</span></div>
+        <div>
+          <div class="ptitle"><h2>Wirkung, Rangliste, Store, Feinschliff</h2><span class="tag clock">7:05 – 7:45</span></div>
+          <p class="goal">Ziel: <b>der Grund, warum jemand wiederkommt</b> — und der Schliff, der über
+            den Eindruck entscheidet.</p>
+          <ul class="sm">
+            <li><b>Wirkung persönlich:</b> Aktionen (bestätigt), Menge (deine Angabe), CO₂e (Schätzung),
+              Wochen in Folge — jede Zahl mit ihrer Herkunftsstufe</li>
+            <li><b>Wirkung gemeinsam:</b> Wochenziel für Frankfurt mit Fortschritt</li>
+            <li><b>Stadtteil-Tabelle</b> mit Platz, Trend und eigenem Anteil als Perzentilband, dazu
+              <b>„So kommt euer Stadtteil nach vorn"</b> mit drei konkreten nächsten Aktionen samt
+              Punktdelta. Das ist der Wiederkommen-Motor: nicht „du bist Platz 7", sondern
+              „zwei offene Quests, 900 m, +240"</li>
+            <li><b>Belohnungs-Store:</b> Katalog, Kosten in Münzen, Einlösen erzeugt einen Code</li>
+            <li>Drei Abzeichen</li>
+            <li><b>Einstellungen → Integrationen:</b> die Tabelle unten, live aus dem Server</li>
+            <li>Feinschliff: Lade- und Leerzustände, deutsche Fehlermeldungen in ganzen Sätzen,
+              Offline-Hinweis</li>
+          </ul>
+          <p class="out"><b>Draußen:</b> Saisons, Erinnerungen, Onboarding-Karussell, weitere Abzeichen.</p>
+          <div class="done"><b>Fertig, wenn:</b> der komplette Demo-Pfad auf einem Handy läuft, das die
+            App noch nie geöffnet hat.</div>
+        </div>
+      </section>
+
+      <section id="pitch">
+        <div class="note go">
+          <h3>▶ Demo-Probe und Pitch · 7:45 – 8:00</h3>
+          <ol class="sm">
+            <li><b>Dienst aufwecken.</b> URL aufrufen, warten, bis sie schnell antwortet.</li>
+            <li>Demo-Pfad <b>zweimal</b> durchspielen, einmal davon mit <code>LLM_PROVIDER=mock</code>.</li>
+            <li>Ein geseedetes Konto mit Historie bereitlegen, falls live etwas klemmt.</li>
+            <li>Drei Folien: <b>das Problem</b> (Sperrmüll steht wochenlang) — <b>die Schleife</b>
+              (ein Foto, vier Wege) — <b>der Nachweis</b> (warum man uns die Zahlen glauben kann).</li>
+            <li>Gestrichene Phasen als Screenshots aus dem Design-Canvas — geplant, nicht behauptet.</li>
+          </ol>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="integration">
+        <h2>Integrationsregister</h2>
+        <p>Auch ein Screen in der App, damit niemand raten muss, was echt ist.</p>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Dienst</th><th>Status</th><th>Nahtstelle</th></tr></thead>
+            <tbody>
+              <tr><td><b>foodsharing API</b></td><td><span class="tag t-api">echt</span></td><td><code>integrations/foodsharing/</code> — läuft über den Proxy</td></tr>
+              <tr><td><b>traffiQ / GTFS</b></td><td><span class="tag t-api">echt</span></td><td>vorverarbeitet nach <code>data/</code></td></tr>
+              <tr><td><b>OpenStreetMap</b></td><td><span class="tag t-api">echt</span></td><td>Leaflet; bei Last eigener Tile-Server</td></tr>
+              <tr><td><b>Vytal</b></td><td><span class="tag t-est">Sandbox</span></td><td><code>integrations/vytal/</code> — Ereignisform ist schon die echte</td></tr>
+              <tr><td><b>FES Sperrmüll-Termine</b></td><td><span class="tag t-inp">nachgebaut</span></td><td><code>fes/pickup.ts</code> — <code>categories</code>, <code>slots</code>, <code>book</code>, <code>cancel</code></td></tr>
+              <tr><td><b>FES Abfuhrkalender</b></td><td><span class="tag t-inp">nachgebaut</span></td><td><code>fes/calendar.ts</code> — pro Adresse ein Bezirk</td></tr>
+              <tr><td><b>FES Abfall-ABC</b></td><td><span class="tag t-inp">nachgebaut</span></td><td><code>fes/waste-abc.ts</code> — Wissensbasis als JSON</td></tr>
+              <tr><td><b>Fahrtauskunft</b></td><td><span class="tag t-inp">aus GTFS gerechnet</span></td><td><code>traffiq/departures.ts</code></td></tr>
+              <tr><td><b>Gutschein-Partner</b></td><td><span class="tag t-inp">nachgebaut</span></td><td><code>integrations/rewards/</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <p class="sm"><b>Regel für alles Nachgebaute:</b> gleiche Feldnamen, gleiche Statuswerte,
+            gleiche Fehlerfälle wie der echte Dienst. In der App trägt jeder nachgebaute Wert die
+            Kennzeichnung <b>„simuliert"</b> — nie „bestätigt". Damit ist der Austausch später eine
+            Adapterdatei und keine Umbauaktion.</p>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="regeln">
+        <h2>Das Regelwerk</h2>
+        <h3>Herkunft jeder Zahl</h3>
+        <div class="cols three">
+          <div class="tier">
+            <span class="tag t-api" style="align-self:flex-start">bestätigt</span>
+            <p>Kommt aus einer Schnittstelle oder vom Server: Abholungs-ID, Zeitstempel,
+              GTFS-Abfahrt, Vytal-Ereignis, Verifikationsstatus.</p>
+          </div>
+          <div class="tier">
+            <span class="tag t-inp" style="align-self:flex-start">deine Angabe</span>
+            <p>Eingetippt und nicht prüfbar: Menge, Verkehrsmittel, Zustand. Zählt, wird aber nie als
+              Messwert dargestellt.</p>
+          </div>
+          <div class="tier">
+            <span class="tag t-est" style="align-self:flex-start">Schätzung</span>
+            <p>Aus einer offengelegten Annahme gerechnet: CO₂-Faktoren, KI-Klassifikation,
+              Bildvergleich.</p>
+          </div>
+        </div>
+
+        <h3>Zwei Währungen</h3>
+        <p class="sm"><span class="tag t-plain">XP</span> für Level und Status, nicht ausgebbar · <span class="tag t-gold">Münzen</span> für Gutscheine, 10 XP ≈ 1 Münze. Gelb ist im ganzen Produkt für Belohnung reserviert und taucht sonst nirgends auf.</p>
+
+        <h3>Sperren gegen Fehlanreize</h3>
+        <ul class="sm">
+          <li>höchstens drei bewertete Aktionen pro Tag</li>
+          <li>ab der dritten Aktion am selben Ort am selben Tag halbe Punkte</li>
+          <li><b>netto statt brutto</b>: Anfahrts-CO₂ wird abgezogen; netto negativ heißt null Punkte
+            <b>plus Erklärung, wie es positiv würde</b></li>
+          <li>jedes Partner-Ereignis über seine Ereignis-ID genau einmal belohnt</li>
+          <li>Münzen nicht kaufbar, nicht übertragbar, laufen nicht ab</li>
+          <li><b>keine Rangliste von Personen</b> — Stadtteile werden verglichen, alle Punkte zählen
+            zusammen auf ein Stadtziel; die eigene Position erscheint als Perzentilband</li>
+        </ul>
+
+        <h3>Was wir bewusst nicht bauen</h3>
+        <p class="sm">Rangliste von Personen · Kauf oder Handel von Münzen · Preise im Markt ·
+          Dauer-Standortverfolgung · Chat · erfundene Zahlen, die wie Messwerte aussehen.</p>
+      </section>
+
+    </div>
+  </main>
+</div>
+</div>

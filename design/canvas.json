@@ -1,0 +1,50 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Start" },
+    { "file": "Scan.dc.html", "x": 510, "y": 0, "w": 390, "h": 844, "title": "Scan" },
+    { "file": "Erkannt.dc.html", "x": 1020, "y": 0, "w": 390, "h": 844, "title": "Erkannt — der Agent ordnet ein" },
+    { "file": "Abholung.dc.html", "x": 1530, "y": 0, "w": 390, "h": 844, "title": "Sperrmüll buchen" },
+
+    { "file": "Markt.dc.html", "x": 0, "y": 1000, "w": 390, "h": 844, "title": "Reparatur-Markt" },
+    { "file": "Quests.dc.html", "x": 510, "y": 1000, "w": 390, "h": 844, "title": "Quest-Karte (echte OSM-Kacheln)" },
+    { "file": "QuestProof.dc.html", "x": 1020, "y": 1000, "w": 390, "h": 844, "title": "Vorher / Nachher" },
+    { "file": "Review.dc.html", "x": 1530, "y": 1000, "w": 390, "h": 844, "title": "Gegenprüfung" },
+
+    { "file": "Route.dc.html", "x": 0, "y": 2000, "w": 390, "h": 844, "title": "Route-Assistent" },
+    { "file": "Kalender.dc.html", "x": 510, "y": 2000, "w": 390, "h": 844, "title": "Abfallkalender" },
+    { "file": "Wissen.dc.html", "x": 1020, "y": 2000, "w": 390, "h": 844, "title": "Wissen" },
+    { "file": "Fairteiler.dc.html", "x": 1530, "y": 2000, "w": 390, "h": 844, "title": "foodsharing (Live-API)" },
+
+    { "file": "Vytal.dc.html", "x": 0, "y": 3000, "w": 390, "h": 844, "title": "Vytal-Mehrweg" },
+    { "file": "Wirkung.dc.html", "x": 510, "y": 3000, "w": 390, "h": 844, "title": "Wirkung" },
+    { "file": "Rangliste.dc.html", "x": 1020, "y": 3000, "w": 390, "h": 844, "title": "Stadtteile" },
+    { "file": "Belohnungen.dc.html", "x": 1530, "y": 3000, "w": 390, "h": 844, "title": "Münzen einlösen" },
+
+    { "file": "Nachweis.dc.html", "x": 0, "y": 4000, "w": 390, "h": 844, "title": "Nachweis" },
+    { "file": "System.dc.html", "x": 510, "y": 4000, "w": 900, "h": 1200, "title": "Design-System — Mainwasser" }
+  ],
+  "annotations": [
+    {
+      "id": "loop",
+      "x": -330,
+      "y": 10,
+      "w": 280,
+      "text": "Die eine Kernaktion\n\nFoto → einordnen → richtige Aktion.\nDerselbe Auslöser führt in Abholung,\nReparatur-Markt, Quest oder Wissen.\n\nDadurch muss niemand vorher wissen,\nin welchem Modul sein Problem lebt."
+    },
+    {
+      "id": "nachweis",
+      "x": -330,
+      "y": 1010,
+      "w": 280,
+      "text": "Nachweis statt Behauptung\n\nVorher/Nachher + GPS + Zeit + zwei\nanonyme Gegenprüfungen. Die KI liefert\neine Einschätzung mit Begründung,\nnicht ein Urteil.\n\nDie Aufgabe verlangt, dass man sieht,\nWARUM ein Nachweis akzeptiert wurde."
+    },
+    {
+      "id": "belohnung",
+      "x": -330,
+      "y": 3010,
+      "w": 280,
+      "text": "Zwei Währungen\n\nXP → Level und Status, nicht ausgebbar.\nMünzen → Gutscheine bei Partnern.\n\nKein Kaufen, kein Übertragen, max. drei\nbewertete Aktionen am Tag. Stadtteile\nzeigen Platzierung, treten aber nicht\ngegeneinander an — alles zählt aufs\nStadtziel."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

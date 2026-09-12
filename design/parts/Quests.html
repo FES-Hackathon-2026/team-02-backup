@@ -1,0 +1,90 @@
+<div class="scr">
+  <!-- real OpenStreetMap raster tiles, z16, Frankfurt Untermainkai / Holbeinsteg.
+       In the app this is Leaflet over the same tile source. -->
+  <div style="position:absolute;inset:0;overflow:hidden;background:#E8E0D8">
+    <div style="position:absolute;left:-340px;top:-267px;width:768px;height:1024px;display:grid;grid-template-columns:repeat(3,256px);grid-template-rows:repeat(4,256px)">
+      <img src="osm_c0_r0.png" width="256" height="256" alt=""><img src="osm_c1_r0.png" width="256" height="256" alt=""><img src="osm_c2_r0.png" width="256" height="256" alt="">
+      <img src="osm_c0_r1.png" width="256" height="256" alt=""><img src="osm_c1_r1.png" width="256" height="256" alt=""><img src="osm_c2_r1.png" width="256" height="256" alt="">
+      <img src="osm_c0_r2.png" width="256" height="256" alt=""><img src="osm_c1_r2.png" width="256" height="256" alt=""><img src="osm_c2_r2.png" width="256" height="256" alt="">
+      <img src="osm_c0_r3.png" width="256" height="256" alt=""><img src="osm_c1_r3.png" width="256" height="256" alt=""><img src="osm_c2_r3.png" width="256" height="256" alt="">
+    </div>
+  </div>
+
+  <header class="nav" style="position:relative;z-index:3;background:transparent">
+    <div class="nav-t" style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 13px;flex:none;box-shadow:var(--sh)">Quests<small>7 offen in 2 km</small></div>
+    <div class="grow"></div>
+    <button class="icobtn" style="box-shadow:var(--sh)">{{ico:users,21}}</button>
+  </header>
+
+  <div class="chips" style="position:relative;z-index:3;padding:0 18px;flex-wrap:nowrap;overflow:hidden">
+    <span class="chip on" style="box-shadow:var(--sh)">Alle</span>
+    <span class="chip" style="box-shadow:var(--sh)">Müll melden</span>
+    <span class="chip" style="box-shadow:var(--sh)">Clean-up</span>
+    <span class="chip" style="box-shadow:var(--sh)">Gegenprüfen</span>
+  </div>
+
+  <!-- pins sit on real coordinates: the hero pin is the Holbeinsteg riverbank -->
+  <div style="position:absolute;left:254px;top:352px;z-index:3">
+    <span style="width:42px;height:42px;border-radius:50% 50% 50% 6px;transform:rotate(-45deg);background:var(--blue-deep);border:3px solid #fff;box-shadow:0 5px 14px rgba(16,32,44,.34);display:flex;align-items:center;justify-content:center">
+      <span style="transform:rotate(45deg);color:#fff;display:flex">{{ico:quest,19}}</span>
+    </span>
+  </div>
+  <div style="position:absolute;left:108px;top:196px;z-index:3">
+    <span style="width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--blue);box-shadow:0 3px 9px rgba(16,32,44,.26);color:var(--blue-deep);display:flex;align-items:center;justify-content:center">{{ico:trash,16}}</span>
+  </div>
+  <div style="position:absolute;left:196px;top:274px;z-index:3">
+    <span style="width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--gold);box-shadow:0 3px 9px rgba(16,32,44,.26);color:var(--gold-ink);display:flex;align-items:center;justify-content:center">{{ico:shield,16}}</span>
+  </div>
+  <div style="position:absolute;left:62px;top:330px;z-index:3">
+    <span style="width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--blue);box-shadow:0 3px 9px rgba(16,32,44,.26);color:var(--blue-deep);display:flex;align-items:center;justify-content:center">{{ico:quest,16}}</span>
+  </div>
+  <div style="position:absolute;left:170px;top:186px;z-index:3">
+    <span style="width:26px;height:26px;border-radius:50%;background:rgba(31,92,130,.22);border:2px solid rgba(31,92,130,.5);display:flex;align-items:center;justify-content:center">
+      <span style="width:10px;height:10px;border-radius:50%;background:var(--blue-deep)"></span>
+    </span>
+  </div>
+
+  <span style="position:absolute;right:10px;bottom:314px;z-index:3;background:rgba(255,255,255,.86);border-radius:5px;padding:2px 6px;font-size:9.5px;color:#526575">© OpenStreetMap</span>
+
+  <div class="sheet" style="z-index:4;position:relative;padding-bottom:12px">
+    <div class="grab"></div>
+    <div class="between" style="align-items:flex-start;margin-bottom:11px">
+      <div class="grow">
+        <div class="row" style="gap:7px">
+          <h2 class="h2">Müll am Mainufer</h2>
+          <span class="tag warn">seit 3 Tagen</span>
+        </div>
+        <p class="xs mut" style="margin:4px 0 0">Untermainkai, Höhe Holbeinsteg · 400 m · von Nachbar:in gemeldet</p>
+      </div>
+      <span class="coin" style="height:28px;font-size:13.5px">{{ico:star,14,2}}+120</span>
+    </div>
+
+    <div class="row" style="gap:9px;margin-bottom:12px">
+      <span class="thumb" style="width:88px;height:64px;position:relative">
+        <span style="position:absolute;inset:0;background:#D9E5D3"></span>
+        <span style="position:absolute;left:0;right:0;bottom:0;height:22px;background:#C3D5BB"></span>
+        <span style="position:absolute;left:14px;bottom:16px;width:17px;height:11px;border-radius:3px;background:#9AAE93"></span>
+        <span style="position:absolute;left:36px;bottom:13px;width:23px;height:15px;border-radius:4px;background:#8FA588"></span>
+        <span style="position:absolute;left:60px;bottom:18px;width:13px;height:9px;border-radius:3px;background:#A5B79D"></span>
+      </span>
+      <div class="grow col" style="gap:6px">
+        <div class="row xs mut" style="gap:6px">{{ico:users,15}}2 Personen sind unterwegs</div>
+        <div class="row xs mut" style="gap:6px">{{ico:clock,15}}ca. 25 Min · Handschuhe nötig</div>
+        <div class="row xs mut" style="gap:6px">{{ico:route,15}}U4 bis Willy-Brandt-Platz, dann 6 Min</div>
+      </div>
+    </div>
+
+    <div class="row" style="gap:9px">
+      <button class="btn sm" style="flex:1;height:48px;border-radius:14px">Route ansehen</button>
+      <button class="btn primary" style="flex:1.4;height:48px">Quest übernehmen</button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <span class="tab">{{ico:home,22}}Start</span>
+    <span class="tab on">{{ico:quest,22}}Quests</span>
+    <span class="tab"><span class="tab-fab">{{ico:camera,24,1.9}}</span></span>
+    <span class="tab">{{ico:market,22}}Markt</span>
+    <span class="tab">{{ico:leaf,22}}Wirkung</span>
+  </nav>
+</div>

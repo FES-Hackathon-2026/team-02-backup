@@ -1,0 +1,258 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+  <style>
+/* ReMain — "Mainwasser" design system.
+   Pastel river blue on cool paper, deep navy ink, yellow reserved for rewards.
+   Provenance colours are load-bearing: confirmed / stated / estimated must
+   never be confusable, because the brief requires them to be separated. */
+:root {
+  --paper: #F1F5F8;
+  --card: #FFFFFF;
+  --ink: #10202C;
+  --ink2: #526575;
+  --ink3: #8C9CA8;
+  --line: #DBE5EC;
+  --blue: #7FA8C4;
+  --blue-deep: #1F5C82;
+  --blue-ink: #14435F;
+  --sky: #D6E6F1;
+  --sky2: #EAF2F8;
+  --gold: #E3A81C;
+  --gold-ink: #8A6410;
+  --gold-soft: #FBF0D4;
+  --slate: #5F6280;
+  --slate-soft: #ECEEF5;
+  --stone: #7C6F61;
+  --stone-soft: #F1EDE7;
+  --alert: #B03A2B;
+  --alert-soft: #FAE7E3;
+  --sh: 0 1px 1px rgba(16,32,44,.04), 0 6px 18px rgba(16,32,44,.06);
+  --r: 18px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: 'Schibsted Grotesk', 'Segoe UI', system-ui, sans-serif; }
+a { color: var(--blue-deep); text-decoration: none; }
+a:hover { color: var(--blue-ink); }
+svg { display: block; }
+
+/* ---------- shell ---------- */
+.scr {
+  width: 390px; height: 844px; background: var(--paper); color: var(--ink);
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
+  font-size: 14px; line-height: 1.42; letter-spacing: -0.005em;
+}
+.nav {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 18px 12px; background: var(--paper);
+}
+.nav.solid { background: var(--card); border-bottom: 1px solid var(--line); }
+.nav-t { flex: 1; min-width: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.nav-t small { display: block; font-size: 12px; font-weight: 500; color: var(--ink2); letter-spacing: 0; }
+.icobtn {
+  width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--card); border-radius: 14px; color: var(--ink);
+  padding: 0; cursor: pointer;
+}
+.body { flex: 1; min-height: 0; overflow: hidden; padding: 2px 18px 14px; display: flex; flex-direction: column; gap: 14px; }
+.body.flush { padding-left: 0; padding-right: 0; }
+
+/* ---------- tab bar ---------- */
+.tabs {
+  flex: none; height: 78px; background: var(--card); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: start;
+  padding: 9px 6px 0; position: relative;
+}
+.tab { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink3); font-size: 10.5px; font-weight: 600; }
+.tab.on { color: var(--blue-deep); }
+.tab-fab {
+  width: 54px; height: 54px; border-radius: 50%; background: var(--blue-deep); color: #fff;
+  display: flex; align-items: center; justify-content: center; margin-top: -20px;
+  box-shadow: 0 6px 16px rgba(31,92,130,.34); border: 3px solid var(--card);
+}
+
+/* ---------- surfaces ---------- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--sh); padding: 15px; }
+.card.tight { padding: 13px; }
+.card.flat { box-shadow: none; }
+.card.sky { background: var(--sky2); border-color: #CFE2EE; box-shadow: none; }
+.sheet {
+  background: var(--card); border-radius: 24px 24px 0 0; border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 28px rgba(16,32,44,.10); padding: 8px 18px 16px; margin-top: auto;
+}
+.grab { width: 38px; height: 4px; border-radius: 4px; background: #CFDCE5; margin: 0 auto 12px; }
+
+/* ---------- type ---------- */
+.h1 { font-family: 'Bricolage Grotesque', 'Schibsted Grotesk', system-ui, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
+.h2 { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+.h3 { font-size: 14px; font-weight: 700; margin: 0; }
+.lbl { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink3); margin: 0; }
+.mut { color: var(--ink2); }
+.sm { font-size: 12.5px; }
+.xs { font-size: 11.5px; }
+.num { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+/* ---------- bits ---------- */
+.row { display: flex; align-items: center; gap: 10px; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.grow { flex: 1; min-width: 0; }
+.chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+  font-size: 12.5px; font-weight: 600; color: var(--ink2); white-space: nowrap;
+}
+.chip.on { background: var(--blue-deep); border-color: var(--blue-deep); color: #fff; }
+.chip.soft { background: var(--sky); border-color: #C6DCEC; color: var(--blue-ink); }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px; padding: 0 18px;
+  border-radius: 15px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%;
+}
+.btn.primary { background: var(--blue-deep); border-color: var(--blue-deep); color: #fff; }
+.btn.sm { height: 40px; font-size: 13.5px; border-radius: 12px; width: auto; padding: 0 14px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 8px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap;
+}
+.tag.api { background: var(--sky); color: var(--blue-ink); }
+.tag.inp { background: var(--slate-soft); color: var(--slate); }
+.tag.est { background: var(--stone-soft); color: var(--stone); }
+.tag.warn { background: var(--alert-soft); color: var(--alert); }
+.dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.coin {
+  display: inline-flex; align-items: center; gap: 5px; height: 25px; padding: 0 9px 0 7px; border-radius: 999px;
+  background: var(--gold-soft); color: var(--gold-ink); font-size: 12.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.bar { height: 8px; border-radius: 99px; background: var(--sky); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 99px; background: var(--blue-deep); }
+.thumb { border-radius: 13px; background: var(--sky); border: 1px solid #CFE2EE; overflow: hidden; position: relative; flex: none; }
+.sep { height: 1px; background: var(--line); }
+.ico { color: var(--ink2); flex: none; }
+  </style>
+</helmet>
+<div class="scr">
+  <header class="nav solid">
+    <button class="icobtn" style="border:none;background:transparent;width:32px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5.5-6.4 6.5 6.4 6.5"/></svg></button>
+    <div class="nav-t">Stadtteile<small>Saison 3 · endet in 12 Tagen</small></div>
+  </header>
+
+  <div class="body" style="gap:12px">
+    <div class="card" style="border-color:var(--blue);background:var(--sky2)">
+      <div class="row" style="gap:14px">
+        <span style="width:58px;height:58px;border-radius:18px;background:var(--blue-deep);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none">
+          <span class="num" style="font-size:23px;line-height:1">2</span>
+          <span style="font-size:9px;font-weight:700;letter-spacing:.05em">VON 16</span>
+        </span>
+        <span class="grow">
+          <b class="h2" style="display:block">Bockenheim</b>
+          <span class="row xs" style="gap:5px;margin-top:3px;color:var(--blue-deep);font-weight:700"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19.4V4.9"/><path d="m5.6 11.3 6.4-6.4 6.4 6.4"/></svg>einen Platz gut seit letzter Woche</span>
+          <span class="xs mut" style="display:block;margin-top:5px">15.240 XP · 1.104 Aktive</span>
+        </span>
+      </div>
+      <div class="sep" style="margin:12px 0"></div>
+      <p class="xs mut" style="margin:0;line-height:1.5">
+        Dein Anteil: <b style="color:var(--ink)">214 XP</b> — damit gehörst du zu den
+        <b style="color:var(--ink)">aktivsten 12 %</b> im Stadtteil.
+      </p>
+    </div>
+
+    <div class="card tight">
+      <div class="col" style="gap:11px">
+
+        <div class="row" style="gap:11px">
+          <span class="num" style="width:18px;font-size:14px;color:var(--ink3)">1</span>
+          <span class="grow">
+            <span class="between"><b class="sm">Nordend</b><span class="sm num">16.880</span></span>
+            <span class="bar" style="margin-top:5px;display:block"><i style="width:100%"></i></span>
+          </span>
+          <span style="color:var(--blue-deep);flex:none"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.6 12h12.8"/></svg></span>
+        </div>
+
+        <div class="row" style="gap:11px">
+          <span class="num" style="width:18px;font-size:14px;color:var(--blue-deep)">2</span>
+          <span class="grow">
+            <span class="between"><b class="sm" style="color:var(--blue-deep)">Bockenheim</b><span class="sm num" style="color:var(--blue-deep)">15.240</span></span>
+            <span class="bar" style="margin-top:5px;display:block"><i style="width:90%"></i></span>
+          </span>
+          <span style="color:var(--blue-deep);flex:none"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19.4V4.9"/><path d="m5.6 11.3 6.4-6.4 6.4 6.4"/></svg></span>
+        </div>
+
+        <div class="row" style="gap:11px">
+          <span class="num" style="width:18px;font-size:14px;color:var(--ink3)">3</span>
+          <span class="grow">
+            <span class="between"><b class="sm">Sachsenhausen</b><span class="sm num">14.905</span></span>
+            <span class="bar" style="margin-top:5px;display:block"><i style="width:88%"></i></span>
+          </span>
+          <span style="color:var(--alert);flex:none"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.6v14.5"/><path d="m5.6 12.7 6.4 6.4 6.4-6.4"/></svg></span>
+        </div>
+
+        <div class="row" style="gap:11px">
+          <span class="num" style="width:18px;font-size:14px;color:var(--ink3)">4</span>
+          <span class="grow">
+            <span class="between"><b class="sm">Bornheim</b><span class="sm num">11.302</span></span>
+            <span class="bar" style="margin-top:5px;display:block"><i style="width:67%"></i></span>
+          </span>
+          <span style="color:var(--blue-deep);flex:none"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19.4V4.9"/><path d="m5.6 11.3 6.4-6.4 6.4 6.4"/></svg></span>
+        </div>
+
+        <div class="row" style="gap:11px">
+          <span class="num" style="width:18px;font-size:14px;color:var(--ink3)">5</span>
+          <span class="grow">
+            <span class="between"><b class="sm">Gallus</b><span class="sm num">9.870</span></span>
+            <span class="bar" style="margin-top:5px;display:block"><i style="width:58%"></i></span>
+          </span>
+          <span style="color:var(--blue-deep);flex:none"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.6 12h12.8"/></svg></span>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="lbl">So kommt Bockenheim nach vorn</p>
+    <div class="col" style="gap:9px">
+      <button class="card tight" style="display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;font-family:inherit">
+        <span style="width:38px;height:38px;border-radius:11px;background:var(--sky);color:var(--blue-deep);display:flex;align-items:center;justify-content:center;flex:none"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 21.5V3.2"/><path d="M6 4.2h11l-2.3 3.7L17 11.6H6"/></svg></span>
+        <span class="grow">
+          <b class="sm" style="display:block">2 Quests liegen seit Tagen offen</b>
+          <span class="xs mut">Mainufer und Kirchplatz · beide unter 1 km</span>
+        </span>
+        <span class="coin">+240</span>
+      </button>
+      <button class="card tight" style="display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;font-family:inherit">
+        <span style="width:38px;height:38px;border-radius:11px;background:var(--sky);color:var(--blue-deep);display:flex;align-items:center;justify-content:center;flex:none"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.8 6.6h10.5v10.2H2.8z"/><path d="M13.3 10.2h3.6l3.3 3.2v3.4h-6.9z"/><circle cx="7" cy="18.4" r="1.9"/><circle cx="17" cy="18.4" r="1.9"/></svg></span>
+        <span class="grow">
+          <b class="sm" style="display:block">3 Sperrmüllstellen ohne Anmeldung</b>
+          <span class="xs mut">fotografieren, Abholung buchen, fertig</span>
+        </span>
+        <span class="coin">+180</span>
+      </button>
+      <button class="card tight" style="display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;font-family:inherit">
+        <span style="width:38px;height:38px;border-radius:11px;background:var(--sky);color:var(--blue-deep);display:flex;align-items:center;justify-content:center;flex:none"><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9.4" cy="8.6" r="3.3"/><path d="M3.6 19.6c0-3.2 2.6-5.4 5.8-5.4s5.8 2.2 5.8 5.4"/><path d="M16.4 6.1a3.3 3.3 0 0 1 0 6.3M17.6 14.6c1.8.7 2.9 2.4 2.9 4.6"/></svg></span>
+        <span class="grow">
+          <b class="sm" style="display:block">Nachbar:in einladen</b>
+          <span class="xs mut">zählt ab dem ersten bestätigten Scan</span>
+        </span>
+        <span class="coin">+50</span>
+      </button>
+    </div>
+
+    <div class="card flat tight" style="background:transparent;border-style:dashed">
+      <p class="xs mut" style="margin:0;line-height:1.55">
+        Stadtteile treten nicht gegeneinander an — alle XP zählen zusammen auf das Stadtziel.
+        Die Tabelle zeigt nur, wo gerade noch Luft ist.
+      </p>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

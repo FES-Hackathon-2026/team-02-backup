@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
 
@@ -7,19 +7,34 @@
          the CSS then pays it back with env(safe-area-inset-*) padding. -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <title>Save2Share</title>
-    <meta name="description" content="Find food rescues that are already on your way. Rescue minus travel." />
+    <title>ReMain</title>
+    <meta
+      name="description"
+      content="Ein Foto — und Frankfurt weiß, was damit zu tun ist. Sperrmüll anmelden, reparieren lassen, Quests erledigen, Wirkung sehen."
+    />
+
+    <!-- Phase 1 loads the faces from Google Fonts. If the venue wifi is bad on
+         the day, self-host the two WOFF2 files instead — the fallback stack
+         below keeps the layout intact either way. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap"
+    />
 
     <!-- PWA: installable on Android (manifest) and iOS (apple-* meta) -->
     <link rel="manifest" href="manifest.webmanifest" />
-    <meta name="theme-color" content="#0f7a5a" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0d1310" media="(prefers-color-scheme: dark)" />
-    <meta name="color-scheme" content="light dark" />
+    <!-- One palette, the designed one. The dark tokens are opt-in (see
+         styles/tokens.css), so the browser chrome must not promise a dark
+         build the app will not render. -->
+    <meta name="theme-color" content="#f1f5f8" />
+    <meta name="color-scheme" content="light" />
 
     <!-- iOS home-screen behaviour: iOS ignores the manifest for these -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Save2Share" />
+    <meta name="apple-mobile-web-app-title" content="ReMain" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />

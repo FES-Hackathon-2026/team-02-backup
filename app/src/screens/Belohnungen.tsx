@@ -1,0 +1,303 @@
+import { useState } from 'react'
+
+import Icon, { type IconName } from '../components/Icon'
+import Screen from '../components/Screen'
+import { Label, Tag } from '../components/ui'
+import {
+  ApiError,
+  api,
+  useApi,
+  type CouponCatalogue,
+  type RedeemResult,
+} from '../lib/client'
+import { de } from '../lib/de'
+import { useSession } from '../lib/session'
+
+/**
+ * Belohnungen — Münzen become something you can hold.
+ *
+ * The catalogue is rebuilt, and the screen says so once at the top rather
+ * than pretending otherwise: we generate the codes ourselves, there is no
+ * partner agreement behind them. What is real is the count of places next
+ * to a bonus — those are OpenStreetMap rows, so „50 Reparaturbetriebe" is
+ * a number a judge can check.
+ *
+ * Redeeming spends coins and never creates them, which is why this screen
+ * calls one endpoint and computes nothing: the balance that comes back is
+ * the ledger minus the redemptions, recalculated on the server.
+ */
+
+const ICON: Record<string, IconName> = {
+  cup: 'cup',
+  route: 'route',
+  wrench: 'wrench',
+  gift: 'gift',
+}
+
+export default function Belohnungen() {
+  const { me, refresh } = useSession()
+  const catalogue = useApi<CouponCatalogue>('/api/coupons')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [problem, setProblem] = useState<ApiError | null>(null)
+  const [frisch, setFrisch] = useState<RedeemResult | null>(null)
+
+  if (!me) return null
+
+  const data = catalogue.data
+
+  async function einloesen(couponId: string) {
+    setBusy(couponId)
+    setProblem(null)
+    try {
+      const result = await api.post<RedeemResult>('/api/redeem', { couponId })
+      setFrisch(result)
+      catalogue.reload()
+      // The tab bar and every other screen read the balance from the
+      // session, so it has to learn about the spend too.
+      void refresh()
+    } catch (error) {
+      setProblem(
+        error instanceof ApiError
+          ? error
+          : new ApiError(0, 'offline', 'Keine Verbindung zum Server. Bitte gleich noch einmal.'),
+      )
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <Screen back title="Belohnungen" sub="Münzen einlösen" gap={13}>
+      {catalogue.error && (
+        <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
+          <Icon name="info" size={18} className="ico" />
+          <span className="sm grow">
+            {catalogue.error.status === 0 ? de.state.offline : catalogue.error.message}
+          </span>
+          <button className="btn sm" onClick={() => catalogue.reload()}>
+            {de.action.retry}
+          </button>
+        </div>
+      )}
+
+      {catalogue.loading && !data && (
+        <div className="empty">
+          <span className="spinner" />
+          <p className="sm mut">{de.state.loading}</p>
+        </div>
+      )}
+
+      {data && (
+        <>
+          {/* --- balance ------------------------------------------------- */}
+          <div className="card" style={{ borderColor: 'var(--gold)', background: 'var(--gold-soft)' }}>
+            <div className="row" style={{ gap: 13 }}>
+              <span
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 15,
+                  background: 'var(--gold)',
+                  color: 'var(--on-gold)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flex: 'none',
+                }}
+              >
+                <Icon name="star" size={24} stroke={2} />
+              </span>
+              <span className="grow">
+                <span
+                  className="num"
+                  style={{
+                    fontSize: 28,
+                    color: 'var(--gold-ink)',
+                    display: 'block',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {data.coins}
+                </span>
+                <span className="xs" style={{ color: 'var(--gold-ink)', fontWeight: 600 }}>
+                  {data.coins === 1 ? 'Münze verfügbar' : 'Münzen verfügbar'}
+                  {data.coinsEarned !== data.coins && ` · ${data.coinsEarned} insgesamt verdient`}
+                </span>
+              </span>
+            </div>
+            <p className="xs" style={{ margin: '11px 0 0', lineHeight: 1.5, color: 'var(--gold-ink)' }}>
+              {data.xpPerCoin} XP ergeben eine Münze. XP bleiben für dein Level stehen, Münzen
+              gibst du hier aus.
+            </p>
+          </div>
+
+          {/* --- what just happened -------------------------------------- */}
+          {frisch && (
+            <div className="card" style={{ borderColor: 'var(--blue)', background: 'var(--sky2)' }}>
+              <div className="between" style={{ marginBottom: 9 }}>
+                <b className="sm">{frisch.redemption.title}</b>
+                <Tag von="simulated" icon />
+              </div>
+              <Code value={frisch.redemption.code} />
+              <p className="xs mut" style={{ margin: '9px 0 0', lineHeight: 1.55 }}>
+                {frisch.message}
+              </p>
+            </div>
+          )}
+
+          {problem && (
+            <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
+              <Icon name="info" size={18} className="ico" />
+              <span className="sm grow">{problem.message}</span>
+              <button
+                className="icobtn bare"
+                onClick={() => setProblem(null)}
+                aria-label={de.action.close}
+              >
+                <Icon name="cross" size={18} />
+              </button>
+            </div>
+          )}
+
+          {/* --- catalogue ----------------------------------------------- */}
+          <div>
+            <div className="between" style={{ marginBottom: 10 }}>
+              <p className="lbl" style={{ margin: 0 }}>
+                Verfügbar
+              </p>
+              <Tag von="simulated" />
+            </div>
+
+            <div className="col" style={{ gap: 9 }}>
+              {data.coupons.map((c) => (
+                <div
+                  key={c.id}
+                  className="card tight row"
+                  style={{ gap: 11, opacity: c.affordable ? 1 : 0.6 }}
+                >
+                  <span
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 12,
+                      background: c.affordable ? 'var(--sky)' : 'var(--paper)',
+                      color: c.affordable ? 'var(--blue-deep)' : 'var(--ink3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 'none',
+                    }}
+                  >
+                    <Icon name={ICON[c.icon] ?? 'gift'} size={21} />
+                  </span>
+                  <span className="grow" style={{ minWidth: 0 }}>
+                    <b className="sm" style={{ display: 'block' }}>
+                      {c.title}
+                    </b>
+                    <span className="xs mut" style={{ display: 'block' }}>
+                      {c.affordable
+                        ? c.detail
+                        : `noch ${c.missing} ${c.missing === 1 ? 'Münze' : 'Münzen'}`}
+                    </span>
+                    {c.partners && (
+                      <span className="row" style={{ gap: 5, marginTop: 5, flexWrap: 'wrap' }}>
+                        <Tag von="api">
+                          {c.partners.count} {c.partners.label}
+                        </Tag>
+                        <span className="xs mut">aus {c.partners.source}</span>
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    className="btn sm"
+                    disabled={!c.affordable || busy !== null}
+                    onClick={() => void einloesen(c.id)}
+                    style={
+                      c.affordable
+                        ? {
+                            background: 'var(--blue-deep)',
+                            borderColor: 'var(--blue-deep)',
+                            color: 'var(--on-blue)',
+                            flex: 'none',
+                          }
+                        : { color: 'var(--ink3)', flex: 'none' }
+                    }
+                  >
+                    {busy === c.id ? '…' : c.coins}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* --- codes stay visible --------------------------------------- */}
+          <div>
+            <p className="lbl" style={{ marginBottom: 10 }}>
+              Eingelöst
+            </p>
+            {data.redemptions.length === 0 ? (
+              <div className="card dashed tight">
+                <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
+                  Noch nichts eingelöst. Eingelöste Codes bleiben hier stehen — auch nach einem
+                  Neustart der App.
+                </p>
+              </div>
+            ) : (
+              <div className="col" style={{ gap: 9 }}>
+                {data.redemptions.map((r) => (
+                  <div key={r.id} className="card tight" style={{ opacity: r.expired ? 0.6 : 1 }}>
+                    <div className="between" style={{ marginBottom: 9, gap: 8 }}>
+                      <span className="row" style={{ gap: 9, minWidth: 0 }}>
+                        <Icon name={ICON[r.icon] ?? 'gift'} size={19} className="ico" />
+                        <b className="sm">{r.title}</b>
+                      </span>
+                      {r.expired ? (
+                        <Label tone="warn">abgelaufen</Label>
+                      ) : (
+                        <Label>gültig bis {r.validLabel}</Label>
+                      )}
+                    </div>
+                    <Code value={r.code} />
+                    <p className="xs mut" style={{ margin: '8px 0 0' }}>
+                      {r.coins} {r.coins === 1 ? 'Münze' : 'Münzen'} ausgegeben
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card dashed tight">
+            <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
+              {data.note} Münzen laufen nicht ab, lassen sich nicht kaufen und nicht übertragen —
+              damit lohnt sich Mitmachen, aber niemand kann sich nach oben kaufen.
+            </p>
+          </div>
+        </>
+      )}
+    </Screen>
+  )
+}
+
+/** The code itself. Big, selectable, nothing to write down. */
+function Code({ value }: { value: string }) {
+  return (
+    <span
+      className="num"
+      style={{
+        display: 'block',
+        fontSize: 21,
+        letterSpacing: '.08em',
+        color: 'var(--blue-deep)',
+        background: 'var(--paper)',
+        border: '1px dashed var(--line)',
+        borderRadius: 12,
+        padding: '11px 13px',
+        textAlign: 'center',
+        userSelect: 'all',
+      }}
+    >
+      {value}
+    </span>
+  )
+}

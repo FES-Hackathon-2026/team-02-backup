@@ -1,0 +1,126 @@
+/* ------------------------------------------------------------------
+   ReMain — "Mainwasser" design tokens.
+
+   Source of truth: the ReMain design canvas (design/parts/_shared.css,
+   published as the artifact). Every value below is the artboard value.
+   If the two ever disagree, the artboard wins.
+
+   Pastel river blue on cool paper, deep navy ink. Yellow is reserved for
+   ONE thing: reward. Coins, XP, redeemed coupons. Nothing else in the
+   product is allowed to be yellow, which is what makes it mean something.
+
+   The three provenance colours are load-bearing. Confirmed / stated /
+   estimated must never be confusable, because the brief requires them to
+   be visually separated at every number.
+
+   THEME. The design has exactly one palette: the light one. The dark
+   palette below is ours, not the designer's, so it is strictly OPT-IN —
+   it applies only when something stamps data-theme="dark" on <html>.
+   It deliberately does NOT follow prefers-color-scheme: a judge opening
+   the link on a phone set to dark mode must still see the screens that
+   were designed and reviewed, not an unreviewed inversion of them.
+   To go back to following the OS, wrap the dark block in
+   @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) }.
+   ------------------------------------------------------------------ */
+:root {
+  --paper: #f1f5f8;
+  --card: #ffffff;
+  --ink: #10202c;
+  --ink2: #526575;
+  --ink3: #8c9ca8;
+  --line: #dbe5ec;
+  --line2: #eaf1f6;
+
+  --blue: #7fa8c4;
+  --blue-deep: #1f5c82;
+  --blue-ink: #14435f;
+  --sky: #d6e6f1;
+  --sky2: #eaf2f8;
+
+  /* Edges within the sky family. The design rims a sky surface with a tone
+     DARKER than its own fill — reaching for --line or --sky here makes the
+     edge disappear, which is what flattened the sky cards and thumbnails. */
+  --sky-line: #cfe2ee; /* .card.sky, .thumb */
+  --sky-line2: #c6dcec; /* .chip.soft */
+  --grab: #cfdce5; /* the sheet handle, darker than --line on purpose */
+
+  /* rewards only — see the note above */
+  --gold: #e3a81c;
+  --gold-ink: #8a6410;
+  --gold-soft: #fbf0d4;
+
+  /* provenance: "deine Angabe" */
+  --slate: #5f6280;
+  --slate-soft: #eceef5;
+  /* provenance: "Schätzung" */
+  --stone: #7c6f61;
+  --stone-soft: #f1ede7;
+
+  --alert: #b03a2b;
+  --alert-soft: #fae7e3;
+
+  /* Ink ON a filled control, so no screen hard-codes #fff and then breaks
+     the moment the fill beneath it changes tone. Three steps down the blue
+     fill, matching the hero card in the design. */
+  --on-blue: #ffffff;
+  --on-blue2: #c4ddee;
+  --on-blue3: #8fbedd;
+  --on-alert: #ffffff;
+  /* Ink on a full-strength yellow: the reward fill and the FES "Gelbe
+     Tonne" swatch, which is a fixed brand yellow and never themes. */
+  --on-gold: #2e2400;
+
+  --sh: 0 1px 1px rgba(16, 32, 44, 0.04), 0 6px 18px rgba(16, 32, 44, 0.06);
+  --r: 18px;
+  --tabbar-h: 78px;
+
+  color-scheme: light;
+}
+
+/* Opt-in only — see the THEME note above. Nothing stamps this today; it is
+   kept whole so a dark build is one attribute away. */
+:root[data-theme='dark'] {
+  --paper: #0c151c;
+  --card: #141f28;
+  --ink: #e4edf3;
+  --ink2: #9aaebb;
+  --ink3: #748693;
+  --line: #22303b;
+  --line2: #1a252e;
+
+  --blue: #6e9dbc;
+  --blue-deep: #7fc3ee;
+  --blue-ink: #a9d8f5;
+  --sky: #152c3c;
+  --sky2: #101e28;
+
+  /* Still a step away from the fill, but upward: on a dark ground an edge
+     reads by being lighter than what it contains. */
+  --sky-line: #1d3a4e;
+  --sky-line2: #22475f;
+  --grab: #2b3945;
+
+  --gold: #e8b93b;
+  --gold-ink: #f0c95c;
+  --gold-soft: #2c2410;
+
+  --slate: #9ea2c4;
+  --slate-soft: #1e2030;
+  --stone: #b7a894;
+  --stone-soft: #241f19;
+
+  --alert: #ec8e78;
+  --alert-soft: #2d1713;
+
+  /* The deep blue becomes the LIGHT tone here, so ink sitting on a filled
+     control has to flip with it — same for the alert fill. --on-gold does
+     not flip: it sits on a fixed brand yellow either way. */
+  --on-blue: #08121a;
+  --on-blue2: #123449;
+  --on-blue3: #2a5c7c;
+  --on-alert: #2d1713;
+
+  --sh: 0 1px 1px rgba(0, 0, 0, 0.3), 0 6px 18px rgba(0, 0, 0, 0.28);
+
+  color-scheme: dark;
+}
