@@ -31,8 +31,8 @@ export default function Start() {
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
   return <Screen title={t(`Hallo ${me.name}`)} sub={t("Was möchtest du heute erledigen?")} tabs action={
-    <span className="row"><button className="icobtn" aria-label={t("Einstellungen")} onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={t(`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`)}>
-      <Icon name="bell" size={21} />{t(!!notices.data?.unread && <span className="notification-dot" />)}
+    <span className="row"><button className="icobtn" aria-label={t("Einstellungen")} onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={t(`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}${tour.data?.slot ? ', Sammeltour buchbar' : ''}`)}>
+      <Icon name="bell" size={21} />{t((!!notices.data?.unread || !!tour.data?.slot) && <span className="notification-dot" />)}
     </button></span>
   }>
     <div className="card row home-progress">
@@ -51,11 +51,6 @@ export default function Start() {
     <WeeklyGoal />
     <button className="card tight row" onClick={() => navigate('/essen')}><Thumb icon="leaf" /><span className="grow"><b className="sm">{t("Essen retten")}</b><span className="xs mut card-sub">{t(food.error ? 'foodsharing antwortet gerade nicht — erneut versuchen' : foodTop ? `${foodTop.title}${foodTop.hoursLeft == null ? '' : ` · noch ${Math.max(1, Math.round(foodTop.hoursLeft))} h`}` : 'Offene Angebote und Fairteiler entdecken')}</span></span><Icon name="chevron" size={17} /></button>
     {t(reusableStatus.data?.configured && <button className="card tight row" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><span className="grow"><b className="sm">{t(activeContainers.length ? `${activeContainers.length} Mehrweg-Behälter offen` : 'Mehrweg statt Einweg')}</b><span className="xs mut card-sub" style={{ color: overdue ? 'var(--alert)' : undefined }}>{t(reusable.error ? 'Konto noch nicht freigeschaltet' : overdue ? 'Rückgabe überfällig' : nextReturn !== null ? `Rückgabe in ${Math.max(1, Math.round(nextReturn))} Stunden` : `Ausgabe und Rücknahme an der ${reusable.data?.station ?? 'ReMain-Station'}`)}</span></span><Icon name="chevron" size={17} /></button>)}
-    {/* The collection tour, not the bin calendar. A Restmüll date is a fact
-        you can do nothing about; a tour with room on it is an invitation with
-        a deadline — and that is what belongs on the screen that asks what you
-        want to do today. Full detail, map and booking live one tap away. */}
-    {t(tour.data?.slot && <button className="card tight row" onClick={() => navigate('/mitteilungen')}><Thumb icon="truck" /><span className="grow"><b className="sm">{t("Sammeltour in deiner Nähe")}</b><span className="xs mut card-sub">{t(tour.data.slot.periodLabel || tour.data.slot.label)}</span></span><Tag von="simulated" /><Icon name="chevron" size={17} /></button>)}
     <section><div className="between" style={{ marginBottom: 9 }}><p className="lbl">{t("In deiner Nähe")}</p><button className="text-link" onClick={() => navigate('/quests')}>{t("Karte")}</button></div>
       <div className="nearby-grid">
         <button className="card tight" onClick={() => navigate('/quests')}><Thumb icon="quest" /><b>{quest?.title ?? t('Quests entdecken')}</b><span className="xs mut">{t(quest ? `${quest.district ?? 'Frankfurt'} · +${quest.xp} XP` : 'Gemeinsam aufräumen')}</span></button>
