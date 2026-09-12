@@ -1,4 +1,8 @@
 import { useLanguage } from './lib/i18n'
+import { useEffect, useState } from 'react'
+import { SplashScreen } from './components/BrandMark'
+import Onboarding from './screens/Onboarding'
+import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
@@ -50,17 +54,20 @@ export default function App() {
 function Gate() {
   const { me, loading } = useSession()
   const { pathname } = useLocation()
+  const [splash, setSplash] = useState(true)
+  const [introduced, setIntroduced] = useState(hasCompletedOnboarding)
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(() => setSplash(false), reduced ? 0 : 1400)
+    return () => window.clearTimeout(timer)
+  }, [])
 
-  // One request long. Anything more elaborate here flashes on every load.
-  if (loading) {
-    return (
-      <div className="app">
-        <div className="empty" style={{ minHeight: '100dvh', justifyContent: 'center' }}>
-          <span className="spinner" />
-        </div>
-      </div>
-    )
-  }
+  if (splash || loading) return <SplashScreen />
+
+  if (!me && !introduced) return <Onboarding onComplete={() => {
+    completeOnboarding()
+    setIntroduced(true)
+  }} />
 
   if (!me) return <Anmelden />
 

@@ -1,4 +1,5 @@
 import LanguagePicker from '../components/LanguagePicker'
+import BrandMark from '../components/BrandMark'
 import { t } from './../lib/i18n'
 import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
@@ -107,6 +108,7 @@ export default function Anmelden() {
       >
         <div style={{ alignSelf: 'flex-end', minWidth: 180 }}><LanguagePicker /></div>
         <div>
+          <BrandMark />
           <h1
             className="h1"
             style={{ fontSize: 38, color: 'var(--blue-deep)', letterSpacing: '-0.04em' }}

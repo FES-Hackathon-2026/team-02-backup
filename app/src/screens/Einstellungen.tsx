@@ -1,4 +1,5 @@
 import LanguagePicker from '../components/LanguagePicker'
+import Onboarding from './Onboarding'
 import { t, getLocale } from './../lib/i18n'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -23,6 +24,7 @@ import { DEFAULT_THEME, getTheme, setTheme, type Theme } from '../lib/theme'
  * kind of thing that is funny until a judge presses it mid-demo.
  */
 export default function Einstellungen() {
+  const [showIntroduction, setShowIntroduction] = useState(false)
   const navigate = useNavigate()
   const { me, signOut, updateProfile, deleteAccount } = useSession()
 
@@ -35,6 +37,7 @@ export default function Einstellungen() {
   const [busy, setBusy] = useState<'out' | 'delete' | null>(null)
 
   if (!me) return null
+  if (showIntroduction) return <Onboarding onComplete={() => setShowIntroduction(false)} />
 
   const dirty = name.trim() !== me.name
 
@@ -191,7 +194,8 @@ export default function Einstellungen() {
           ).map(([value, label, icon]) => (
             <button
               key={value}
-              className="chip"
+              className="chip theme-option"
+              data-theme-option={value}
               aria-pressed={theme === value}
               onClick={() => chooseTheme(value)}
             >
@@ -209,6 +213,7 @@ export default function Einstellungen() {
 
       {/* --------------------------------------------------------------- */}
       <p className="lbl">{t("App")}</p>
+      <button className="btn" onClick={() => setShowIntroduction(true)}><Icon name="info" size={20} />{t('Einführung ansehen')}</button>
       <div className="card flat col" style={{ gap: 0, padding: 0, overflow: 'hidden' }}>
         <Row icon="link" label={t("Integrationen")} hint="Was echt ist und was nachgebaut" onClick={() => navigate('/integrationen')} />
         <Row icon="shield" label={t("Wirkung & Nachweise")} hint="Woher jede Zahl kommt" onClick={() => navigate('/wirkung')} />

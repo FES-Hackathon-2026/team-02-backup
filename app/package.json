@@ -3,14 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "ReMain \u2014 mobile-first PWA for the Frankfurt Impact Challenge (Team 02)",
+  "description": "ReMain — mobile-first PWA for the Frankfurt Impact Challenge (Team 02)",
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
     "typecheck": "tsc --noEmit",
-    "test:i18n": "node scripts/test-i18n.mjs"
+    "test:i18n": "node scripts/test-i18n.mjs",
+    "test:onboarding": "node scripts/test-onboarding.mjs"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",
