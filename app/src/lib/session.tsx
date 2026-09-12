@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 
 import { ApiError, api, type Me } from './client'
+import { consumeRedirectResult, redirectPending, signInWithGoogle, signOutOfGoogle } from './firebase'
 
 /**
  * The signed-in person.
@@ -8,15 +9,49 @@ import { ApiError, api, type Me } from './client'
  * Restored from the cookie on every load, so a reload or a shared link never
  * asks again. `loading` is the only reason the app shows a blank frame, and
  * it lasts one request.
+ *
+ * Two ways in, one session out: Google gets verified by the server and then
+ * issues the SAME cookie the guest sign-in does. Nothing downstream of here
+ * knows or cares which button was pressed.
  */
+
+/** What the server can tell us about the sign-in methods it offers. */
+export interface AuthConfig {
+  google: boolean
+  guest: boolean
+}
+
+/**
+ * A new Google account the server has never seen, which still needs a
+ * Stadtteil before it can exist. Thrown by signInWithGoogle so the login
+ * screen can ask one more question instead of showing an error.
+ */
+export class DistrictRequired extends Error {
+  profile: { name: string; email: string | null; photoUrl: string | null }
+  constructor(profile: DistrictRequired['profile']) {
+    super('Fast geschafft — wähle noch deinen Stadtteil.')
+    this.name = 'DistrictRequired'
+    this.profile = profile
+  }
+}
 
 interface SessionValue {
   me: Me | null
   loading: boolean
   /** true when the server could not be reached at all */
   offline: boolean
+  /** which sign-in methods this deployment offers; null until known */
+  auth: AuthConfig | null
   signIn: (name: string, districtId: string) => Promise<void>
+  /**
+   * Google sign-in, end to end. Throws DistrictRequired when the account is
+   * new here — call again with the chosen district and the same token is
+   * reused, so the person is not sent back to Google.
+   */
+  signInWithGoogle: (districtId?: string) => Promise<void>
   signOut: () => Promise<void>
+  updateProfile: (changes: { name?: string; districtId?: string }) => Promise<void>
+  deleteAccount: () => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -24,8 +59,18 @@ const SessionContext = createContext<SessionValue | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null)
+  // A pending redirect means this load is the second half of a sign-in.
+  // Starting in the loading state stops the login screen flashing first.
   const [loading, setLoading] = useState(true)
   const [offline, setOffline] = useState(false)
+  const [auth, setAuth] = useState<AuthConfig | null>(null)
+
+  /**
+   * The last verified Google token, kept only between the 409 and the retry
+   * that follows it. Never stored — a token lives about an hour and there is
+   * no reason for one to outlive the question it is waiting on.
+   */
+  const [pendingToken, setPendingToken] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -44,22 +89,109 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  /** Sends a verified Google token to our server and adopts the result. */
+  const exchange = useCallback(async (idToken: string, districtId?: string) => {
+    try {
+      setMe(await api.post<Me>('/api/session/google', { idToken, districtId }))
+      setOffline(false)
+      setPendingToken(null)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409 && error.code === 'district_required') {
+        // Hold the token so answering the question costs one request, not a
+        // second trip through Google.
+        setPendingToken(idToken)
+        throw new DistrictRequired(
+          (error.body as { profile?: DistrictRequired['profile'] } | null)?.profile ?? {
+            name: '',
+            email: null,
+            photoUrl: null,
+          },
+        )
+      }
+      throw error
+    }
+  }, [])
+
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    void (async () => {
+      // Both answers matter before the first paint, and neither depends on
+      // the other.
+      const [config, redirectToken] = await Promise.all([
+        api.get<AuthConfig>('/api/auth/config').catch(() => null),
+        consumeRedirectResult(),
+      ])
+      setAuth(config ?? { google: false, guest: true })
+
+      if (redirectToken !== null) {
+        try {
+          await exchange(redirectToken)
+          setLoading(false)
+          return
+        } catch {
+          // Needs a district, or the server said no. Either way the login
+          // screen takes it from here.
+        }
+      }
+      await refresh()
+    })()
+  }, [refresh, exchange])
 
   const signIn = useCallback(async (name: string, districtId: string) => {
     setMe(await api.post<Me>('/api/session', { name, districtId }))
     setOffline(false)
   }, [])
 
+  const startGoogle = useCallback(
+    async (districtId?: string) => {
+      // The retry after DistrictRequired reuses the token we already hold.
+      const idToken = pendingToken ?? (await signInWithGoogle())
+      await exchange(idToken, districtId)
+    },
+    [pendingToken, exchange],
+  )
+
+  /**
+   * Both halves of the session, in the order that cannot strand anyone:
+   * Google first (a failure there still leaves a working app), our cookie
+   * second, local state last.
+   */
   const signOut = useCallback(async () => {
-    await api.post('/api/session/logout')
+    await signOutOfGoogle()
+    try {
+      await api.post('/api/session/logout')
+    } catch {
+      /* already gone, or offline — the device is signed out either way */
+    }
+    setPendingToken(null)
+    setMe(null)
+  }, [])
+
+  const updateProfile = useCallback(async (changes: { name?: string; districtId?: string }) => {
+    setMe(await api.patch<Me>('/api/me', changes))
+  }, [])
+
+  const deleteAccount = useCallback(async () => {
+    await api.del('/api/me')
+    await signOutOfGoogle()
+    setPendingToken(null)
     setMe(null)
   }, [])
 
   return (
-    <SessionContext.Provider value={{ me, loading, offline, signIn, signOut, refresh }}>
+    <SessionContext.Provider
+      value={{
+        me,
+        loading: loading || redirectPending(),
+        offline,
+        auth,
+        signIn,
+        signInWithGoogle: startGoogle,
+        signOut,
+        updateProfile,
+        deleteAccount,
+        refresh,
+      }}
+    >
       {children}
     </SessionContext.Provider>
   )

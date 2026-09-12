@@ -11,11 +11,18 @@ import { useEffect, useState } from 'react'
 export class ApiError extends Error {
   status: number
   code: string
+  /**
+   * The whole decoded response. Most failures need nothing but `message`,
+   * but some carry a payload — the 409 from Google sign-in returns the
+   * Google profile so the next screen can greet the person by name.
+   */
+  body: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, body: unknown = null) {
     super(message)
     this.status = status
     this.code = code
+    this.body = body
   }
 }
 
@@ -40,15 +47,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       res.status,
       data?.error ?? 'unknown',
       data?.message ?? `Die Anfrage ist mit ${res.status} fehlgeschlagen.`,
+      data,
     )
   }
   return data as T
 }
 
+const withBody = (method: string, body?: unknown): RequestInit => ({
+  method,
+  body: body === undefined ? undefined : JSON.stringify(body),
+})
+
 export const api = {
   get: <T,>(path: string) => request<T>(path),
-  post: <T,>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }),
+  post: <T,>(path: string, body?: unknown) => request<T>(path, withBody('POST', body)),
+  patch: <T,>(path: string, body?: unknown) => request<T>(path, withBody('PATCH', body)),
+  /** `delete` is a reserved word, so the verb loses its tail. */
+  del: <T,>(path: string) => request<T>(path, { method: 'DELETE' }),
   upload: <T,>(path: string, form: FormData) =>
     request<T>(path, { method: 'POST', body: form }),
 }
@@ -71,6 +86,11 @@ export interface Me {
   district: { id: string; name: string; bezirk: number }
   role: string
   isDemo: boolean
+  /** how this person signed in — 'guest' needs no account, 'google' has one */
+  provider: 'guest' | 'google'
+  email: string | null
+  photoUrl: string | null
+  createdAt: string
   xp: number
   level: number
   levelStart: number

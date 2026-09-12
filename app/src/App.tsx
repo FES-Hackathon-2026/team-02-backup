@@ -4,6 +4,7 @@ import { SessionProvider, useSession } from './lib/session'
 import Abholung from './screens/Abholung'
 import Anmelden from './screens/Anmelden'
 import Belohnungen from './screens/Belohnungen'
+import Einstellungen from './screens/Einstellungen'
 import Erkannt from './screens/Erkannt'
 import Fairteiler from './screens/Fairteiler'
 import Integrationen from './screens/Integrationen'
@@ -66,6 +67,7 @@ function Gate() {
       <Route path="/kalender" element={<Kalender />} />
       <Route path="/belohnungen" element={<Belohnungen />} />
       <Route path="/stadtteile" element={<Stadtteile />} />
+      <Route path="/einstellungen" element={<Einstellungen />} />
 
       {/* Wired ahead of time so the phases below never edit this file. */}
       <Route path="/nachweis/:actionId" element={<Nachweis />} />

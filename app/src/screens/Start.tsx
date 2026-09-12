@@ -14,7 +14,7 @@ import { useSession } from '../lib/session'
 
 export default function Start() {
   const navigate = useNavigate()
-  const { me, signOut } = useSession()
+  const { me } = useSession()
   const quests = useApi<{ quests: Quest[] }>('/api/quests')
   const market = useApi<{ items: MarketItem[] }>('/api/market')
   const season = useApi<Season>('/api/season')
@@ -43,8 +43,12 @@ export default function Start() {
       sub={`Level ${me.level} · ${me.district.name}`}
       tabs
       action={
-        <button className="icobtn" onClick={() => void signOut()} aria-label="Abmelden">
-          <Icon name="bell" size={21} />
+        <button
+          className="icobtn"
+          onClick={() => navigate('/einstellungen')}
+          aria-label="Einstellungen"
+        >
+          <Icon name="settings" size={21} />
         </button>
       }
     >
