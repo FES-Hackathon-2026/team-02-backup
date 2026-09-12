@@ -13,7 +13,7 @@ for (const [filename, size, solid] of [
   ['apple-touch-icon.png', 180, true],
 ]) {
   // Full-bleed ground for OS masks; all identifying artwork sits within the safe circle.
-  const svg = solid ? source.replace('rx="30"', 'rx="0"') : source
+  const svg = solid ? source.replace('x="6" y="6" width="88" height="88" rx="22"', 'width="100" height="100"') : source
   const png = new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng()
   writeFileSync(new URL(filename, publicDirectory), png)
   console.log(`${filename}: ${size} × ${size}`)
