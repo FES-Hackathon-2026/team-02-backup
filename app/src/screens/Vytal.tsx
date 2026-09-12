@@ -144,6 +144,27 @@ export default function Vytal() {
         </div>
       ))}
 
+      {/* The LOAD failing is not the same as a write failing, and it had
+          nowhere to appear: `problem` is only ever set by the scan and
+          confirm paths, and `nichtEingerichtet` stays false when the token
+          exists but is refused. So a 502 from /containers rendered the
+          station banner and then an empty screen — the one outcome this
+          product is not allowed to have. */}
+      {state.error && (
+        <div className="card tight col" style={{ gap: 8, borderColor: 'var(--alert)' }}>
+          <div className="row" style={{ gap: 9 }}>
+            <Icon name="info" size={18} className="ico" />
+            <b className="sm grow">{t('Mehrweg ist gerade nicht nutzbar')}</b>
+          </div>
+          <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
+            {t(state.error.message)}
+          </p>
+          <button className="btn sm" onClick={() => state.reload()}>
+            {t('Nochmal versuchen')}
+          </button>
+        </div>
+      )}
+
       {t(problem && (
         <div className="card tight row" style={{ gap: 9, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
