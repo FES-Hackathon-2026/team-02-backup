@@ -1,64 +1,117 @@
-# Vytal — was der echte Adapter ersetzt
+# Vytal — die echte Anbindung
 
-Der Sandbox-Zugang (Notion: *Vytal x FES Hackathon – Technical Documentation*)
-lag uns beim Bauen nicht vor. Dieser Ordner ist deshalb ein **Nachbau**, und er
-sagt das auch überall: jeder Wert kommt mit `tier: 'simulated'` heraus und die
-App zeigt ihn als „simuliert", nie als „bestätigt".
+Bis zur Sandbox-Freigabe stand hier ein Nachbau. Der ist weg. Was hier läuft,
+ist die **Vytal Merchant-API**, und jeder Wert trägt deshalb `tier: 'confirmed'`.
 
-Nachgebaut ist nur die Quelle der Ereignisse. **Die Ereignisform ist die echte**
-— darum ist der Austausch später eine Datei und kein Umbau.
+Quelle: *Vytal x FES Hackathon – Technical Documentation* (Notion), abgerufen
+am 12.09.2026. Ansprechpartner: Stephan Rüschenbaum, stephan.rueschenbaum@vytal.org.
 
-## Die Ereignisform
+## Das eine Detail, aus dem alles folgt
 
-```json
-{
-  "event_id":       "vytal_evt_9f2k1a8c",
-  "type":           "borrow | return",
-  "container_id":   "VY-7F3K29",
-  "container_type": "bowl_1000 | bowl_500 | cup_400",
-  "partner_id":     "vytal_ffm_hauptwache",
-  "user_ref":       "remain:42",
-  "status":         "borrowed | returned",
-  "occurred_at":    "2026-09-12T11:04:18.221Z",
-  "due_at":         "2026-09-26T11:04:18.221Z",
-  "was_overdue":    false,
-  "days_held":      3
-}
-```
+**Der Token gehört einer Filiale, nicht einer App.** Vytal stellt JWTs pro
+Store aus. Daraus folgt dreierlei, und die Oberfläche muss das abbilden statt
+es zu verstecken:
 
-`event_id` ist das einzige Feld, an dem etwas hängt: unser Ledger belohnt ein
-Partner-Ereignis über `award({ eventKey: event_id })` **genau einmal**. Ein
-zweiter Scan desselben Behälters liefert deshalb **dasselbe** `event_id`
-zurück, nicht ein neues — genauso, wie ein echtes Rückgabeterminal reagiert,
-wenn man eine bereits zurückgegebene Schale davorhält.
+- Eine Ausgabe geht auf den **Bestand unserer Station**. Es gibt kein Lokal
+  auszuwählen — der Token sagt schon, welches gemeint ist.
+- `ContainerReturn` nimmt **weder `userId` noch Store** entgegen. Der Token
+  bestimmt, wo der Behälter landet. Wer über ReMain zurückgibt, gibt **bei
+  uns** zurück.
+- ReMain ist damit kein Gast im Vytal-Netz, sondern **selbst eine Station**.
 
-## Was der Adapter können muss
+Das Filialverzeichnis zeigt trotzdem die echten Vytal-Partner in der Nähe —
+als das, was sie sind: das Netz, zu dem der Behälter gehört. Nicht als
+Rückgabeorte, die wir buchen könnten.
 
-| Methode | Was sie tut | Echter Ersatz |
+> Geprüft am 12.09.2026: Im Umkreis von 50 km um Frankfurt gibt es **keine**
+> Vytal-Rückgabeboxen (`RETURN_BOX`, `SERVICED_RETURN_BOX_*` liefern null
+> Treffer, während `RESTAURANT` 50 liefert — der Filter greift also).
+
+## Zwei Dienste, zwei Regeln
+
+| | Merchant-API | Filialverzeichnis |
 |---|---|---|
-| `partners({lat, lon, radiusKm})` | Rückgabeorte in der Nähe | `GET /partners?lat&lon` |
-| `containers(userRef)` | aktive und zurückgegebene Behälter | `GET /users/{ref}/containers` |
-| `borrow({userRef, partnerId, containerType})` | Ausleihe erfassen | im Echtbetrieb löst die Partnerkasse das aus, nicht die App |
-| `returnContainer({userRef, containerId, partnerId})` | Rückgabe erfassen, `repeat` bei Wiederholung | `POST /returns` bzw. Webhook `container.returned` |
-| `event(eventId)` | ein Ereignis nachschlagen | `GET /events/{event_id}` |
+| Host | `merchantapi.vytal.org` | `colugo.vytal.org` |
+| Protokoll | REST | GraphQL |
+| Auth | `Authorization: Bearer <JWT>` | `Authorization: ANONYMOUS` (wörtlich) |
+| Geheim? | **Ja** — nur Server | Nein, öffentliche Daten |
+| Fehler | HTTP-Status **und** `result`-Feld | HTTP **200** mit `errors`-Array |
 
-## Beim Umstellen zu tun
+Beide Fehlerkonventionen sind Fallen. Ein `response.ok` allein übersieht
+`STORE_NOT_FOUND` beim Verzeichnis **und** ein `result: "…"` ungleich
+`Success` bei der Merchant-API. `client.js` und `stores.js` prüfen beides.
 
-1. `index.js` durch den HTTP-Adapter ersetzen, gleiche fünf Methoden, gleiche
-   Feldnamen. `store.js` und `partners.js` fallen ersatzlos weg.
-2. `TIER` in `index.js` von `'simulated'` auf `'confirmed'` setzen. Das ist der
-   einzige Ort, an dem die Herkunftsstufe dieser Integration steht — Route und
-   Screen lesen sie von dort.
-3. Schlüssel als `VYTAL_API_KEY` in `server/.env`. **Nie** mit `VITE_`-Prefix.
-4. `status: 'pending'` im Integrationsregister (`server/src/routes/meta.js`,
-   Eintrag `vytal`) auf `live` ziehen — eine Zeile, gehört Phase 10.
-5. Im Echtbetrieb kommt die Ausleihe vom Partner. `POST /api/vytal/borrow`
-   entfällt dann; die Rückgabe bleibt unverändert.
+## Die Endpunkte
 
-## Zustand des Nachbaus
+| Datei | Methode | Vytal |
+|---|---|---|
+| `users.js` | `ensureVytalUser(userId)` | `POST /api/3/ReferencedAnonUser/Create?userId=` |
+| `index.js` | `checkCode(code)` | `GET /api/3/Container/CheckCode?code=` |
+| `index.js` | `checkout({vytalUserId, qrCodes, transactionId})` | `POST /api/3/Containers/Checkout` |
+| `index.js` | `returnContainer({qrCodes, transactionId})` | `POST /api/3/Container/ContainerReturn` |
+| `index.js` | `containers(vytalUserId)` | `GET /api/3/ContainerHistory/GetUserContainers` |
+| `index.js` | `co2Saved(vytalUserId)` | `GET /api/3/Sustainability/GetUserCo2SavingsForStore` |
+| `index.js` | `stock()` | `GET /Merchant/GetStoreStock` — ohne `/api/3`, so steht es in der Doku |
+| `stores.js` | `nearby({lat, lon})` | GraphQL `nearestVytalStores` |
+| `stores.js` | `search({query})` | GraphQL `storeSearch` |
 
-`server/data/vytal-events.json`, geschrieben über `store.js`. Absichtlich
-**nicht** in unserem SQLite: Vytals Ereignisse gehören Vytal, und `schema.sql`
-hat aus gutem Grund keine Vytal-Tabelle. Als Datei statt als Variable, weil
-`event_id` einen Neustart überleben muss — sonst wäre eine schon belohnte
-Rückgabe mit neuem Schlüssel ein zweites Mal bezahlbar.
+## Konto-Anlage
+
+`ReferencedAnonUser/Create` ist laut Doku **genau einmal pro Person** zu
+rufen. Es gibt keine Suche nach der Referenz, mit der man sich davon erholen
+könnte: ein zweiter Ruf legt eine zweite Vytal-Person an, und die Behälter der
+ersten verschwinden aus unserer Sicht. Deshalb steht die UUID in
+`vytal_users` — eine Tabelle, kein Cache.
+
+Angelegt wird **faul**, beim ersten Scan. Niemand wird bei einem Partner
+angemeldet, weil er die App geöffnet hat.
+
+Über die Leitung geht `remain-<id>`. Kein Name, keine Mailadresse, kein
+Google-Konto. Vytal nennt diese Nutzer anonym, und das bleiben sie.
+
+## Genau einmal bezahlen
+
+Zwei verschiedene Schlüssel, zwei verschiedene Aufgaben — das wird leicht
+verwechselt:
+
+**`transactionId`** macht den *Aufruf bei Vytal* idempotent. Wir würfeln ihn
+beim Scan, schreiben ihn nach `vytal_transactions`, und der Bestätigen-Knopf
+gibt ihn zurück. Ein Wiederholungsversuch nach einem Timeout bucht damit
+keinen zweiten Behälter.
+
+**`cycleKey(containerId, checkoutTime)`** macht die *Belohnung* einmalig. Er
+ist der `event_key` im Ledger. Nicht die Behälter-ID allein: Behälter werden
+wiederverwendet, dieselbe Schale kommt nächsten Monat wieder, und jede
+Ausleihe verdient ihre eigenen 20 XP. Der Ausleihzeitpunkt trennt die Runden.
+
+Reihenfolge in `routes/vytal.js` ist deshalb: **erst** die Runde lesen
+(solange der Behälter noch aktiv ist), **dann** buchen, **dann** gutschreiben.
+Nach der Rückgabe ist der Behälter in einer anderen Liste und der Schlüssel
+nicht mehr zu ermitteln.
+
+## Was die Oberfläche zeigen muss
+
+- `returnDeadline` kommt von Vytal und ist maßgeblich. Nicht selbst
+  `Ausleihe + 14 Tage` rechnen — `LOAN_DAYS` ist nur Anzeigetext.
+- Die Liste **`sold`**: Behälter, die nicht zurückkamen und abgerechnet
+  wurden. Wer das versteckt, lässt es die Leute vom Kontoauszug erfahren.
+- `creditsOnReturn` ist **Vytals** Guthaben, nicht unsere Münzen. Nie
+  vermischen.
+- `co2SavedKg` ist eine Messung des Partners — die einzige Zahl auf dem
+  Schirm, unter der keine Annahme stehen muss. Aber: nur Behälter, die
+  **unsere** Station ausgegeben hat und die zurückkamen.
+
+## Codes nie im Browser prüfen
+
+Die Doku sagt es ausdrücklich: Es sind viele Alt-Formate im Umlauf, die
+Prüfung gehört ins Backend. Die App schickt den **rohen** Decode an
+`POST /api/vytal/scan` und entscheidet nichts selbst. `CheckCode` antwortet
+mit `type: Container | User | Invalid` — ein Vytal-*Nutzercode* ist etwas, das
+jemand tatsächlich vor die Kamera hält, und wird eigens abgefangen.
+
+## Wenn der Demo-Store abläuft
+
+Die fünf Demo-Stores waren für die zwei Hackathon-Tage gebührenfrei. Danach
+gelten die normalen Regeln: 14 Tage Leihfrist, danach eine Ausgleichsgebühr
+(`overduePrice`, Liste `sold`). Vor dem nächsten Einsatz mit Stephan klären,
+ob Store B noch frei ist — sonst laufen echte Kosten auf.
