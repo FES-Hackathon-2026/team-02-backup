@@ -1,6 +1,7 @@
 import { t, getLocale } from './../lib/i18n'
 import { WeeklyGoal } from '../components/ReferenceActions'
 import { useState } from 'react'
+import DashboardTour from '../components/DashboardTour'
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
@@ -12,6 +13,8 @@ export default function Start() {
   const navigate = useNavigate()
   const { me, signOut } = useSession()
   const [error, setError] = useState('')
+  // Preview mode: show the tour on every dashboard visit, regardless of saved completion.
+  const [tourOpen, setTourOpen] = useState(true)
   const quests = useApi<{ quests: Quest[] }>('/api/quests')
   const market = useApi<{ items: MarketItem[] }>('/api/market')
   const season = useApi<Season>('/api/season')
@@ -32,10 +35,11 @@ export default function Start() {
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
   return <Screen title={t(`Hallo ${me.name}`)} sub={t("Was möchtest du heute erledigen?")} tabs action={
-    <span className="row"><button className="icobtn" aria-label={t("Einstellungen")} onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={t(`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`)}>
+    <span className="row"><button data-dashboard-tour="settings" className="icobtn" aria-label={t("Einstellungen")} onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button data-dashboard-tour="notifications" className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={t(`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`)}>
       <Icon name="bell" size={21} />{t(!!notices.data?.unread && <span className="notification-dot" />)}
     </button></span>
   }>
+    {tourOpen && <DashboardTour onFinish={() => setTourOpen(false)} />}
     <div className="card row home-progress">
       <button className="level-water" onClick={() => navigate('/wirkung')} aria-label={t(`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`)}>
         <span className="level-water-tank" aria-hidden="true">
@@ -66,6 +70,7 @@ export default function Start() {
     </section>
     {t((quests.error || market.error || kalender.error || impact.error || season.error || notices.error) && <div className="card tight" role="alert"><p className="sm">{t("Einige Daten konnten nicht geladen werden.")}</p><button className="btn sm" onClick={() => { quests.reload(); market.reload(); kalender.reload(); impact.reload(); season.reload(); notices.reload() }}>{t("Erneut laden")}</button></div>)}
     {t(city && <button className="card sky" onClick={() => navigate('/stadtteile')}><div className="between"><p className="lbl">{t("Frankfurt diese Woche")}</p><Tag von="api" /></div><p className="sm"><b className="num" style={{ fontSize: 24 }}>{t(city.weekXp.toLocaleString(getLocale()))}</b> {t(" / ")}{t(city.goalXp.toLocaleString(getLocale()))} {t(" XP")}</p><Bar value={city.weekXp} max={city.goalXp} /></button>)}
+    <button className="text-link dashboard-tour-replay" onClick={() => setTourOpen(true)}><Icon name="info" size={18} />{t('Dashboard kennenlernen')}</button>
     <details className="card home-more"><summary>{t("Weitere Angebote")}</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
       <button className="btn" onClick={() => navigate('/essen')}><Icon name="leaf" size={18} />{t("Essen retten")}</button>
       <button className="btn" onClick={() => navigate('/wissen')}><Icon name="info" size={18} />{t("Was mache ich damit?")}</button>

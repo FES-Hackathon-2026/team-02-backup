@@ -26,9 +26,9 @@ export default function TabBar() {
   return (
     <nav className="tabs" aria-label={t("Hauptbereiche")}>
       {t(TABS.map((tab) => (
-        <NavLink key={tab.to} to={tab.to} end={tab.end} className="tab" aria-label={t(tab.label)}>
+        <NavLink key={tab.to} to={tab.to} end={tab.end} className="tab" data-dashboard-tour={tab.icon === 'quest' ? 'quests' : tab.icon === 'market' ? 'market' : tab.icon === 'leaf' ? 'impact' : undefined} aria-label={t(tab.label)}>
           {t(tab.fab ? (
-            <><span className="tab-fab">
+            <><span className="tab-fab" data-dashboard-tour="scan">
               <Icon name={tab.icon} size={24} stroke={1.9} />
             </span><span className="tab-label">{t(tab.label)}</span></>
           ) : (

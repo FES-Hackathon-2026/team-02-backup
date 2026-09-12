@@ -371,5 +371,20 @@
   "Mehrweg ist gerade nicht nutzbar": "Reusables are currently unavailable",
   "Alles ins Bild, was mit weg soll — auch Kleinteile": "Include everything for collection, including small items",
   "Fundstück mit etwas Umgebung aufnehmen": "Photograph the item with some of its surroundings",
-  "Objekt möglichst formatfüllend aufnehmen": "Fill the frame with the object"
+  "Objekt möglichst formatfüllend aufnehmen": "Fill the frame with the object",
+  "Hier beginnt dein Scan": "Start your scan here",
+  "Tippe auf die Kamera, um einen Gegenstand zu fotografieren. ReMain zeigt dir passende Möglichkeiten zum Weitergeben, Reparieren oder Entsorgen.": "Tap the camera to photograph an item. ReMain shows you ways to pass it on, repair it or dispose of it.",
+  "Abholungen und Neuigkeiten": "Collections and updates",
+  "Über die Glocke findest du deine Mitteilungen. Hier prüfst du kommende Transporte, planst eine Abholung und behältst deine Termine im Blick.": "The bell opens your notifications. Check upcoming transport, plan a collection and keep track of your dates here.",
+  "Hilf in deiner Nachbarschaft": "Help your neighbourhood",
+  "Die Flagge führt zu den Quests. Entdecke gemeldete Stellen in deiner Nähe und hilf beim Aufräumen.": "The flag opens quests. Find reported locations nearby and help clean them up.",
+  "Weitergeben statt wegwerfen": "Pass it on instead of throwing it away",
+  "Im Reparaturmarkt kannst du Dinge anbieten, nach Angeboten suchen und Hilfe bei einer Reparatur finden.": "Use the repair market to offer items, browse listings and find help with repairs.",
+  "Sieh, was du bewirkst": "See your impact",
+  "Das Blatt öffnet deine Wirkung. Dort findest du deine Aktionen, Fortschritte und Nachweise.": "The leaf opens your impact page. Find your actions, progress and evidence there.",
+  "Mach ReMain zu deiner App": "Make ReMain yours",
+  "Hier änderst du dein Profil, die Sprache und die Darstellung. Du bist startklar — probiere deinen ersten Scan aus.": "Change your profile, language and appearance here. You’re ready to go — try your first scan.",
+  "Dashboard kennenlernen": "Show dashboard tour",
+  "{0} von {1}": "{0} of {1}",
+  "Verstanden": "Got it"
 }
