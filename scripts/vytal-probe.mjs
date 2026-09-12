@@ -68,6 +68,14 @@ try {
   console.log(`merchant_id  ${claims.vytal_merchant_id}`)
   console.log(`issued       ${claims.created_at}`)
   console.log(`expires      ${claims.exp === 0 ? 'never (exp: 0)' : claims.exp}`)
+  // The claim that decides whether this token may create users at all. It is
+  // printed because `service: "other"` cost a day once: every endpoint below
+  // works with such a token except registration, which fails as
+  // ServiceNameRequired and takes the whole Mehrweg screen down with it.
+  console.log(
+    `service      ${claims.service}` +
+      (claims.service === 'other' ? red('  ← cannot create users; ask Vytal to reissue') : ''),
+  )
 } catch {
   console.log(red('Token is not a readable JWT — check it was pasted whole.'))
 }
@@ -171,7 +179,8 @@ if (arg('--register')) {
       dim(
         '  Not fixable from our side: query, body and header spellings were all\n' +
           '  tried and all rejected, while other endpoints accept the same token.\n' +
-          '  Ask Vytal to reissue it with a real `service` claim (ours says "other").\n',
+          '  Ask Vytal to reissue it with a real `service` claim — that is exactly\n' +
+          '  what fixed it on 12.09.2026, when "other" became "qnips".\n',
       ),
     )
   }

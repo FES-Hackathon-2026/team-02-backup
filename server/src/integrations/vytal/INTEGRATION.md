@@ -109,6 +109,52 @@ Prüfung gehört ins Backend. Die App schickt den **rohen** Decode an
 mit `type: Container | User | Invalid` — ein Vytal-*Nutzercode* ist etwas, das
 jemand tatsächlich vor die Kamera hält, und wird eigens abgefangen.
 
+## Der `service`-Claim im Token
+
+Der Store-Token trägt ein Feld, das nirgends in der Doku steht und das
+trotzdem darüber entscheidet, ob die Anbindung überhaupt läuft: **`service`**.
+
+Der erste Token für Store B trug `service: "other"`. Damit beantwortete
+`ReferencedAnonUser/Create` **jeden** Versuch mit 400 `ServiceNameRequired` —
+egal ob der Dienst als Query, im Body oder als Header mitging. Alle anderen
+Endpunkte akzeptierten genau denselben Token anstandslos. Weil aber jede
+Vytal-Route zuerst die Vytal-Identität der Person braucht, stand damit der
+ganze Mehrweg-Schirm still.
+
+Am 12.09.2026 hat Vytal den Token mit `service: "qnips"` neu ausgestellt.
+Ohne eine Zeile Änderung auf unserer Seite legt `Create` seitdem Konten an.
+
+> Merke: `ServiceNameRequired` ist **kein** Fehler in unserer Anfrage.
+> Payload dekodieren, `service` lesen, bei Vytal einen neuen Token holen.
+> `scripts/vytal-probe.mjs` gibt den Claim jetzt im Kopf mit aus.
+
+## Live geprüft am 12.09.2026
+
+Mit dem neuen Token gegen `merchantapi.vytal.org`, über unsere eigenen Routen:
+
+| Endpunkt | Antwort |
+|---|---|
+| `ReferencedAnonUser/Create` | `success: true` + UUID |
+| `GetUserContainers` | 200 — `active` / `returned` / `sold`, alle leer |
+| `GetUserCo2SavingsForStore` | 200 — `co2SavedKg: 0` |
+| `GetStoreStock` | 200 — **`[]`** |
+| `CheckCode` | 200 auf einen echten Behälter (`HTTP://VYT.TO/KYBOG9`) |
+| `Checkout` | `result: "Success"` — echter Becher, echte Ausgabe |
+
+**`GetStoreStock` ist keine Voraussetzung.** Das Regal meldet `[]`, und die
+Ausgabe lief trotzdem durch: Behälter `Cup M 300ml` / `KYBOG9`, gebucht auf
+„[Demo] FES Hackathon – Store B". Wer aus der leeren Bestandsliste schließt,
+Mehrweg gehe nicht, schließt falsch — gescannt wird der Behälter in der Hand,
+nicht ein Eintrag in einer Liste.
+
+Was damit **noch nicht** geprüft ist: `ContainerReturn` **über unsere Route**.
+Der Becher oben wurde 16 Sekunden nach der Ausgabe zurückgegeben — aber nicht
+durch ReMain: in `vytal_transactions` steht dazu keine Zeile mit
+`kind = 'return'`. Damit ist auch `award()` auf diesem Weg noch nie live
+gelaufen, und der Zyklus hat keine 20 XP gutgeschrieben. Unsere Hälfte prüft
+`scripts/vytal-selftest.mjs` gegen einen Stellvertreter der API — durch die
+echten Routen, das echte Ledger.
+
 ## Wenn der Demo-Store abläuft
 
 Die fünf Demo-Stores waren für die zwei Hackathon-Tage gebührenfrei. Danach

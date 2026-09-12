@@ -134,7 +134,11 @@ export default async function vytalRoutes(app) {
     try {
       const stores = q
         ? await vytal.stores.search({ query: String(q), lat: at.lat, lon: at.lon, limit: 25 })
-        : await vytal.stores.nearby({ lat: at.lat, lon: at.lon, radiusM: num(r, 5000) * 1000, limit: 25 })
+        // `r` is kilometres, hence the *1000. The default was 5000 — i.e. a
+        // 5000 km proximity, the metre default of `nearby()` run through the
+        // conversion a second time. Harmless only because the directory
+        // sorts by distance and the limit binds long before the radius does.
+        : await vytal.stores.nearby({ lat: at.lat, lon: at.lon, radiusM: num(r, 5) * 1000, limit: 25 })
 
       // Return boxes are a Vytal store type, but there are none deployed in
       // the Frankfurt area — checked against the live directory. Saying so

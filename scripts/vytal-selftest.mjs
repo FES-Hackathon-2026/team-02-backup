@@ -2,11 +2,12 @@
 /**
  * Vytal integration — self-test against a simulated partner.
  *
- * The live demo store cannot currently create users (`ServiceNameRequired`)
- * and holds no stock, so the one journey that matters — take a container,
- * bring it back, get paid once — cannot be driven against the real API. This
- * script drives it against a stand-in *of the API*, through the real routes,
- * the real ledger and the real database.
+ * Registration and checkout have both been driven against the real API since
+ * the token was reissued on 12.09.2026 — a real cup really was handed out.
+ * The half that has never run live is the half that pays: a return booked
+ * through our own route, and the `award()` that follows it exactly once.
+ * This script drives that against a stand-in *of the API*, through the real
+ * routes, the real ledger and the real database.
  *
  * That distinction is the whole point. Nothing here reimplements our logic:
  * `fetch` is intercepted at the boundary and everything above it — the route
