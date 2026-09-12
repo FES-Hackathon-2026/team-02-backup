@@ -101,6 +101,28 @@ a {
   letter-spacing: -0.02em;
 }
 
+/* A back screen stacks the chevron over the heading so both line up with the
+   body's 18px gutter. The negative margins pull the bare button's 22px glyph
+   out to that gutter (its box is 32x44 around it) and stop the extra row
+   from costing a full 44px of sticky header; the tap target keeps its size. */
+.nav-stack {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.nav-stack .nav-t {
+  flex: none;
+  align-self: stretch;
+}
+
+.navback {
+  margin: -7px 0 -5px -5px;
+}
+
 .nav-t small {
   display: block;
   font-size: 14px;
@@ -446,6 +468,17 @@ a.card {
   border-radius: 12px;
   width: auto;
   padding: 0 14px;
+}
+
+/* A button is full-width because most of them sit alone in a column. Inside
+   a flex row that default is a trap: `width: 100%` resolves as the flex
+   basis, so a plain button claims the entire line and a `grow` sibling —
+   basis 0, min-width 0 — is squeezed to nothing. It cost the Mehrweg confirm
+   sheet its "Mitnehmen" button. In a row a button is as wide as its label,
+   and takes the rest of the line only when it asks with `.grow`. */
+.row > .btn,
+.between > .btn {
+  width: auto;
 }
 
 .btn:disabled {
@@ -912,6 +945,205 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 
 /* Last and quietest: the fallback, not the offer. */
 .share-copy { width: 100%; margin-top: 2px; }
+
+/* The dino, floating clear of the tab bar's raised camera button.
+   Right-hand side on purpose: the centre belongs to the one hero action, and
+   two round buttons on the same axis read as a mistake. Sits above the safe
+   area so it never lands under a home indicator. */
+/* Anchored to the 480px app column, not the browser window.
+   `position: fixed; right: 16px` pinned it to the far edge of a desktop
+   viewport, half a screen away from the app it belongs to. The tab bar
+   already solves this — fixed, centred on the column, capped at its width —
+   so this uses the same frame and sits inside its right edge. */
+.agent-fab {
+  position: fixed;
+  left: 50%;
+  margin-left: calc(240px - 16px - 48px); /* half the column, less gutter and button */
+  bottom: calc(var(--tabbar-h) + 14px + env(safe-area-inset-bottom));
+  z-index: 41;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--sky-line);
+  background: var(--card);
+  color: var(--blue-deep);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 18px rgba(31, 92, 130, .22);
+}
+.agent-fab:hover { background: var(--sky2); }
+
+/* FES colours, taken from the palette rather than hard-coded: --gold is the
+   reward yellow and --alert the warning red, so the mascot belongs to the
+   same set of colours as everything around it and themes with them.
+   The button goes yellow so the dino reads at 27px — a yellow silhouette on
+   a white circle is a pale shape at this size. */
+.agent-fab {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 6px 18px rgba(227, 168, 28, .34);
+}
+.agent-fab:hover { background: var(--gold); filter: brightness(1.06); }
+
+/* Draggable, which needs the browser to stop claiming the gesture.
+   The global `touch-action: manipulation` lets a touch scroll the page, so a
+   drag on this button produced one pointermove and then nothing — it appeared
+   to jump once and stick. `none` hands every move to us instead.
+   `user-select` stops a drag turning into a text selection on desktop. */
+.agent-fab {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.agent-fab:active { cursor: grabbing; }
+.dino-body { fill: var(--alert); }
+.dino-eye { fill: var(--gold); }
+
+/* On any surface that is not the yellow button, the colours swap back. */
+.dino-mark.on-light .dino-body { fill: var(--gold); }
+.dino-mark.on-light .dino-eye { fill: var(--alert); }
+
+/* Narrower than the column: fall back to the viewport's own right gutter. */
+@media (max-width: 512px) {
+  .agent-fab {
+    left: auto;
+    right: 16px;
+    margin-left: 0;
+  }
+}
+
+/* A screen with no tab bar has no clearance to leave. */
+.app:not(.has-tabs) .agent-fab {
+  bottom: calc(18px + env(safe-area-inset-bottom));
+}
+
+.agent-groups { display: flex; flex-direction: column; gap: 14px; }
+.agent-group-title { margin: 0 0 7px; }
+.agent-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.agent-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+}
+.agent-item .xs { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-item:hover { border-color: var(--sky-line2); background: var(--sky2); }
+
+/* ---- the dino, as a conversation ---------------------------------- */
+
+.agent-chat { display: flex; flex-direction: column; gap: 11px; }
+
+/* A window, not a page: the thread scrolls inside the sheet so the tools
+   and the input never leave the screen while reading. */
+.agent-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 34vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.agent-line { max-width: 86%; align-self: flex-start; }
+.agent-line p {
+  margin: 0;
+  padding: 9px 12px;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--sky2);
+  border: 1px solid var(--sky-line);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.agent-line.you { align-self: flex-end; }
+.agent-line.you p {
+  border-radius: 14px 14px 4px 14px;
+  background: var(--blue-deep);
+  border-color: var(--blue-deep);
+  color: var(--on-blue);
+}
+/* A generated sentence is labelled as one. The rules behind it are ours,
+   but the wording is not, and those are different claims. */
+.agent-source {
+  display: block;
+  margin: 4px 0 0 2px;
+  color: var(--ink3);
+}
+
+.agent-entry-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 5px 0 0 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue-deep);
+  font-weight: 700;
+}
+
+/* Common tools: one scrolling row, because six chips that wrap push the
+   input off a short screen. */
+.agent-tools {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.agent-tools::-webkit-scrollbar { display: none; }
+.agent-tool {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 19px;
+  background: var(--card);
+  color: var(--ink);
+  font-weight: 600;
+}
+.agent-tool:hover { border-color: var(--sky-line2); background: var(--sky2); }
+
+.agent-input { display: flex; align-items: center; gap: 7px; }
+.agent-input .field { flex: 1; min-width: 0; }
+.agent-send, .agent-mic {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--blue-deep);
+}
+.agent-send:disabled { opacity: .4; }
+
+/* Listening is a state worth seeing from across a room. */
+.agent-mic.on {
+  background: var(--alert);
+  border-color: var(--alert);
+  color: var(--on-alert);
+  animation: agent-pulse 1.3s ease-in-out infinite;
+}
+@keyframes agent-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(176, 58, 43, .45); }
+  50% { box-shadow: 0 0 0 7px rgba(176, 58, 43, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-mic.on { animation: none; }
+}
+
+.agent-all { margin-top: 2px; }
+.agent-all summary { padding: 6px 0; }
+.agent-all .agent-groups { margin-top: 10px; }
 
 @keyframes share-turn {
   from { transform: rotate(-26deg); opacity: 0; }
