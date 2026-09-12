@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Bar, Coin, Tag, Thumb } from '../components/ui'
-import { useApi, type FesCalendar, type PickupNotices, type MarketItem, type Quest, type Season, type Impact } from '../lib/client'
+import { useApi, type FesCalendar, type PickupNotices, type MarketItem, type Quest, type Season, type Impact, type FoodNearby, type VytalState, type VytalStatus } from '../lib/client'
 import { useSession } from '../lib/session'
 
 export default function Start() {
@@ -16,17 +16,24 @@ export default function Start() {
   const season = useApi<Season>('/api/season')
   const impact = useApi<Impact>('/api/impact')
   const kalender = useApi<FesCalendar>('/api/fes/calendar')
+  const food = useApi<FoodNearby>('/api/foodsharing/nearby')
+  const reusable = useApi<VytalState>('/api/vytal/containers')
+  const reusableStatus = useApi<VytalStatus>('/api/vytal/status')
   const notices = useApi<PickupNotices>('/api/fes/notifications')
   if (!me) return null
   const quest = quests.data?.quests[0]
   const item = market.data?.items[0]
   const next = kalender.data?.dates.find(d => !d.own)
+  const foodTop = food.data?.items.find(item => !item.locked)
+  const activeContainers = reusable.data?.active ?? []
+  const overdue = activeContainers.some(item => item.overdue)
+  const nextReturn = activeContainers.reduce<number | null>((value, item) => item.hoursLeft === null ? value : value === null ? item.hoursLeft : Math.min(value, item.hoursLeft), null)
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
   return <Screen title={`Moin, ${me.name}`} sub={`Level ${me.level} · ${me.district.name}`} tabs action={
-    <button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`}>
+    <span className="row"><button className="icobtn" aria-label="Einstellungen" onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`}>
       <Icon name="bell" size={21} />{!!notices.data?.unread && <span className="notification-dot" />}
-    </button>
+    </button></span>
   }>
     <div className="card row home-progress">
       <button className="level-water" style={{ background: `linear-gradient(to top, var(--blue-deep) ${progress}%, var(--sky) ${progress}%)` }} onClick={() => navigate('/wirkung')} aria-label={`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`}><span>{me.level}</span></button>
@@ -38,6 +45,8 @@ export default function Start() {
       <span className="grow"><b className="h2">Foto machen</b><span className="row hero-modes"><Icon name="truck" size={16} /><Icon name="pin" size={16} /><Icon name="info" size={16} /><span className="xs">Sperrmüll · Fund · Frage</span></span></span><Icon name="chevron" size={20} />
     </button>
     <WeeklyGoal />
+    <button className="card tight row" onClick={() => navigate('/essen')}><Thumb icon="leaf" /><span className="grow"><b className="sm">Essen retten</b><span className="xs mut" style={{ display: 'block' }}>{food.error ? 'foodsharing antwortet gerade nicht — erneut versuchen' : foodTop ? `${foodTop.title}${foodTop.hoursLeft == null ? '' : ` · noch ${Math.max(1, Math.round(foodTop.hoursLeft))} h`}` : 'Offene Angebote und Fairteiler entdecken'}</span></span><Icon name="chevron" size={17} /></button>
+    {reusableStatus.data?.configured && <button className="card tight row" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><span className="grow"><b className="sm">{activeContainers.length ? `${activeContainers.length} Mehrweg-Behälter offen` : 'Mehrweg statt Einweg'}</b><span className="xs mut" style={{ display: 'block', color: overdue ? 'var(--alert)' : undefined }}>{reusable.error ? 'Vytal-Konto prüfen — Details öffnen' : overdue ? 'Rückgabe überfällig' : nextReturn !== null ? `Rückgabe in ${Math.max(1, Math.round(nextReturn))} Stunden` : `Ausgabe und Rücknahme an der ${reusable.data?.station ?? 'ReMain-Station'}`}</span></span><Icon name="chevron" size={17} /></button>}
     {next && <button className="card tight row" onClick={() => navigate('/kalender')}><Thumb icon="calendar" /><span className="grow"><b className="sm">{next.titel}</b><span className="xs mut" style={{ display: 'block' }}>{next.label} · {next.window}</span></span><Tag von="simulated" /><Icon name="chevron" size={17} /></button>}
     <section><div className="between" style={{ marginBottom: 9 }}><p className="lbl">In deiner Nähe</p><button className="text-link" onClick={() => navigate('/quests')}>Karte</button></div>
       <div className="nearby-grid">

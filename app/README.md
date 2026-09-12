@@ -20,14 +20,48 @@ npm run dev
 * **Phone on the same wifi:** `npm run dev` already binds to `--host`; open
   `http://<your-lan-ip>:5173` (find it with `ipconfig` on Windows, `ifconfig` on macOS/Linux).
 
-Without a key the app still starts and asks for one under ⚙ → API key. Keys
-entered there are stored in `localStorage` for that browser only.
+The foodsharing team key now lives on the server (`server/.env`), not in the
+client bundle — see the deployment notes below.
 
 ```bash
 npm run build       # type-check + production build into dist/
 npm run preview     # serve the production build exactly as Pages will
 npm run typecheck   # types only, no build
 ```
+
+## Signing in
+
+Two ways in, one session out:
+
+| | What it asks for | Where the progress lives |
+|---|---|---|
+| **Mit Google anmelden** | a Google account | on the account — follows the person to their next device |
+| **Ohne Konto starten** | a name and a Stadtteil | in this browser's cookie |
+
+Google sign-in runs through **Firebase Authentication**, and setting it up
+takes about ten minutes: **[docs/FIREBASE.md](../docs/FIREBASE.md)**.
+
+Leave `VITE_FIREBASE_*` unset and the app is exactly what it was before — the
+Google button never renders, and Vite drops the whole branch at build time, so
+an unconfigured build ships **zero bytes** of the Firebase SDK. A configured
+one loads it lazily, on the press of the button, not on first paint.
+
+The Firebase ID token never becomes the session. The server verifies it
+against Google's published keys and then sets its own signed cookie, the same
+one the guest sign-in gets — so every route behind the gate has exactly one
+way of knowing who is calling. There is **no service-account secret** in this
+project; the server needs only the (public) project id.
+
+A guest who later signs in with Google keeps their XP: the existing row is
+upgraded in place rather than a second one created.
+
+Sign-out clears **both** halves — our cookie and Firebase's local state.
+Clearing only ours is the classic logout bug, where the app forgets you but
+Google does not.
+
+Everything about the account lives under **⚙ → Einstellungen**: profile
+picture and e-mail, display name, Stadtteil, light/dark theme, the
+integration register, sign-out, and account deletion.
 
 ## Android and iOS
 
@@ -62,7 +96,7 @@ app/
     components/
       TabBar.tsx          bottom navigation
       OpportunityCard.tsx one row in the discovery list
-      SettingsSheet.tsx   API key entry
+      GoogleButton.tsx    "Mit Google anmelden", to Google's brand spec
     screens/
       Discover.tsx        ✅ loads live data and ranks it
       Receipts.tsx        ⬜ placeholder — see TODO(#3)

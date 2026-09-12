@@ -11,6 +11,8 @@ import jpeg from 'jpeg-js'
 const dir = mkdtempSync(join(tmpdir(), 'remain-screen-flows-'))
 process.env.DATABASE_FILE = join(dir, 'test.db')
 process.env.SESSION_SECRET = 'screen-flow-tests'
+process.env.VYTAL_JWT = ''
+process.env.VYTAL_TOKEN = ''
 const { db, one, run } = await import('../src/db.js')
 const app = Fastify()
 await app.register(cookie)
@@ -31,7 +33,7 @@ async function call(method, url, payload, user = 1, expected = 200) {
 after(async () => { await app.close(); db.close(); rmSync(dir, { recursive: true, force: true }) })
 
 test('screen APIs expose empty states and live account totals without broken routes', async () => {
-  for (const url of ['/api/me', '/api/quests', '/api/quests/mine', '/api/market', '/api/market/mine', '/api/market/defects', '/api/fes/categories', '/api/fes/calendar', '/api/fes/notifications', '/api/impact', '/api/season', '/api/coupons', '/api/vytal/containers', '/api/fes/abc?category=papier']) await call('GET', url)
+  for (const url of ['/api/me', '/api/quests', '/api/quests/mine', '/api/market', '/api/market/mine', '/api/market/defects', '/api/fes/categories', '/api/fes/calendar', '/api/fes/notifications', '/api/impact', '/api/season', '/api/coupons', '/api/vytal/status', '/api/fes/abc?category=papier']) await call('GET', url)
 })
 
 test('scan photo → market offer → reservation → both confirmations → receipt and balance', async () => {
@@ -86,17 +88,12 @@ test('quest report → claim → declared journey → photo proof → peer revie
   } else assert.fail(`Expected independent review for absent before-photo; got ${submitted.submission.verdict}`)
 })
 
-test('reusable loan → return → receipt; repeat return cannot duplicate reward', async () => {
-  const state = await call('GET', '/api/vytal/containers', undefined, 4)
-  const partner = state.partners.find(p => p.accepts.includes('bowl_1000'))
-  assert.ok(partner)
-  const borrowed = await call('POST', '/api/vytal/borrow', { partnerId: partner.partner_id, containerType: 'bowl_1000' }, 4)
-  const payload = { containerId: borrowed.container.container_id, partnerId: partner.partner_id }
-  const returned = await call('POST', '/api/vytal/returns', payload, 4)
-  assert.ok(returned)
+test('unconfigured live Vytal returns an explicit unavailable state without awarding XP', async () => {
+  const status = await call('GET', '/api/vytal/status', undefined, 4)
+  assert.equal(status.configured, false)
   const before = (await call('GET', '/api/me', undefined, 4)).xp
-  const repeat = await call('POST', '/api/vytal/returns', payload, 4)
-  assert.equal(repeat.repeat, true)
+  await call('GET', '/api/vytal/containers', undefined, 4, 503)
+  await call('POST', '/api/vytal/scan', { code: 'HTTP://VYT.TO/TEST', intent: 'return' }, 4, 503)
   assert.equal((await call('GET', '/api/me', undefined, 4)).xp, before)
 })
 
@@ -206,4 +203,29 @@ test('crossing a level through quiz credit awards the level bonus once with matc
   assert.equal(receipt.credit.xp, 50)
   await call('POST', '/api/knowledge/quiz', { answers: [0, 1, 2] }, user)
   assert.equal((await call('GET', '/api/me', undefined, user)).xp, 255)
+})
+
+
+test('account deletion cleans collection, referral, journey and partner records', async () => {
+  const user = await call('POST', '/api/session', { name: 'Delete Test', districtId: 'bockenheim' }, 1, 201)
+  const userId = user.id
+  const stamp = new Date().toISOString()
+  run("INSERT INTO pickups(id,user_id,category,volume_m3,district_id,address,slot_date,status,reference,created_at) VALUES ('delete-pickup',?,'moebel',1,'bockenheim','Testweg 1','2099-01-01','booked','DELETE',?)", userId, stamp)
+  run("INSERT INTO pickup_items VALUES ('delete-item','delete-pickup',NULL,'moebel',1,?)", stamp)
+  run("INSERT INTO pickup_preferences(pickup_id) VALUES ('delete-pickup')")
+  run("INSERT INTO pickup_requests VALUES (?,'delete-request','{}','delete-pickup')", userId)
+  run("INSERT INTO pickup_notifications VALUES ('delete-note',?,'delete-pickup','delete-event','booked','Test','2099-01-01T10:00',NULL,?)", userId, stamp)
+  run("INSERT INTO pickup_contacts(pickup_id,full_name) VALUES ('delete-pickup','Delete Test')")
+  run("INSERT INTO reward_events VALUES ('delete-reward',?,'Test',10,'{}',?)", userId, stamp)
+  run('INSERT INTO referrals VALUES (?,1,?)', userId, stamp)
+  run("INSERT INTO vytal_users VALUES (?,'test-vytal','test-reference',?)", userId, stamp)
+  run("INSERT INTO vytal_transactions(id,user_id,kind,qr_code,created_at) VALUES ('delete-tx',?,'return','test-qr',?)", userId, stamp)
+  await call('DELETE', '/api/me', undefined, userId)
+  assert.equal(one('SELECT id FROM users WHERE id = ?', userId), undefined)
+  assert.equal(one("SELECT id FROM pickups WHERE id = 'delete-pickup'"), undefined)
+  assert.deepEqual(db.pragma('foreign_key_check'), [])
+})
+
+test('demo switching rejects real accounts and drivers', async () => {
+  await call('POST', '/api/session/switch', { userId: 1 }, 2, 403)
 })

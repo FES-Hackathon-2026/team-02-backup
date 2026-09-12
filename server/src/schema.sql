@@ -26,8 +26,25 @@ CREATE TABLE IF NOT EXISTS users (
   district_id  TEXT NOT NULL REFERENCES districts(id),
   role         TEXT NOT NULL DEFAULT 'citizen',   -- citizen | business
   is_demo      INTEGER NOT NULL DEFAULT 0,        -- seeded, not a real sign-up
-  created_at   TEXT NOT NULL
+  created_at   TEXT NOT NULL,
+
+  -- Identity. 'guest' is the name-and-Stadtteil sign-in that needs no
+  -- account; 'google' is a Firebase-verified Google account. A guest row
+  -- becomes a google row in place when the same device signs in, which is
+  -- what keeps the XP earned before signing in.
+  auth_provider TEXT NOT NULL DEFAULT 'guest',    -- guest | google
+  -- Firebase's `sub` claim: stable for the life of the account and the only
+  -- thing we trust to identify a returning person.
+  google_uid    TEXT,
+  email         TEXT,
+  photo_url     TEXT,
+  last_seen_at  TEXT
 );
+
+-- Partial, so the many guest rows with a NULL uid do not collide. Two rows
+-- can never claim the same Google account.
+CREATE UNIQUE INDEX IF NOT EXISTS users_google_uid
+  ON users(google_uid) WHERE google_uid IS NOT NULL;
 
 -- Real Frankfurt facilities from OpenStreetMap. Not invented, not editable
 -- by the app — refreshed by scripts/fetch-places.mjs.
@@ -284,3 +301,46 @@ CREATE TABLE IF NOT EXISTS referrals (
   created_at TEXT NOT NULL,
   CHECK(referred_id <> referrer_id)
 );
+-- --------------------------------------------------------------------
+-- Vytal Mehrweg
+-- --------------------------------------------------------------------
+
+-- Our person <-> their anonymous user.
+--
+-- Vytal's `ReferencedAnonUser/Create` is documented as "call only once per
+-- user": it mints a UUID against a reference string we choose and that UUID
+-- is then the identity for every later call. Losing this row means minting a
+-- second Vytal user for the same person, who would then hold containers the
+-- app can no longer see — so it is a table, not a cache.
+--
+-- Note what is NOT sent: the reference is `remain-<id>`, an opaque number.
+-- No name, no mail address. The Vytal user stays genuinely anonymous.
+CREATE TABLE IF NOT EXISTS vytal_users (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id),
+  vytal_user_id TEXT NOT NULL,
+  reference     TEXT NOT NULL,   -- what we sent as ?userId=
+  created_at    TEXT NOT NULL
+);
+
+-- One scan, one intent, one `transactionId`.
+--
+-- Checkout and ContainerReturn both take an optional `transactionId` and are
+-- idempotent when it is provided. We mint it when the container is scanned
+-- and reuse it for the call, so a retry after a timeout cannot book the same
+-- container twice on Vytal's side. The row also records what came back, which
+-- is what makes a failed scan explainable afterwards instead of invisible.
+CREATE TABLE IF NOT EXISTS vytal_transactions (
+  id           TEXT PRIMARY KEY,   -- the UUID sent to Vytal as transactionId
+  user_id      INTEGER NOT NULL REFERENCES users(id),
+  kind         TEXT NOT NULL,      -- checkout | return
+  qr_code      TEXT NOT NULL,      -- raw scanned string, unparsed
+  container_id TEXT,               -- Vytal container UUID, once CheckCode knows it
+  short_id     TEXT,
+  status       TEXT NOT NULL DEFAULT 'pending',  -- pending | done | failed
+  result       TEXT,               -- Vytal's own `result` field, verbatim
+  event_key    TEXT,               -- the ledger key, when this one was credited
+  created_at   TEXT NOT NULL,
+  settled_at   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS vytal_tx_user ON vytal_transactions(user_id, created_at DESC);

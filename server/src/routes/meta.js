@@ -39,9 +39,9 @@ const INTEGRATIONS = [
   {
     id: 'vytal',
     name: 'Vytal Mehrweg',
-    status: 'pending',
-    what: 'Ausleihe, Rückgabe, Behälter-ID, Partner, Status',
-    seam: 'server/src/integrations/vytal — Ereignisform ist schon die echte; mit Sandbox-Key nur den Adapter tauschen (Phase 9)',
+    status: 'live',
+    what: 'Konto-Anlage, Code-Prüfung, Ausgabe, Rücknahme, Behälterliste, CO₂ je Person, Filialverzeichnis',
+    seam: 'server/src/integrations/vytal — Merchant-API mit Store-Token; ReMain ist selbst eine Vytal-Station',
   },
   {
     id: 'fes-pickup',

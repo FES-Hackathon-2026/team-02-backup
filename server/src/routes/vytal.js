@@ -1,4 +1,6 @@
-import { all, one } from '../db.js'
+import { randomUUID } from 'node:crypto'
+
+import { all, now, one, run } from '../db.js'
 import { award } from '../engine/award.js'
 import { BASE_XP } from '../engine/rewards.js'
 import * as fs from '../integrations/foodsharing/client.js'
@@ -10,19 +12,16 @@ import { requireUser } from '../session.js'
  * Phase 9 — foodsharing und Vytal.
  *
  * Both partner interfaces live here because this is phase 9's single
- * registration point: `server/src/index.js` is frozen while several sessions
- * build at once, and it already registers exactly one file per phase. Hence
- * one file, two prefixes:
+ * registration point: `server/src/index.js` registers exactly one file per
+ * phase. Hence one file, two prefixes:
  *
- *   /api/vytal/*        Mehrweg — nachgebaut, jeder Wert „simuliert"
+ *   /api/vytal/*        Mehrweg — echt, Merchant-API, jeder Wert „bestätigt"
  *   /api/foodsharing/*  Essen retten — echt, jeder Wert „bestätigt"
  *
  * `/api/food/*` stays what it was: the read-only proxy in routes/food.js.
  * The writes are here instead, and the server makes them itself rather than
- * letting the browser report a pickup it claims to have done. That is the
- * difference between a receipt and a promise: the `pickup_id` and the
- * `picked_up_at` in the ledger came out of foodsharing's own answer, in this
- * process, one line before the credit was written.
+ * letting the browser report something it claims to have done. That is the
+ * difference between a receipt and a promise.
  *
  * Points, as everywhere, come only from `engine/award.js`.
  */
@@ -30,12 +29,9 @@ import { requireUser } from '../session.js'
 /*
  * Base XP comes from `engine/rewards.js`, not from here.
  *
- * It is tempting to pay a Geschäftsrettung more than a walk to the Fairteiler,
- * and the numbers would look sensible. But the receipt re-derives the credit
- * from `BASE_XP[kind]` alone, and a base this file invented would make the
- * explanation disagree with the payment — which is the one thing the receipt
- * exists to prevent. If the sources should be worth different amounts, that
- * belongs in the rules file, next to the rest of the reasoning.
+ * The receipt re-derives a credit from `BASE_XP[kind]` alone, so a base this
+ * file invented would make the explanation disagree with the payment — the
+ * one thing the receipt exists to prevent.
  */
 
 const num = (value, fallback) => {
@@ -77,158 +73,450 @@ const paidFor = (eventKey) =>
 
 export default async function vytalRoutes(app) {
   /* ================================================================
-     Vytal — Mehrweg. Nachgebaut; jeder Wert trägt „simuliert".
+     Vytal — Mehrweg. Echte Merchant-API; jeder Wert trägt „bestätigt".
      ================================================================ */
 
-  const refOf = (user) => `remain:${user.id}`
+  /**
+   * Every Vytal route needs the person's Vytal identity, and the first one
+   * they ever touch creates it. Registration is lazy on purpose: nobody is
+   * enrolled with a partner for opening the app.
+   */
+  async function vytalUserFor(user) {
+    return vytal.ensureVytalUser(user.id)
+  }
 
-  app.get('/api/vytal/partners', async (request, reply) => {
-    const user = requireUser(request, reply)
-    if (!user) return
-
-    const { lat, lon, r } = request.query ?? {}
-    return {
-      tier: vytal.TIER,
-      partners: vytal.partners({
-        lat: lat === undefined ? undefined : num(lat, undefined),
-        lon: lon === undefined ? undefined : num(lon, undefined),
-        radiusKm: num(r, 12),
-      }),
-    }
-  })
-
-  /** What this person is holding, what it is worth, and when it is due back. */
-  app.get('/api/vytal/containers', async (request, reply) => {
-    const user = requireUser(request, reply)
-    if (!user) return
-
-    const { lat, lon } = request.query ?? {}
-    const held = vytal.containers(refOf(user))
-
-    // Which returns have already been paid — the screen shows the receipt
-    // link on the ones that have, and nothing on a repeat.
-    const returned = held.returned.map((c) => {
-      const paid = c.return_event_id ? paidFor(c.return_event_id) : null
-      return { ...c, actionId: paid?.actionId ?? null, xp: paid?.xp ?? 0 }
-    })
-
-    return {
-      tier: vytal.TIER,
-      loanDays: vytal.LOAN_DAYS,
-      xpPerReturn: BASE_XP.vytal,
-      active: held.active,
-      returned,
-      partners: vytal.partners({
-        lat: lat === undefined ? undefined : num(lat, undefined),
-        lon: lon === undefined ? undefined : num(lon, undefined),
-        radiusKm: 12,
-      }),
-      note: 'Nachgebauter Dienst. Ereignisform, Behälter-ID und Partner-ID sind die echten; die Ereignisse selbst stammen aus unserem Stand-in.',
-    }
-  })
+  /** Our own station, as Vytal knows it. */
+  const stationName = () => process.env.VYTAL_STORE_NAME ?? 'ReMain-Station'
 
   /**
-   * Borrowing.
-   *
-   * In the real system the partner's till triggers this, not the app — which
-   * is why the screen labels it a Demo-Ausleihe. It exists so the return, the
-   * part that actually matters, can be demonstrated end to end.
+   * Whether Vytal is configured at all. Without a token every route below
+   * would fail identically and unhelpfully, so it is said once, plainly.
    */
-  app.post('/api/vytal/borrow', async (request, reply) => {
+  function requireVytal(reply) {
+    if (vytal.hasKey()) return true
+    reply.code(503).send({
+      error: 'no_key',
+      message:
+        'Auf dem Server ist kein Vytal-Store-Token hinterlegt (VYTAL_JWT). Mehrweg ist deshalb noch nicht nutzbar.',
+    })
+    return false
+  }
+
+  /**
+   * Where this integration stands — what the Integrationen screen reads, and
+   * the one place that says out loud that ReMain is itself a Vytal station.
+   */
+  app.get('/api/vytal/status', async (request, reply) => {
     const user = requireUser(request, reply)
     if (!user) return
 
-    const { partnerId, containerType } = request.body ?? {}
-    if (!partnerId) {
-      return reply.code(422).send({ error: 'missing_partner', message: 'Es fehlt der Partner.' })
+    const claims = vytal.storeClaims()
+    return {
+      tier: vytal.TIER,
+      configured: vytal.hasKey(),
+      loanDays: vytal.LOAN_DAYS,
+      xpPerReturn: BASE_XP.vytal,
+      store: claims && { ...claims, name: stationName() },
+      registered: Boolean(vytal.vytalUserId(user.id)),
+      note: 'Der Store-Token gehört einer Ausgabestelle. Ausgabe und Rücknahme laufen deshalb immer über unsere eigene Station, nicht über fremde Vytal-Partner.',
     }
+  })
+
+  /** Real Vytal partners nearby — public directory, no token involved. */
+  app.get('/api/vytal/stores', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+
+    const { lat, lon, r, q } = request.query ?? {}
+    const home = one('SELECT lat, lon FROM districts WHERE id = ?', user.district_id)
+    const at = { lat: num(lat, home?.lat ?? 50.1109), lon: num(lon, home?.lon ?? 8.6821) }
 
     try {
-      const { event, container } = vytal.borrow({
-        userRef: refOf(user),
-        partnerId,
-        containerType: containerType ?? 'bowl_1000',
-      })
-      return { tier: vytal.TIER, event, container }
+      const stores = q
+        ? await vytal.stores.search({ query: String(q), lat: at.lat, lon: at.lon, limit: 25 })
+        : await vytal.stores.nearby({ lat: at.lat, lon: at.lon, radiusM: num(r, 5000) * 1000, limit: 25 })
+
+      // Return boxes are a Vytal store type, but there are none deployed in
+      // the Frankfurt area — checked against the live directory. Saying so
+      // beats an empty list the person has to interpret.
+      return {
+        tier: vytal.TIER,
+        source: 'Vytal Filialverzeichnis (öffentlich)',
+        at,
+        stores,
+        returnBoxes: [],
+        returnBoxNote:
+          'Im Raum Frankfurt gibt es derzeit keine Vytal-Rückgabeboxen. Zurückgeben kannst du an unserer Station.',
+      }
+    } catch (error) {
+      return fail(reply, error, request)
+    }
+  })
+
+  /** What our station can hand out right now. */
+  app.get('/api/vytal/stock', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    if (!requireVytal(reply)) return
+
+    try {
+      return { tier: vytal.TIER, store: stationName(), stock: await vytal.stock() }
     } catch (error) {
       return fail(reply, error, request)
     }
   })
 
   /**
-   * Returning — the exactly-once demonstration.
+   * What this person holds, handed back, or was charged for.
    *
-   * The adapter hands back the same `event_id` for a repeat scan, `award()`
-   * refuses to pay a key it has seen, and the answer says which ledger row
-   * already holds the credit. Nothing here decides that; it only reports it.
+   * The credited-ness of each returned container is read back out of our own
+   * ledger by its cycle key, so the screen can show a receipt link on the
+   * ones that paid and nothing on the ones that did not.
+   */
+  app.get('/api/vytal/containers', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    if (!requireVytal(reply)) return
+
+    try {
+      const vytalUser = await vytalUserFor(user)
+      const held = await vytal.containers(vytalUser)
+
+      const withCredit = (list) =>
+        list.map((c) => {
+          const paid = c.cycleKey ? paidFor(c.cycleKey) : null
+          const mine = paid && paid.userId === user.id
+          return {
+            ...c,
+            actionId: mine ? paid.actionId : null,
+            xp: mine ? paid.xp : 0,
+            creditedAt: mine ? paid.createdAt : null,
+          }
+        })
+
+      return {
+        tier: vytal.TIER,
+        source: 'Vytal Merchant-API',
+        loanDays: vytal.LOAN_DAYS,
+        xpPerReturn: BASE_XP.vytal,
+        station: stationName(),
+        active: held.active,
+        returned: withCredit(held.returned),
+        sold: held.sold,
+        counts: held.counts,
+      }
+    } catch (error) {
+      return fail(reply, error, request)
+    }
+  })
+
+  /**
+   * What did the camera see?
+   *
+   * The app sends the raw decode and nothing else. Vytal's documentation is
+   * explicit that code validation belongs in the backend — there are legacy
+   * formats in circulation and only Vytal knows them all — so the app is not
+   * allowed to decide that a string looks like a container.
+   *
+   * The answer carries a `transactionId` minted here and written down before
+   * anything is booked. The app hands it back on confirm, which is what makes
+   * a retry after a timeout idempotent on Vytal's side rather than a second
+   * bowl on someone's account.
+   */
+  app.post('/api/vytal/scan', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    if (!requireVytal(reply)) return
+
+    const { code, intent } = request.body ?? {}
+    if (!code || typeof code !== 'string') {
+      return reply.code(422).send({ error: 'missing_code', message: 'Es fehlt der gescannte Code.' })
+    }
+    if (!['checkout', 'return'].includes(intent)) {
+      return reply
+        .code(422)
+        .send({ error: 'bad_intent', message: 'Unbekannte Absicht — ausleihen oder zurückgeben.' })
+    }
+
+    try {
+      const scanned = await vytal.checkCode(code)
+
+      if (!scanned.ok || scanned.type === 'Invalid') {
+        return reply.code(404).send({
+          error: 'invalid_code',
+          message: 'Das ist kein gültiger Vytal-Code.',
+        })
+      }
+      if (scanned.type === 'User') {
+        return reply.code(422).send({
+          error: 'user_code',
+          message:
+            'Das ist ein Vytal-Nutzercode, kein Behälter. In ReMain brauchst du ihn nicht — scanne den Code auf dem Behälter.',
+        })
+      }
+
+      const vytalUser = await vytalUserFor(user)
+      const transactionId = randomUUID()
+      run(
+        `INSERT INTO vytal_transactions (id, user_id, kind, qr_code, container_id, short_id, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+        transactionId,
+        user.id,
+        intent,
+        code,
+        scanned.containerId,
+        scanned.shortId,
+        now(),
+      )
+
+      // For a return, the cycle this container is on decides whether a credit
+      // is still outstanding — so say it before the person taps anything.
+      let alreadyCredited = null
+      if (intent === 'return') {
+        const held = await vytal.containers(vytalUser)
+        const cycle =
+          held.active.find((c) => c.containerId === scanned.containerId) ??
+          held.returned.find((c) => c.containerId === scanned.containerId)
+        if (cycle?.cycleKey) {
+          const paid = paidFor(cycle.cycleKey)
+          if (paid && paid.userId === user.id) {
+            alreadyCredited = { actionId: paid.actionId, xp: paid.xp, at: paid.createdAt }
+          }
+        }
+      }
+
+      return {
+        tier: vytal.TIER,
+        transactionId,
+        intent,
+        container: scanned,
+        registered: Boolean(vytalUser),
+        alreadyCredited,
+      }
+    } catch (error) {
+      return fail(reply, error, request)
+    }
+  })
+
+  /**
+   * Take a container out.
+   *
+   * Draws on our own station's stock — the token decides which store that is,
+   * so there is nothing to choose. Borrowing earns nothing: carrying a bowl
+   * home is not yet the good deed, bringing it back is.
+   */
+  app.post('/api/vytal/checkout', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    if (!requireVytal(reply)) return
+
+    const tx = pendingTransaction(request, reply, user, 'checkout')
+    if (!tx) return
+
+    try {
+      const vytalUser = await vytalUserFor(user)
+      const result = await vytal.checkout({
+        vytalUserId: vytalUser,
+        qrCodes: [tx.qr_code],
+        transactionId: tx.id,
+      })
+
+      settleTransaction(tx.id, 'done', result.result, null)
+
+      return {
+        tier: vytal.TIER,
+        ok: true,
+        message: `Behälter ausgegeben. Zurück bis in ${vytal.LOAN_DAYS} Tagen.`,
+        result,
+        station: result.storeName ?? stationName(),
+      }
+    } catch (error) {
+      settleTransaction(tx.id, 'failed', error?.detail?.result ?? null, null)
+      return fail(reply, error, request)
+    }
+  })
+
+  /**
+   * Bring a container back — and get paid for it, exactly once.
+   *
+   * The order is deliberate. The rental cycle is read first, because the
+   * ledger key is (container, checkout time) and after the return the
+   * container has moved lists. Then Vytal books it. Only then is a credit
+   * written, out of Vytal's own answer.
+   *
+   * Scan the same bowl twice and the second attempt earns nothing: Vytal
+   * refuses the booking, and even if it did not, `award()` refuses a key it
+   * has already paid. Both halves are shown to the person rather than
+   * swallowed.
    */
   app.post('/api/vytal/returns', async (request, reply) => {
     const user = requireUser(request, reply)
     if (!user) return
+    if (!requireVytal(reply)) return
 
-    const { containerId, partnerId } = request.body ?? {}
-    if (!containerId || !partnerId) {
-      return reply.code(422).send({
-        error: 'missing_fields',
-        message: 'Es fehlen Behälter-Code oder Rückgabeort.',
-      })
-    }
+    const tx = pendingTransaction(request, reply, user, 'return')
+    if (!tx) return
 
-    let result
     try {
-      result = vytal.returnContainer({ userRef: refOf(user), containerId, partnerId })
+      const vytalUser = await vytalUserFor(user)
+
+      // The cycle key has to be read while the container is still active.
+      const before = await vytal.containers(vytalUser)
+      const cycle = before.active.find((c) => c.containerId === tx.container_id)
+
+      if (!cycle) {
+        const done = before.returned.find((c) => c.containerId === tx.container_id)
+        settleTransaction(tx.id, 'failed', 'NotActive', null)
+        const paid = done?.cycleKey ? paidFor(done.cycleKey) : null
+        return reply.code(409).send({
+          error: 'not_active',
+          message: done
+            ? `Dieser Behälter ist schon zurück — am ${stamp(done.returnTime ?? done.checkoutTime)}.`
+            : 'Dieser Behälter ist nicht auf dich ausgeliehen.',
+          alreadyPaid:
+            paid && paid.userId === user.id
+              ? { actionId: paid.actionId, xp: paid.xp, at: paid.createdAt }
+              : null,
+        })
+      }
+
+      const result = await vytal.returnContainer({
+        qrCodes: [tx.qr_code],
+        transactionId: tx.id,
+      })
+
+      const where = result.storeName ?? stationName()
+      const label = cycle.typeName ?? cycle.name ?? 'Mehrwegbehälter'
+      const reason = `Vytal-Behälter ${label} (${cycle.name ?? tx.short_id ?? tx.container_id}) zurückgegeben bei ${where} am ${stamp(result.timestamp ?? now())} · Vytal-Vorgang ${tx.id}`
+
+      const credit = award({
+        userId: user.id,
+        kind: 'vytal',
+        refTable: 'vytal_transactions',
+        refId: tx.id,
+        tier: vytal.TIER,
+        reason,
+        xp: BASE_XP.vytal,
+        eventKey: cycle.cycleKey,
+      })
+
+      settleTransaction(tx.id, 'done', result.result, cycle.cycleKey)
+
+      if (!credit.ok) {
+        const paid = paidFor(cycle.cycleKey)
+        return {
+          tier: vytal.TIER,
+          ok: true,
+          credited: false,
+          code: credit.code,
+          message: `Rückgabe gebucht — belohnt wurde sie schon am ${paid ? stamp(paid.createdAt) : 'früher'}. Eine Ausleihe zählt genau einmal.`,
+          result,
+          container: cycle,
+          alreadyPaid: paid && {
+            actionId: paid.actionId,
+            xp: paid.xp,
+            coins: paid.coins,
+            at: paid.createdAt,
+          },
+        }
+      }
+
+      // A credit of zero is not a failure: the daily cap records the action
+      // and pays nothing, with a sentence saying why.
+      return {
+        tier: vytal.TIER,
+        ok: true,
+        credited: true,
+        blocked: credit.blocked,
+        hint: credit.hint,
+        message: `Rückgabe bestätigt von Vytal, ${stamp(result.timestamp ?? now())}.`,
+        result,
+        container: cycle,
+        award: credit,
+      }
+    } catch (error) {
+      settleTransaction(tx.id, 'failed', error?.detail?.result ?? null, null)
+      return fail(reply, error, request)
+    }
+  })
+
+  /**
+   * Vytal's own CO₂ figure for this person.
+   *
+   * This is a measurement from the partner, not our estimate — the one number
+   * on the Mehrweg screen that needs no assumption printed under it. The
+   * caveat that does have to be printed: it counts only containers our
+   * station issued and that came back.
+   */
+  app.get('/api/vytal/impact', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    if (!requireVytal(reply)) return
+
+    try {
+      const vytalUser = await vytalUserFor(user)
+      const saved = await vytal.co2Saved(vytalUser)
+      return {
+        tier: vytal.TIER,
+        source: 'Vytal Merchant-API',
+        ...saved,
+        scope: `Gezählt werden nur Behälter, die über ${stationName()} ausgegeben und wieder zurückgegeben wurden.`,
+      }
     } catch (error) {
       return fail(reply, error, request)
     }
-
-    const { event, container, repeat } = result
-    const where = container.return_partner_name ?? partnerId
-    const reason = `Vytal-Behälter ${container.label} (${containerId}) zurückgegeben bei ${where} am ${stamp(event.occurred_at)} · Ereignis ${event.event_id}`
-
-    const credit = award({
-      userId: user.id,
-      kind: 'vytal',
-      refTable: 'vytal_events',
-      refId: event.event_id,
-      tier: vytal.TIER,
-      reason,
-      xp: BASE_XP.vytal,
-      eventKey: event.event_id,
-    })
-
-    if (!credit.ok) {
-      const paid = paidFor(event.event_id)
-      return {
-        credited: false,
-        repeat,
-        code: credit.code,
-        message: `Dieses Rückgabe-Ereignis wurde schon belohnt — am ${paid ? stamp(paid.createdAt) : 'früher'}. Ein Ereignis zählt genau einmal.`,
-        event,
-        container,
-        alreadyPaid: paid && { actionId: paid.actionId, xp: paid.xp, coins: paid.coins, at: paid.createdAt },
-        tier: vytal.TIER,
-      }
-    }
-
-    // A credit of zero is not a failure: the daily cap and the travel rule
-    // both record the action and pay nothing, with a sentence saying why.
-    // Passing `hint` on unchanged is what keeps the screen honest about it.
-    const saved = container.single_use_grams
-      ? ` Statt ${container.single_use_grams} g Einwegverpackung.`
-      : ''
-
-    return {
-      credited: true,
-      repeat: false,
-      blocked: credit.blocked,
-      hint: credit.hint,
-      message: `Rückgabe erfasst.${saved}`,
-      event,
-      container,
-      award: credit,
-      tier: vytal.TIER,
-    }
   })
+
+  /* ----------------------------------------------------------------
+     Transaction bookkeeping
+     ---------------------------------------------------------------- */
+
+  /**
+   * The scan that this confirm belongs to.
+   *
+   * A transaction is claimed once. Replaying a `transactionId` that has
+   * already settled is refused here rather than forwarded — Vytal would treat
+   * it as idempotent and answer success, and the app would show a second
+   * confirmation for something that happened once.
+   */
+  function pendingTransaction(request, reply, user, kind) {
+    const { transactionId } = request.body ?? {}
+    if (!transactionId) {
+      reply.code(422).send({ error: 'missing_transaction', message: 'Es fehlt der Scan-Vorgang.' })
+      return null
+    }
+
+    const tx = one('SELECT * FROM vytal_transactions WHERE id = ?', transactionId)
+    if (!tx || tx.user_id !== user.id) {
+      reply.code(404).send({ error: 'unknown_transaction', message: 'Diesen Scan kennen wir nicht.' })
+      return null
+    }
+    if (tx.kind !== kind) {
+      reply.code(409).send({
+        error: 'wrong_intent',
+        message: 'Dieser Scan war für etwas anderes gedacht. Scanne noch einmal.',
+      })
+      return null
+    }
+    if (tx.status !== 'pending') {
+      reply.code(409).send({
+        error: 'already_settled',
+        message: 'Dieser Scan ist schon verbucht. Scanne noch einmal.',
+      })
+      return null
+    }
+    return tx
+  }
+
+  const settleTransaction = (id, status, result, eventKey) =>
+    run(
+      `UPDATE vytal_transactions SET status = ?, result = ?, event_key = ?, settled_at = ? WHERE id = ?`,
+      status,
+      result,
+      eventKey,
+      now(),
+      id,
+    )
 
   /* ================================================================
      foodsharing — echt. Der einzige Partner, der unser Wort bestätigt.

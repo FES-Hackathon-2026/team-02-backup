@@ -11,11 +11,18 @@ import { useCallback, useEffect, useState } from 'react'
 export class ApiError extends Error {
   status: number
   code: string
+  /**
+   * The whole decoded response. Most failures need nothing but `message`,
+   * but some carry a payload — the 409 from Google sign-in returns the
+   * Google profile so the next screen can greet the person by name.
+   */
+  body: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, body: unknown = null) {
     super(message)
     this.status = status
     this.code = code
+    this.body = body
   }
 }
 
@@ -40,15 +47,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       res.status,
       data?.error ?? 'unknown',
       data?.message ?? `Die Anfrage ist mit ${res.status} fehlgeschlagen.`,
+      data,
     )
   }
   return data as T
 }
 
+const withBody = (method: string, body?: unknown): RequestInit => ({
+  method,
+  body: body === undefined ? undefined : JSON.stringify(body),
+})
+
 export const api = {
   get: <T,>(path: string) => request<T>(path),
-  post: <T,>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) }),
+  post: <T,>(path: string, body?: unknown) => request<T>(path, withBody('POST', body)),
+  patch: <T,>(path: string, body?: unknown) => request<T>(path, withBody('PATCH', body)),
+  /** `delete` is a reserved word, so the verb loses its tail. */
+  del: <T,>(path: string) => request<T>(path, { method: 'DELETE' }),
   upload: <T,>(path: string, form: FormData) =>
     request<T>(path, { method: 'POST', body: form }),
 }
@@ -71,6 +86,11 @@ export interface Me {
   district: { id: string; name: string; bezirk: number }
   role: string
   isDemo: boolean
+  /** how this person signed in — 'guest' needs no account, 'google' has one */
+  provider: 'guest' | 'google'
+  email: string | null
+  photoUrl: string | null
+  createdAt: string
   xp: number
   level: number
   levelStart: number
@@ -545,7 +565,7 @@ export interface AbcAnswer {
 }
 
 /* ------------------------------------------------------------------
-   Phase 9 — foodsharing (live) und Vytal (nachgebaut)
+   Phase 9 — foodsharing und Vytal, beide live
    ------------------------------------------------------------------ */
 
 /** Why a Geschäftsrettung is closed for this access, in words. */
@@ -662,77 +682,179 @@ export interface FoodHistory {
   pickups: FoodHistoryEntry[]
 }
 
-/* Vytal — every value below is `simulated`, never `confirmed`. */
+/* Vytal — the live Merchant-API. Every value below is `confirmed`. */
 
-export interface VytalPartner {
-  partner_id: string
+/** A real Vytal partner from the public directory. Not a return point we book. */
+export interface VytalStore {
+  id: string
   name: string
-  address: string
-  lat: number
-  lon: number
-  accepts: string[]
-  distanceKm: number | null
+  lat: number | null
+  lon: number | null
+  address: string | null
+  distanceM?: number | null
+  type?: string | null
+  locationName?: string | null
 }
 
+export interface VytalStores {
+  tier: 'confirmed'
+  source: string
+  at: { lat: number; lon: number }
+  stores: VytalStore[]
+  returnBoxes: VytalStore[]
+  returnBoxNote: string
+}
+
+/**
+ * One container, as Vytal describes it.
+ *
+ * `returnDeadline` is Vytal's and authoritative — never recompute it from
+ * `checkoutTime + 14 days`. `cycleKey` is ours: it identifies this rental
+ * rather than this bowl, which is what lets a reused container be paid for
+ * again next month without being paid twice this month.
+ */
 export interface VytalContainer {
-  container_id: string
-  container_type: string
-  label: string
-  partner_id: string
-  partner_name: string | null
-  status: 'borrowed' | 'returned' | 'overdue'
-  borrowed_at: string
-  due_at: string
-  returned_at: string | null
-  return_partner_id: string | null
-  return_partner_name: string | null
-  borrow_event_id: string
-  return_event_id: string | null
-  hoursLeft: number
-  single_use_grams: number | null
+  containerId: string
+  name: string | null
+  typeId: number | null
+  typeName: string | null
+  sizeHelper: string | null
+  imageUrl: string | null
+
+  checkoutTime: string | null
+  returnDeadline: string | null
+  returnTime: string | null
+  status: string | null
+
+  hoursLeft: number | null
+  overdue: boolean
+  isOnHold: boolean
+  onHoldSince: string | null
+
+  checkoutStoreName: string | null
+  checkinStoreName: string | null
+  restrictedCheckinInfo: string | null
+
+  /** What it costs if it never comes back. */
+  overduePrice: number
+  /** Vytal's own credit — NOT our Münzen. Never add the two together. */
+  creditsOnReturn: number
+
+  cycleKey: string | null
+
   /** on returned containers: the ledger row that paid for it */
   actionId?: number | null
   xp?: number
+  creditedAt?: string | null
 }
 
 export interface VytalState {
-  tier: 'simulated'
+  tier: 'confirmed'
+  source: string
   loanDays: number
   xpPerReturn: number
+  station: string
   active: VytalContainer[]
   returned: VytalContainer[]
-  partners: VytalPartner[]
+  /** Never returned in time, and charged for. Shown, not hidden. */
+  sold: VytalContainer[]
+  counts: { active: number; returned: number; sold: number }
+}
+
+export interface VytalStatus {
+  tier: 'confirmed'
+  configured: boolean
+  loanDays: number
+  xpPerReturn: number
+  store: {
+    storeId: string | null
+    vytalStoreId: string | null
+    merchantId: string | null
+    createdAt: string | null
+    name: string
+  } | null
+  registered: boolean
   note: string
 }
 
-/** The partner event itself — `event_id` is the exactly-once key. */
-export interface VytalEvent {
-  event_id: string
-  type: 'borrow' | 'return'
-  container_id: string
-  container_type: string
-  partner_id: string
-  user_ref: string
-  status: string
-  occurred_at: string
-  due_at: string
-  was_overdue?: boolean
-  days_held?: number
+/** What CheckCode saw. `type` distinguishes a bowl from a Vytal user card. */
+export interface VytalScanned {
+  ok: boolean
+  type: 'Container' | 'User' | 'Invalid'
+  containerId: string | null
+  shortId: string | null
+  name: string | null
+  typeId: number | null
+  typeName: string | null
+  sizeHelper: string | null
+  imageUrl: string | null
+  containerStatus: string | null
+}
+
+/**
+ * The answer to a scan. `transactionId` travels back with the confirm and is
+ * what makes a retry after a timeout idempotent on Vytal's side.
+ */
+export interface VytalScanResult {
+  tier: 'confirmed'
+  transactionId: string
+  intent: 'checkout' | 'return'
+  container: VytalScanned
+  registered: boolean
+  alreadyCredited: { actionId: number; xp: number; at: string } | null
+}
+
+/** Vytal's own answer to a checkout or a return. */
+export interface VytalBooking {
+  result: string
+  storeName: string | null
+  timestamp: string | null
+  containers: { containerId: string; name: string | null; typeId: number | null; imageUrl: string | null }[]
+  currentUserContainerCount: number | null
+  transactionContainerCount: number | null
+  remainingCheckouts: number | null
+  showCheckoutLimitWarning: boolean
+  forbiddenContainerTypeNames: string[] | null
+  allowedStoreNames: string[] | null
+}
+
+export interface VytalCheckoutResult {
+  tier: 'confirmed'
+  ok: true
+  message: string
+  result: VytalBooking
+  station: string
 }
 
 export interface VytalReturnResult {
+  tier: 'confirmed'
+  ok: true
   credited: boolean
-  repeat: boolean
   blocked?: boolean
   hint?: string | null
   code?: string
   message: string
-  event: VytalEvent
+  result: VytalBooking
   container: VytalContainer
   award?: { actionId: number; xp: number; coins: number; totals: Totals }
   alreadyPaid?: { actionId: number; xp: number; coins: number; at: string } | null
-  tier: 'simulated'
 }
+
+/** Vytal's measured CO₂ for this person — a partner figure, not our estimate. */
+export interface VytalImpact {
+  tier: 'confirmed'
+  source: string
+  co2SavedKg: number
+  containerCount: number
+  scope: string
+}
+
+export interface VytalStock {
+  tier: 'confirmed'
+  store: string
+  stock: { typeId: number; name: string; amount: number }[]
+}
+
 
 /* ------------------------------------------------------------------
    Phase 3 — Engine und Nachweis

@@ -36,12 +36,12 @@ Additional collection screens remain integrated: `/abholung/:pickupId`, `/mittei
 - Five scored activities in a Berlin calendar week award +30 XP once. Each newly reached level awards +50 XP once; level 8 unlocks the Klimaheld badge. The quiz awards +10 XP once. A signed invitation earns its referrer +50 XP after a scored photo-linked action by the new account. Bonus rows have receipts but do not count as activities or consume daily action slots.
 - Invitation links are copied for the user to share. No invitation is sent automatically.
 - Route start records a declared transport mode and claims the quest. It does not record GPS or claim live turn-by-turn guidance. The same factors and deductions power preview, ledger and receipt; no separate car-only penalty is invented.
-- FES and Vytal remain explicitly simulated. Reminders are in-app. GTFS is the supplied historical service day, not live departures. Coupon codes remain simulated partner redemption.
+- FES remains explicitly simulated. Vytal now uses the real partner integration from main; a configured store token is required. Reminders are in-app. GTFS is the supplied historical service day, not live departures. Coupon codes remain simulated partner redemption.
 
 ## Verification
 
 - `npm run build --prefix app`: TypeScript and production bundle.
-- `npm test --prefix server`: 25 passing tests using isolated database flows covering collection lifecycle, market handover, quest journey/proof/quorum, receipt consistency, Vytal repeat protection, coupon balance, transport preview consistency, quiz/referral eligibility, milestone idempotency and transactional rollback.
+- `npm test --prefix server`: 27 passing tests using isolated database flows covering collection lifecycle, market handover, quest journey/proof/quorum, receipt consistency, Vytal repeat protection, coupon balance, transport preview consistency, quiz/referral eligibility, milestone idempotency and transactional rollback.
 - Read-only checks through the running Vite proxy: account, collections, notifications, quests, market, impact, coupons, mobility, foodsharing and Vytal return HTTP 200.
 - Native browser checks: home, calendar day filtering, calendar-to-booking navigation, booking form/sticky footer, impact cards, quest selection and quest-to-route handoff, weekly goal popup and knowledge quiz popup.
 - Live foodsharing writes and every camera/device combination were not exercised. No real rescue was reserved during verification.
@@ -55,3 +55,11 @@ Collection opportunities and citizen booking shortcuts were removed from the das
 Repair-market cards and details prefer uploaded item photos. Missing or failed uploads use labeled category-example photographs for furniture, electrical appliances and bicycles. These are real photographs, not evidence of the advertised item. Unknown categories keep an explicit missing-photo state. Attribution and license links appear on the detail screen; asset provenance is in `app/public/images/market/CREDITS.md`.
 
 Current verification: frontend build passes; downloaded JPEGs inspected. Native browser control failed to start, and a fresh Claude reference fetch returned only the frame shell. The earlier documented reference inspection and current flow code were used for this update; exact fresh visual parity is not claimed.
+
+## Main integration verification
+
+Merged `origin/main` at `1d0a06f` into the feature branch. Google/Firebase authentication, settings/theme/account controls, QR-based Vytal checkout/return and home food/return status are included. The compact reference UI, notifications-only collection entry, market photographs, shared tours and progression rewards remain.
+
+Merge fixes preserve invitation binding for guest and new Google accounts, refresh rewards after Vytal returns, reject demo switching into real accounts or driver roles, and remove collection/progression/Vytal child records when deleting an account.
+
+Validation: production build passed; 27 backend tests passed; `node scripts/vytal-selftest.mjs` passed every simulated-partner check. Both development servers restarted and existing SQLite data migrated without resetting it. Local Firebase configuration and `VYTAL_JWT` are absent, so live Google/Vytal operations were not verified. npm audit reports an existing high-severity `@fastify/static` advisory; its suggested fix is a major-version upgrade, left outside this merge.

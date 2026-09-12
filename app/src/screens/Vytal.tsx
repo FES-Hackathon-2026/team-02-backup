@@ -1,110 +1,150 @@
 import { useSession } from '../lib/session'
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
-import { Coin, Label, Tag, Thumb } from '../components/ui'
+import { Coin, Label, Tag } from '../components/ui'
 import {
   ApiError,
   api,
   useApi,
-  type VytalContainer,
+  type VytalCheckoutResult,
+  type VytalImpact,
   type VytalReturnResult,
+  type VytalScanResult,
   type VytalState,
+  type VytalStatus,
 } from '../lib/client'
+import { useQrScanner } from '../lib/useQrScanner'
 
 /**
- * Mehrweg — the return, and the proof that a return counts once.
+ * Mehrweg — the live Vytal integration.
  *
- * Vytal's sandbox never reached us, so everything on this screen comes from
- * our own stand-in and says so at every value: `simuliert`, never `bestätigt`.
- * What is real is the shape — `event_id`, `container_id`, `partner_id`,
- * `status` — and one guarantee built on it.
+ * Two things on this screen are worth doing deliberately.
  *
- * That guarantee is the reason this screen exists at all. Scanning the same
- * container twice is a button, not a hypothetical: the second scan comes back
- * with the same `event_id`, the ledger recognises it, and the screen shows
- * which credit already holds it. A partner event is payable exactly once, and
- * here that is something a judge can try rather than something we assert.
+ * **We are the station.** Vytal issues one token per store, and a return
+ * books into whichever store presented it. So a container handed back through
+ * ReMain comes back to *us*, not to the café it came from. The screen says
+ * that in plain words instead of showing a list of partners it cannot book.
+ *
+ * **The camera does not decide anything.** It reads a string off a QR code
+ * and posts it, untouched, to our server, which asks Vytal what it is. Vytal
+ * has old code formats in circulation and their documentation is explicit
+ * that parsing belongs in the backend — a clever regex here would fail on
+ * precisely the oldest bowls.
  */
 
-const uhr = (iso: string) =>
-  new Date(iso).toLocaleString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+type Modus = 'checkout' | 'return'
 
-const tag = (iso: string) =>
-  new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+const de = (value: number, digits = 1) =>
+  value.toLocaleString('de-DE', { maximumFractionDigits: digits })
 
-function frist(hoursLeft: number) {
-  if (hoursLeft < 0) return `seit ${Math.abs(Math.round(hoursLeft / 24))} Tagen überfällig`
-  if (hoursLeft < 24) return `noch ${Math.round(hoursLeft)} Stunden`
-  return `noch ${Math.round(hoursLeft / 24)} Tage`
+const datum = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    : '—'
+
+/** How long is left, said the way a person would say it. */
+function frist(hoursLeft: number | null) {
+  if (hoursLeft === null) return null
+  if (hoursLeft < 0) {
+    const tage = Math.ceil(-hoursLeft / 24)
+    return { text: tage <= 1 ? 'überfällig' : `${tage} Tage überfällig`, warn: true }
+  }
+  if (hoursLeft < 24) return { text: `noch ${hoursLeft} h`, warn: true }
+  const tage = Math.floor(hoursLeft / 24)
+  return { text: `noch ${tage} ${tage === 1 ? 'Tag' : 'Tage'}`, warn: tage <= 2 }
 }
 
 export default function Vytal() {
   const { refresh } = useSession()
+  const status = useApi<VytalStatus>('/api/vytal/status')
   const state = useApi<VytalState>('/api/vytal/containers')
+  const impact = useApi<VytalImpact>('/api/vytal/impact')
+
+  const [modus, setModus] = useState<Modus | null>(null)
+  const [scan, setScan] = useState<VytalScanResult | null>(null)
   const [busy, setBusy] = useState(false)
-  const [result, setResult] = useState<VytalReturnResult | null>(null)
   const [problem, setProblem] = useState<ApiError | null>(null)
-  const [ort, setOrt] = useState<string | null>(null)
-  const [groesse, setGroesse] = useState('bowl_1000')
+  const [erfolg, setErfolg] = useState<VytalReturnResult | VytalCheckoutResult | null>(null)
+  const [manuell, setManuell] = useState('')
 
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [allReturns, setAllReturns] = useState(false)
-  const aktiv = state.data?.active.find(c => c.container_id === activeId) ?? state.data?.active[0] ?? null
-  const partners = state.data?.partners ?? []
-  const rueckgabeort = ort ?? partners[0]?.partner_id ?? null
+  /* One scan at a time. The decode loop fires every 180 ms and would happily
+     post the same bowl a dozen times while the first request is in flight. */
+  const inFlight = useRef(false)
 
-  async function call<T>(path: string, body: unknown): Promise<T | null> {
+  const aufnehmen = useCallback(
+    async (code: string) => {
+      if (inFlight.current || !modus) return
+      inFlight.current = true
+      setBusy(true)
+      setProblem(null)
+      try {
+        const answer = await api.post<VytalScanResult>('/api/vytal/scan', { code, intent: modus })
+        setScan(answer)
+        setModus(null) // stop the camera; the confirm sheet takes over
+      } catch (error) {
+        if (error instanceof ApiError) setProblem(error)
+      } finally {
+        setBusy(false)
+        inFlight.current = false
+      }
+    },
+    [modus],
+  )
+
+  const scanner = useQrScanner(modus !== null, aufnehmen)
+
+  async function bestaetigen() {
+    if (!scan) return
     setBusy(true)
     setProblem(null)
     try {
-      const response = await api.post<T>(path, body)
-      void refresh()
-      return response
+      const path = scan.intent === 'return' ? '/api/vytal/returns' : '/api/vytal/checkout'
+      const answer = await api.post<VytalReturnResult | VytalCheckoutResult>(path, {
+        transactionId: scan.transactionId,
+      })
+      setErfolg(answer)
+      setScan(null)
+      state.reload()
+      impact.reload()
+      status.reload()
+      await refresh()
     } catch (error) {
-      setProblem(
-        error instanceof ApiError
-          ? error
-          : new ApiError(0, 'offline', 'Keine Verbindung zum Server.'),
-      )
-      return null
+      if (error instanceof ApiError) setProblem(error)
+      setScan(null)
     } finally {
       setBusy(false)
     }
   }
 
-  async function ausleihen(partnerId: string) {
-    const answer = await call('/api/vytal/borrow', { partnerId, containerType: groesse })
-    if (answer) {
-      setResult(null)
-      state.reload()
-    }
-  }
-
-  /** The same call for the first scan and for every repeat — that is the point. */
-  async function zurueckgeben(containerId: string) {
-    if (!rueckgabeort) return
-    const answer = await call<VytalReturnResult>('/api/vytal/returns', {
-      containerId,
-      partnerId: rueckgabeort,
-    })
-    if (answer) {
-      setResult(answer)
-      state.reload()
-    }
-  }
+  const nichtEingerichtet = status.data && !status.data.configured
 
   return (
-    <Screen back title="Mehrweg" sub="Vytal · nachgebauter Dienst">
-      <div className="between"><span className="sm mut">{state.data?.active.length ?? 0} Behälter offen</span><Tag von="simulated" /></div>
-      {state.error && <div className="card tight" role="alert"><p>{state.error.message}</p><button className="btn" onClick={state.reload}>Erneut laden</button></div>}
+    <Screen back title="Mehrweg" sub="Vytal · echte Schnittstelle">
+      {/* Who we are in this transaction. The one thing that is easy to get
+          wrong about this integration, so it is the first thing said. */}
+      {status.data?.store && (
+        <div className="card tight row" style={{ gap: 10, borderColor: 'var(--stone)' }}>
+          <Icon name="info" size={18} className="ico" />
+          <p className="xs mut grow" style={{ margin: 0 }}>
+            ReMain ist selbst eine <b>Vytal-Station</b>. Ausgabe und Rücknahme laufen über{' '}
+            {status.data.store.name} — nicht über fremde Vytal-Partner.
+          </p>
+          <Tag von="api" icon />
+        </div>
+      )}
+
+      {nichtEingerichtet && (
+        <div className="card tight row" style={{ gap: 9, borderColor: 'var(--alert)' }}>
+          <Icon name="info" size={18} className="ico" />
+          <span className="sm grow">
+            Auf dem Server fehlt der Vytal-Store-Token. Mehrweg ist noch nicht nutzbar.
+          </span>
+        </div>
+      )}
+
       {problem && (
         <div className="card tight row" style={{ gap: 9, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
@@ -115,315 +155,425 @@ export default function Vytal() {
         </div>
       )}
 
+      {erfolg && <Quittung answer={erfolg} onClose={() => setErfolg(null)} />}
+
+      {/* The camera. */}
+      {modus && (
+        <Kamera
+          modus={modus}
+          scanner={scanner}
+          busy={busy}
+          manuell={manuell}
+          setManuell={setManuell}
+          onManuell={() => void aufnehmen(manuell.trim())}
+          onClose={() => setModus(null)}
+        />
+      )}
+
+      {/* The confirm sheet — what Vytal says is in your hand. */}
+      {scan && (
+        <Bestaetigen
+          scan={scan}
+          busy={busy}
+          onConfirm={() => void bestaetigen()}
+          onCancel={() => setScan(null)}
+        />
+      )}
+
       {state.loading && (
         <div className="empty">
           <span className="spinner" />
         </div>
       )}
 
-      {(state.data?.active.length ?? 0) > 1 && <div className="chips scroll">{state.data!.active.map(c => <button className="chip" key={c.container_id} aria-pressed={aktiv?.container_id === c.container_id} onClick={() => setActiveId(c.container_id)}>{c.label} · {c.container_id}</button>)}</div>}
       {/* What you are holding. */}
-      {aktiv && <Aktiv container={aktiv} />}
-
-      {aktiv && (
-        <div className="card tight">
-          <div className="between" style={{ marginBottom: 9 }}>
-            <span className="lbl">Rückgabeort</span>
-            <span className="xs mut">{partners.length} in der Nähe</span>
-          </div>
-          <div className="chips scroll">
-            {partners.map((p) => (
-              <button
-                key={p.partner_id}
-                className="chip"
-                aria-pressed={rueckgabeort === p.partner_id}
-                onClick={() => setOrt(p.partner_id)}
-              >
-                {p.name.replace(' (Demo)', '')}
-                {p.distanceKm !== null && (
-                  <span className="mut">
-                    {p.distanceKm < 1
-                      ? `${Math.round(p.distanceKm * 1000)} m`
-                      : `${p.distanceKm.toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`}
-                  </span>
+      {state.data?.active.map((c) => {
+        const rest = frist(c.hoursLeft)
+        return (
+          <div key={c.containerId} className="card">
+            <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
+              {c.imageUrl && (
+                <img
+                  src={c.imageUrl}
+                  alt=""
+                  width={52}
+                  height={52}
+                  style={{ borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+                />
+              )}
+              <div className="grow">
+                <div className="between">
+                  <b className="h3">{c.typeName ?? 'Mehrwegbehälter'}</b>
+                  {rest && <Label tone={rest.warn ? 'warn' : 'plain'}>{rest.text}</Label>}
+                </div>
+                <p className="xs mut" style={{ margin: '4px 0 0' }}>
+                  {c.name ?? c.containerId.slice(0, 8)}
+                  {c.sizeHelper ? ` · ${c.sizeHelper}` : ''} · zurück bis{' '}
+                  {datum(c.returnDeadline)}
+                </p>
+                {c.checkoutStoreName && (
+                  <p className="xs mut" style={{ margin: '2px 0 0' }}>
+                    Ausgegeben von {c.checkoutStoreName}
+                  </p>
                 )}
-              </button>
-            ))}
+                {c.restrictedCheckinInfo && (
+                  <p className="xs mut" style={{ margin: '2px 0 0' }}>
+                    {c.restrictedCheckinInfo}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              className="btn primary"
+              style={{ marginTop: 12 }}
+              disabled={busy || nichtEingerichtet === true}
+              onClick={() => setModus('return')}
+            >
+              <Icon name="scan" size={19} />
+              Zurückgeben — Code scannen
+            </button>
           </div>
+        )
+      })}
 
-          <button
-            className="btn primary"
-            style={{ marginTop: 12 }}
-            disabled={busy || !rueckgabeort}
-            onClick={() => void zurueckgeben(aktiv.container_id)}
-          >
-            {busy ? <span className="spinner" /> : <Icon name="scan" size={19} />}
-            Code {aktiv.container_id} scannen
-          </button>
-          <p className="xs mut" style={{ margin: '8px 0 0' }}>
-            Der Code steht auf dem Deckel. Den Scan simulieren wir hier — das Ereignis
-            dahinter hat die Form, die auch die Kamera erzeugen würde.
-          </p>
-        </div>
-      )}
-
-      {/* Nothing borrowed: offer the loan, and be clear who normally triggers it. */}
-      {!state.loading && !state.error && !aktiv && (
+      {/* Nothing out. */}
+      {!state.loading && state.data?.active.length === 0 && (
         <div className="card">
           <b className="h3">Gerade kein Behälter unterwegs</b>
           <p className="sm mut" style={{ margin: '6px 0 12px' }}>
-            Im Echtbetrieb bucht die Kasse des Partners die Ausleihe, wenn du dein Essen
-            bekommst. Für die Demo löst du sie hier aus.
+            Scanne einen Behälter an unserer Station, um ihn mitzunehmen. {state.data.loanDays}{' '}
+            Tage Zeit, kein Pfand.
           </p>
-
-          <div className="chips" style={{ marginBottom: 10 }}>
-            {[
-              { id: 'bowl_1000', label: 'Schale 1 l' },
-              { id: 'bowl_500', label: 'Schale 0,5 l' },
-              { id: 'cup_400', label: 'Becher 0,4 l' },
-            ].map((g) => (
-              <button
-                key={g.id}
-                className="chip"
-                aria-pressed={groesse === g.id}
-                onClick={() => setGroesse(g.id)}
-              >
-                {g.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="col" style={{ gap: 8 }}>
-            {partners
-              .filter((p) => p.accepts.includes(groesse))
-              .slice(0, 4)
-              .map((p) => (
-                <button
-                  key={p.partner_id}
-                  className="card tight flat row"
-                  /* button.card sets display:block and outranks .row — say it again */
-                  style={{ display: 'flex', gap: 10 }}
-                  disabled={busy}
-                  onClick={() => void ausleihen(p.partner_id)}
-                >
-                  <Thumb icon="cup" size={38} />
-                  <span className="grow">
-                    <span className="sm" style={{ display: 'block', fontWeight: 600 }}>
-                      {p.name}
-                    </span>
-                    <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                      {p.address}
-                    </span>
-                  </span>
-                  <Icon name="chevron" size={18} className="ico" />
-                </button>
-              ))}
-          </div>
+          <button
+            className="btn"
+            disabled={busy || nichtEingerichtet === true}
+            onClick={() => setModus('checkout')}
+          >
+            <Icon name="scan" size={19} />
+            Behälter mitnehmen
+          </button>
         </div>
       )}
 
-      {/* The result — and the button that proves the rule. */}
-      {result && (
-        <Ergebnis
-          result={result}
-          busy={busy}
-          onRepeat={() => void zurueckgeben(result.container.container_id)}
-          onClose={() => setResult(null)}
-        />
-      )}
-
-      {/* Returned before. */}
-      {(state.data?.returned.length ?? 0) > 0 && (
-        <div>
-          <div className="between"><p className="lbl" style={{ marginBottom: 9 }}>Zurückgegeben</p>{state.data!.returned.length > 8 && <button className="text-link" onClick={() => setAllReturns(v => !v)}>{allReturns ? 'Weniger' : 'Alle Rückgaben'}</button>}</div>
-          <div className="col" style={{ gap: 9 }}>
-            {state.data!.returned.slice(0, allReturns ? undefined : 8).map((c) => (
-              <div key={c.container_id} className="card tight row" style={{ gap: 10 }}>
-                <Thumb icon="cup" size={38} />
-                <span className="grow">
-                  <span className="sm" style={{ display: 'block', fontWeight: 600 }}>
-                    {c.label} · {c.container_id}
-                  </span>
-                  <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                    {c.returned_at ? uhr(c.returned_at) : ''} · {c.return_partner_name}
-                  </span>
-                </span>
-                {c.actionId ? (
-                  <Link className="xs" to={`/nachweis/${c.actionId}`} style={{ fontWeight: 700 }}>
-                    Nachweis
-                  </Link>
-                ) : (
-                  <Label>ohne Gutschrift</Label>
-                )}
-              </div>
-            ))}
+      {/* Vytal's own CO2 figure — the one number here that needs no assumption. */}
+      {impact.data && impact.data.containerCount > 0 && (
+        <div className="card tight">
+          <div className="between">
+            <span className="lbl">Von Vytal bestätigt</span>
+            <Tag von="api" icon>
+              Vytal
+            </Tag>
           </div>
+          <div className="row" style={{ gap: 14, marginTop: 8, alignItems: 'baseline' }}>
+            <b className="h2">{de(impact.data.co2SavedKg, 2)} kg</b>
+            <span className="sm mut">
+              CO₂e gespart · {impact.data.containerCount}{' '}
+              {impact.data.containerCount === 1 ? 'Behälter' : 'Behälter'}
+            </span>
+          </div>
+          <p className="xs mut" style={{ margin: '8px 0 0' }}>
+            {impact.data.scope}
+          </p>
         </div>
       )}
 
-      {state.data && (
-        <p className="xs mut" style={{ margin: 0 }}>
-          Eine Rückgabe ist {state.data.xpPerReturn} XP wert, Leihdauer {state.data.loanDays} Tage.
-          Belohnt wird über die Ereignis-ID — jedes Ereignis genau einmal.
-        </p>
+      {/* Charged for. Never hidden — otherwise people learn it from the bank. */}
+      {state.data && state.data.sold.length > 0 && (
+        <div className="card tight" style={{ borderColor: 'var(--alert)' }}>
+          <div className="between" style={{ marginBottom: 8 }}>
+            <span className="lbl">Nicht zurückgekommen</span>
+            <Label tone="warn">{state.data.sold.length}</Label>
+          </div>
+          {state.data.sold.map((c) => (
+            <div key={c.containerId} className="between sm" style={{ padding: '4px 0' }}>
+              <span>{c.typeName ?? c.name ?? c.containerId.slice(0, 8)}</span>
+              <span className="mut">
+                {c.overduePrice > 0 ? `${de(c.overduePrice, 2)} €` : 'abgerechnet'}
+              </span>
+            </div>
+          ))}
+          <p className="xs mut" style={{ margin: '8px 0 0' }}>
+            Nach {state.data.loanDays} Tagen berechnet Vytal eine Ausgleichsgebühr. Diese
+            Behälter sind damit gekauft.
+          </p>
+        </div>
+      )}
+
+      {/* History. */}
+      {state.data && state.data.returned.length > 0 && (
+        <div className="card tight">
+          <div className="between" style={{ marginBottom: 9 }}>
+            <span className="lbl">Zurückgegeben</span>
+            <span className="xs mut">{state.data.counts.returned}</span>
+          </div>
+          {state.data.returned.slice(0, 8).map((c) => (
+            <div key={`${c.containerId}-${c.checkoutTime}`} className="between sm" style={{ padding: '5px 0' }}>
+              <span className="grow">
+                {c.typeName ?? c.name ?? c.containerId.slice(0, 8)}
+                <span className="mut"> · {datum(c.returnTime)}</span>
+              </span>
+              {c.actionId ? (
+                <Link to={`/nachweis/${c.actionId}`} className="row" style={{ gap: 6 }}>
+                  <Coin star>{c.xp}</Coin>
+                  <Icon name="chevron" size={14} />
+                </Link>
+              ) : (
+                <span className="xs mut">nicht über ReMain</span>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </Screen>
   )
 }
 
-/* ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------
+   The camera
+   ------------------------------------------------------------------ */
 
-function Aktiv({ container }: { container: VytalContainer }) {
-  const spaet = container.status === 'overdue'
+function Kamera({
+  modus,
+  scanner,
+  busy,
+  manuell,
+  setManuell,
+  onManuell,
+  onClose,
+}: {
+  modus: Modus
+  scanner: ReturnType<typeof useQrScanner>
+  busy: boolean
+  manuell: string
+  setManuell: (v: string) => void
+  onManuell: () => void
+  onClose: () => void
+}) {
+  const kaputt = scanner.state === 'fehlt' || scanner.state === 'unsicher' || scanner.state === 'blockiert'
 
   return (
-    <div className={spaet ? 'card' : 'card sky'}>
-      <div className="between" style={{ marginBottom: 11 }}>
-        <span className="h3">Dein Behälter</span>
-        <Tag von="simulated" icon />
+    <div className="card">
+      <div className="between" style={{ marginBottom: 10 }}>
+        <b className="h3">
+          {modus === 'return' ? 'Behälter zurückgeben' : 'Behälter mitnehmen'}
+        </b>
+        <button className="icobtn bare" onClick={onClose} aria-label="Abbrechen">
+          <Icon name="cross" size={18} />
+        </button>
       </div>
 
-      <div className="row" style={{ gap: 13, alignItems: 'flex-start' }}>
-        <Thumb icon="cup" size={52} />
-        <div className="grow">
-          <div className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
-            <b className="sm">{container.label}</b>
-            <Label tone={spaet ? 'warn' : 'plain'}>{container.container_id}</Label>
-          </div>
-          <div className="xs mut" style={{ marginTop: 3 }}>
-            Ausgeliehen bei {container.partner_name} am {tag(container.borrowed_at)}
-          </div>
-          <div className="row" style={{ gap: 6, marginTop: 7 }}>
-            <Icon name="clock" size={14} className="ico" />
-            <span className="sm" style={{ fontWeight: 700 }}>
-              {frist(container.hoursLeft)}
-            </span>
-            <span className="xs mut">bis {tag(container.due_at)}</span>
-          </div>
+      {!kaputt && (
+        <div
+          style={{
+            position: 'relative',
+            borderRadius: 12,
+            overflow: 'hidden',
+            background: 'var(--ink)',
+            aspectRatio: '4 / 3',
+          }}
+        >
+          <video
+            ref={scanner.videoRef}
+            playsInline
+            muted
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+          <canvas ref={scanner.canvasRef} style={{ display: 'none' }} />
+
+          {/* The target. Purely to tell someone where to point. */}
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              inset: '18%',
+              border: '2px solid rgba(255,255,255,.85)',
+              borderRadius: 12,
+            }}
+          />
+
+          {(scanner.state === 'startet' || busy) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'grid',
+                placeItems: 'center',
+                background: 'rgba(0,0,0,.35)',
+              }}
+            >
+              <span className="spinner" />
+            </div>
+          )}
+
+          {scanner.hatLampe && (
+            <button
+              className="icobtn"
+              onClick={() => void scanner.toggleLampe()}
+              aria-label="Licht"
+              aria-pressed={scanner.lampe}
+              style={{ position: 'absolute', right: 10, bottom: 10 }}
+            >
+              <Icon name="spark" size={18} />
+            </button>
+          )}
         </div>
-      </div>
-
-      {container.single_use_grams && (
-        <p className="xs mut" style={{ margin: '11px 0 0' }}>
-          Jede Rückgabe spart eine Einwegverpackung von rund {container.single_use_grams} g.
-        </p>
       )}
+
+      <p className="xs mut" style={{ margin: '9px 0 0' }}>
+        {kaputt
+          ? scanner.state === 'unsicher'
+            ? 'Die Kamera braucht eine sichere Verbindung (https).'
+            : scanner.state === 'blockiert'
+              ? 'Die Kamera ist blockiert. Du kannst den Code auch eintippen.'
+              : 'Keine Kamera gefunden. Du kannst den Code eintippen.'
+          : 'Den QR-Code auf dem Behälter ins Feld halten.'}
+      </p>
+
+      {/* Always available, not just as a fallback: a scratched code is a
+          thing that happens, and the short id is printed next to it. */}
+      <div className="row" style={{ gap: 8, marginTop: 10 }}>
+        <input
+          className="grow"
+          value={manuell}
+          onChange={(e) => setManuell(e.target.value)}
+          placeholder="Code eintippen, z. B. ABC123"
+          aria-label="Behälter-Code"
+          autoCapitalize="characters"
+          autoCorrect="off"
+        />
+        <button className="btn" disabled={busy || manuell.trim() === ''} onClick={onManuell}>
+          Prüfen
+        </button>
+      </div>
     </div>
   )
 }
 
-/**
- * The answer to a scan — first or fifth, the same call and a different story.
- *
- * A repeat is not an error state: the return happened, it was recorded, and it
- * was already paid. So it gets the same calm treatment as the first scan, plus
- * the ledger row that holds the credit, so nobody has to take our word for it.
- */
-function Ergebnis({
-  result,
+/* ------------------------------------------------------------------
+   Confirm — what Vytal says is in your hand
+   ------------------------------------------------------------------ */
+
+function Bestaetigen({
+  scan,
   busy,
-  onRepeat,
-  onClose,
+  onConfirm,
+  onCancel,
 }: {
-  result: VytalReturnResult
+  scan: VytalScanResult
   busy: boolean
-  onRepeat: () => void
-  onClose: () => void
+  onConfirm: () => void
+  onCancel: () => void
 }) {
-  /* Three different outcomes, and conflating them would be the one thing
-     this screen must not do: paid, refused because the event was already
-     paid, or recorded and capped by a rule that has nothing to do with it. */
-  const paid = result.credited && !result.blocked
-  const schonBezahlt = !result.credited
-  const gedeckelt = result.credited && result.blocked
+  const c = scan.container
+  const rueckgabe = scan.intent === 'return'
 
   return (
-    <div className="card">
-      <div className="between" style={{ marginBottom: 9 }}>
-        <span className="h3">{schonBezahlt ? 'Schon erfasst' : 'Rückgabe erfasst'}</span>
+    <div className="card" style={{ borderColor: 'var(--leaf)' }}>
+      <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
+        {c.imageUrl && (
+          <img
+            src={c.imageUrl}
+            alt=""
+            width={56}
+            height={56}
+            style={{ borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+          />
+        )}
+        <div className="grow">
+          <div className="between">
+            <b className="h3">{c.typeName ?? 'Mehrwegbehälter'}</b>
+            <Tag von="api" icon>
+              Vytal
+            </Tag>
+          </div>
+          <p className="xs mut" style={{ margin: '4px 0 0' }}>
+            {c.name ?? c.shortId ?? ''}
+            {c.sizeHelper ? ` · ${c.sizeHelper}` : ''}
+          </p>
+        </div>
+      </div>
+
+      {/* A container that was already paid for this cycle. Said before the
+          tap, not after — the return still needs to happen, the reward does not. */}
+      {scan.alreadyCredited && (
+        <p className="xs mut" style={{ margin: '10px 0 0' }}>
+          Für diese Ausleihe gab es schon {scan.alreadyCredited.xp} XP. Die Rückgabe
+          wird trotzdem gebucht, eine zweite Belohnung nicht.
+        </p>
+      )}
+
+      <div className="row" style={{ gap: 8, marginTop: 12 }}>
+        <button className="btn primary grow" disabled={busy} onClick={onConfirm}>
+          {busy ? <span className="spinner" /> : <Icon name="check" size={19} />}
+          {rueckgabe ? 'Zurückgeben' : 'Mitnehmen'}
+        </button>
+        <button className="btn" disabled={busy} onClick={onCancel}>
+          Abbrechen
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------
+   Receipt
+   ------------------------------------------------------------------ */
+
+function Quittung({
+  answer,
+  onClose,
+}: {
+  answer: VytalReturnResult | VytalCheckoutResult
+  onClose: () => void
+}) {
+  const retour = 'credited' in answer
+  const credited = retour && answer.credited
+  const award = retour ? answer.award : undefined
+
+  return (
+    <div className="card" style={{ borderColor: credited ? 'var(--leaf)' : 'var(--stone)' }}>
+      <div className="between">
+        <div className="row" style={{ gap: 9 }}>
+          <Icon name="check" size={19} className="ico" />
+          <b className="h3">{answer.message}</b>
+        </div>
         <button className="icobtn bare" onClick={onClose} aria-label="Schließen">
           <Icon name="cross" size={18} />
         </button>
       </div>
 
-      <div className="col" style={{ gap: 7 }}>
-        <div className="between">
-          <span className="sm mut">Ereignis-ID</span>
-          <span className="row" style={{ gap: 6 }}>
-            <b className="xs">{result.event.event_id}</b>
-            <Tag von="simulated" />
-          </span>
-        </div>
-        <div className="between">
-          <span className="sm mut">Behälter</span>
-          <b className="sm">{result.container.container_id}</b>
-        </div>
-        <div className="between">
-          <span className="sm mut">Zeitpunkt</span>
-          <b className="sm">{uhr(result.event.occurred_at)}</b>
-        </div>
-      </div>
-
-      <div className="sep" style={{ margin: '11px 0' }} />
-
-      {paid && result.award ? (
-        <div className="between">
-          <Coin star>
-            +{result.award.xp} XP · {result.award.coins} Münzen
-          </Coin>
-          <Link className="sm" to={`/nachweis/${result.award.actionId}`} style={{ fontWeight: 700 }}>
-            Nachweis öffnen
+      {award && (
+        <div className="row" style={{ gap: 10, marginTop: 10 }}>
+          <Coin star>{award.xp}</Coin>
+          {award.coins > 0 && <Coin>{award.coins}</Coin>}
+          <Link to={`/nachweis/${award.actionId}`} className="sm grow" style={{ textAlign: 'right' }}>
+            Nachweis ansehen <Icon name="chevron" size={13} />
           </Link>
-        </div>
-      ) : (
-        <div>
-          <div className="row" style={{ gap: 7, marginBottom: 5 }}>
-            <Icon name={schonBezahlt ? 'shield' : 'clock'} size={16} className="ico" />
-            <b className="sm">
-              {schonBezahlt ? 'Keine zweite Gutschrift' : 'Gezählt, aber nicht bepunktet'}
-            </b>
-          </div>
-          <p className="sm mut" style={{ margin: 0 }}>
-            {schonBezahlt ? result.message : (result.hint ?? result.message)}
-          </p>
-          {result.alreadyPaid && (
-            <div className="between" style={{ marginTop: 9 }}>
-              <span className="xs mut">
-                gutgeschrieben am {uhr(result.alreadyPaid.at)} · {result.alreadyPaid.xp} XP
-              </span>
-              <Link
-                className="xs"
-                to={`/nachweis/${result.alreadyPaid.actionId}`}
-                style={{ fontWeight: 700 }}
-              >
-                Nachweis
-              </Link>
-            </div>
-          )}
-          {gedeckelt && result.award && (
-            <div className="between" style={{ marginTop: 9 }}>
-              <span className="xs mut">Die Rückgabe steht trotzdem im Belohnungsbuch</span>
-              <Link
-                className="xs"
-                to={`/nachweis/${result.award.actionId}`}
-                style={{ fontWeight: 700 }}
-              >
-                Nachweis
-              </Link>
-            </div>
-          )}
         </div>
       )}
 
-      {/* The demonstration, as a button. Press it and nothing is paid twice. */}
-      <button className="btn sm" style={{ width: '100%', marginTop: 12 }} disabled={busy} onClick={onRepeat}>
-        {busy ? <span className="spinner" /> : <Icon name="scan" size={17} />}
-        Denselben Code nochmal scannen
-      </button>
-      <p className="xs mut" style={{ margin: '7px 0 0' }}>
-        Dieselbe Rückgabe liefert dieselbe Ereignis-ID. Das Belohnungsbuch kennt sie und
-        zahlt nicht erneut — nachlesbar im Nachweis.
-      </p>
+      {retour && !credited && answer.alreadyPaid && (
+        <p className="xs mut" style={{ margin: '9px 0 0' }}>
+          Gutgeschrieben wurde sie bereits —{' '}
+          <Link to={`/nachweis/${answer.alreadyPaid.actionId}`}>zum Nachweis</Link>.
+        </p>
+      )}
+
+      {retour && answer.blocked && answer.hint && (
+        <p className="xs mut" style={{ margin: '9px 0 0' }}>
+          {answer.hint}
+        </p>
+      )}
+
+      {answer.result.showCheckoutLimitWarning && (
+        <p className="xs mut" style={{ margin: '9px 0 0' }}>
+          Du bist nah am Ausleih-Limit
+          {answer.result.remainingCheckouts !== null
+            ? ` — noch ${answer.result.remainingCheckouts} möglich.`
+            : '.'}
+        </p>
+      )}
     </div>
   )
 }

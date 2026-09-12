@@ -442,6 +442,111 @@ a.card {
   cursor: not-allowed;
 }
 
+/* A button that has to be present without competing — "Zurück", "Abmelden".
+   Quieter than .btn, still a full 50px tap target. */
+.btn.ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink2);
+}
+
+/* Destructive, and the only place outside a provenance tag that uses the
+   alert colour. The filled version appears exactly once: on the press that
+   cannot be undone. */
+.btn.danger {
+  background: var(--alert);
+  border-color: var(--alert);
+  color: var(--on-alert);
+}
+
+/* Outlined until that confirm step.
+   `background` is restated here on purpose. .btn.danger above sets it at the
+   same specificity as .btn.ghost and comes later, so it would otherwise win
+   the fill — while this rule, being more specific, still wins the text
+   colour. That combination paints --alert on --alert: the label is rendered,
+   and invisible. Both properties belong together in one rule. */
+.btn.ghost.danger {
+  background: transparent;
+  color: var(--alert);
+  border-color: var(--alert);
+}
+
+/* "Mit Google anmelden" — Google's own spec, not ours. The neutral border,
+   the white ground and the fixed 14px label are prescribed by the branding
+   guidelines, so none of them reads from the palette and none of them
+   changes in dark mode. The button is the one element in the product that
+   is deliberately off-theme. */
+.btn.google {
+  background: #ffffff;
+  border: 1px solid #747775;
+  color: #1f1f1f;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 10px;
+}
+
+.btn.google:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+
+/* "oder" with a rule either side, between the two ways in. */
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink3);
+  font-size: 12px;
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* One tappable line in a grouped list — Einstellungen. Full-bleed dividers
+   between rows, none after the last, which is what makes a stack of these
+   read as one card rather than three. */
+.listrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 15px;
+  border: none;
+  border-bottom: 1px solid var(--line2);
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+}
+
+.listrow:last-child {
+  border-bottom: none;
+}
+
+/* The profile picture. A Google photo when there is one; otherwise the
+   initial, which at least tells two accounts apart — a stock silhouette
+   does not. */
+.avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  flex: none;
+  object-fit: cover;
+  background: var(--sky);
+}
+
+.avatar.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue-deep);
+  font-size: 22px;
+  font-weight: 700;
+}
+
 .field {
   width: 100%;
   height: 48px;
@@ -556,6 +661,14 @@ a.card {
   border: 2px solid var(--line);
   border-top-color: var(--blue-deep);
   animation: spin 0.7s linear infinite;
+}
+
+/* Inside a button, where it stands in for an icon. */
+.spinner.sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  flex: none;
 }
 
 @keyframes spin {
