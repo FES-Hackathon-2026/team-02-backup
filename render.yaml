@@ -51,6 +51,19 @@ services:
       - key: FS_API_BASE
         value: https://app-foodsharing-hackathon.azurewebsites.net
 
+      # The Vytal store token. It identifies one store location, which is
+      # what lets ReMain hand out and take back containers at all — and why
+      # it must never reach the browser. sync: false = prompt in the dashboard.
+      - key: VYTAL_JWT
+        sync: false
+      - key: VYTAL_API_BASE
+        value: https://merchantapi.vytal.org
+      # Public store directory — no token, header is literally ANONYMOUS.
+      - key: VYTAL_GRAPHQL_BASE
+        value: https://colugo.vytal.org/
+      - key: VYTAL_STORE_NAME
+        value: ReMain-Station Frankfurt
+
       # Google sign-in. The SERVER only needs the project id, which is
       # public — it verifies ID tokens against Google's published keys, so
       # there is no service-account secret to store here.
