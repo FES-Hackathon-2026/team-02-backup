@@ -49,6 +49,12 @@ const ADDED_COLUMNS = {
     ['photo_url', 'TEXT'],
     ['last_seen_at', 'TEXT'],
   ],
+  // The Repair Cafés brought two fields no OSM place needed: a contact
+  // address, and the listing that carries the next date.
+  places: [
+    ['email', 'TEXT'],
+    ['info_url', 'TEXT'],
+  ],
 }
 
 for (const [table, columns] of Object.entries(ADDED_COLUMNS)) {

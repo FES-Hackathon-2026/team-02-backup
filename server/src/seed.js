@@ -44,17 +44,38 @@ function seedDistricts() {
 }
 
 function seedPlaces() {
-  const { places } = read('places.json')
   const stmt = db.prepare(
-    `INSERT INTO places (id, kind, name, lat, lon, addr, postcode, opening_hours, operator, is_fes, website, phone, source)
-     VALUES (@id, @kind, @name, @lat, @lon, @addr, @postcode, @opening_hours, @operator, @is_fes, @website, @phone, @source)
+    `INSERT INTO places (id, kind, name, lat, lon, addr, postcode, opening_hours, operator, is_fes, website, phone, source, email, info_url)
+     VALUES (@id, @kind, @name, @lat, @lon, @addr, @postcode, @opening_hours, @operator, @is_fes, @website, @phone, @source, @email, @info_url)
      ON CONFLICT(id) DO UPDATE SET name = excluded.name, opening_hours = excluded.opening_hours,
-       operator = excluded.operator, is_fes = excluded.is_fes`,
+       operator = excluded.operator, is_fes = excluded.is_fes, website = excluded.website,
+       email = excluded.email, info_url = excluded.info_url`,
   )
+
+  const { places } = read('places.json')
+
+  /*
+   * The Repair Cafés live in their own file rather than in places.json,
+   * because places.json is overwritten wholesale by scripts/fetch-places.mjs
+   * and OpenStreetMap has never heard of seven of these eight. Folding them
+   * in here means one table, one distance sort, one /api/places — and the
+   * next Overpass run cannot quietly delete them.
+   */
+  const { cafes } = read('repair-cafes.json')
+  const asPlace = (c) => ({
+    ...c,
+    kind: 'reparaturcafe',
+    is_fes: 0,
+    source: 'repaircafe.org',
+  })
+
+  const rows = [...places.map((p) => ({ ...p, is_fes: p.fes ? 1 : 0 })), ...cafes.map(asPlace)]
   tx(() => {
-    for (const p of places) stmt.run({ ...p, is_fes: p.fes ? 1 : 0 })
+    for (const p of rows) {
+      stmt.run({ email: null, info_url: null, phone: null, ...p })
+    }
   })()
-  return places.length
+  return rows.length
 }
 
 /** Nearest real place of a kind, so a demo quest sits somewhere that exists. */

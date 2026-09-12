@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
+import RepairCafeCard from '../components/RepairCafeCard'
 import Screen from '../components/Screen'
 import { Coin, Label, Tag } from '../components/ui'
 import { ApiError, api, useApi, type MarketDetail } from '../lib/client'
@@ -270,27 +271,16 @@ export default function MarktDetail() {
           {t("Nachweis ansehen")}</Link>
       ))}
 
-      {/* --- who could actually fix this --- */}
-      {t(d.repairShops.length > 0 && (
+      {/* --- where this could actually be fixed --- */}
+      {t(d.repairCafes.length > 0 && (
         <>
           <h2 className="h3" style={{ marginBottom: -4 }}>
-            {t("Wer das reparieren kann")}</h2>
+            {t("Wo das repariert werden kann")}</h2>
+          <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
+            {t("Die nächsten Repair Cafés — ehrenamtlich, kostenlos, und du reparierst mit. Tipp für Termine und Kontakt.")}</p>
           <div className="col" style={{ gap: 9 }}>
-            {t(d.repairShops.map((shop) => (
-              <div key={shop.id} className="card tight">
-                <div className="row" style={{ gap: 11 }}>
-                  <span className="thumb" style={{ width: 38, height: 38, flex: 'none' }}>
-                    <Icon name="wrench" size={19} />
-                  </span>
-                  <span className="grow">
-                    <b className="sm" style={{ display: 'block' }}>
-                      {t(shop.name)}
-                    </b>
-                    <span className="xs mut">
-                      {t(shop.addr ?? 'Adresse nicht hinterlegt')} {t(" · ")}{t(shop.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }))} {t(" km")}</span>
-                  </span>
-                </div>
-              </div>
+            {t(d.repairCafes.map((cafe) => (
+              <RepairCafeCard key={cafe.id} cafe={cafe} />
             )))}
           </div>
         </>

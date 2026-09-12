@@ -258,15 +258,38 @@ function receiptFor(itemId, side) {
   return row?.action_id ?? null
 }
 
-/** The other half of the marketplace: who can actually fix this. Real OSM shops. */
-function repairShopsNear(lat, lon, limit = 3) {
+/**
+ * The other half of the marketplace: where this can actually be fixed.
+ *
+ * These used to be the 50 commercial repair shops OSM knows in Frankfurt. A
+ * Repair Café is the better answer to "my toaster is broken but I do not want
+ * to throw it away": it costs nothing, somebody repairs it *with* you, and it
+ * is run by the same civic impulse as the rest of this app. It also fits the
+ * one rule the marketplace never bends — no prices, no resale.
+ *
+ * The trade is that there are eight of them instead of fifty and they open a
+ * few hours a month, so the screen has to carry the date rather than pretend
+ * a café is a shop you can walk into. Hence `openingHours` and `infoUrl`
+ * travel with every row.
+ */
+function repairCafesNear(lat, lon, limit = 3) {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return []
-  return all("SELECT id, name, addr, opening_hours, lat, lon FROM places WHERE kind = 'reparatur'")
+  return all(
+    `SELECT id, name, addr, postcode, opening_hours, operator, website, email, info_url, lat, lon
+       FROM places WHERE kind = 'reparaturcafe'`,
+  )
     .map((p) => ({
       id: p.id,
       name: p.name,
       addr: p.addr,
+      postcode: p.postcode,
       openingHours: p.opening_hours,
+      operator: p.operator,
+      website: p.website,
+      email: p.email,
+      infoUrl: p.info_url,
+      lat: p.lat,
+      lon: p.lon,
       distanceKm: Number(distanceKm({ lat, lon }, p).toFixed(2)),
     }))
     .sort((a, b) => a.distanceKm - b.distanceKm)
@@ -296,8 +319,8 @@ function detail(item, viewerId) {
         : role === 'claimer'
           ? receiptFor(item.id, 'claim')
           : null,
-    repairShops: repairShopsNear(item.lat, item.lon),
-    attribution: '© OpenStreetMap contributors (ODbL)',
+    repairCafes: repairCafesNear(item.lat, item.lon),
+    attribution: 'Repair-Café-Verzeichnis: repaircafe.org · Koordinaten: OpenStreetMap (ODbL)',
   }
 }
 
