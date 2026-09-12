@@ -21,3 +21,10 @@ Thumbs.db
 npm-debug.log*
 yarn-error.log*
 *.log
+
+node_modules/
+data/
+.env
+
+# unpacked GTFS — 154 MB, rebuilt by scripts/build-mobility-data.mjs
+.cache/

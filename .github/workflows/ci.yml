@@ -1,23 +1,22 @@
 name: CI
 
+# Checks both halves of the app. The server has no test suite at hackathon
+# speed, so the check that earns its keep is "does it actually boot and answer"
+# — which catches the failure that bit us in practice: a route registered twice,
+# or a seed file that moved.
+
 on:
   pull_request:
-    paths:
-      - 'app/**'
-      - '.github/workflows/ci.yml'
   push:
     branches-ignore: [main]
-    paths:
-      - 'app/**'
-      - '.github/workflows/ci.yml'
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Type-check and build
+  client:
+    name: Client — type-check and build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -32,8 +31,54 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - run: npm ci
-
       - run: npm run build
 
       - name: Check the build produced something servable
         run: test -f dist/index.html && test -f dist/manifest.webmanifest
+
+  server:
+    name: Server — boot and answer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install
+        working-directory: server
+        run: npm ci
+
+      - name: Boot, then ask it three questions
+        working-directory: server
+        env:
+          PORT: 8080
+          SESSION_SECRET: ci-only
+        run: |
+          npm start &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/api/health >/dev/null && break
+            sleep 1
+          done
+
+          # Health, with the real reference data seeded.
+          curl -fsS http://localhost:8080/api/health | tee /tmp/health.json
+          node -e "
+            const h = require('/tmp/health.json');
+            if (!h.ok) throw new Error('health not ok');
+            if (h.counts.districts !== 46) throw new Error('expected 46 Stadtteile, got ' + h.counts.districts);
+            if (h.counts.places < 900) throw new Error('OSM places missing: ' + h.counts.places);
+            console.log('seed looks right');
+          "
+
+          # The integration register renders — it is a demo artefact, not decoration.
+          curl -fsS http://localhost:8080/api/integrations >/dev/null
+
+          # Signing in is the first thing a judge does; a 201 here is the smoke test.
+          curl -fsS -X POST http://localhost:8080/api/session \
+            -H 'Content-Type: application/json' \
+            -d '{"name":"CI","districtId":"bockenheim"}' >/dev/null
+          echo "sign-in works"

@@ -1,0 +1,577 @@
+/* ------------------------------------------------------------------
+   ReMain — shell and components.
+   Tokens live in tokens.css; nothing here hard-codes a colour.
+   ------------------------------------------------------------------ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Schibsted Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.42;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  /* no double-tap zoom, no rubber-band flash behind the app on iOS */
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+svg {
+  display: block;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--blue-deep);
+  text-decoration: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue-deep);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Shell. Phone-width column, centred on a larger screen.
+   Safe-area insets keep content clear of the notch and the home bar.
+   ------------------------------------------------------------------ */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--paper);
+}
+
+@media (min-width: 520px) {
+  .app {
+    box-shadow: 0 0 0 1px var(--line);
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(16px + env(safe-area-inset-top)) 18px 12px;
+  background: var(--paper);
+}
+
+.nav.solid {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.nav-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.nav-t small {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink2);
+  letter-spacing: 0;
+}
+
+.icobtn {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 14px;
+  color: var(--ink);
+  padding: 0;
+}
+
+.icobtn.bare {
+  border: none;
+  background: transparent;
+  width: 32px;
+}
+
+.body {
+  flex: 1;
+  padding: 2px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Room for the tab bar so the last card is never trapped under it. */
+.app.has-tabs .body {
+  padding-bottom: calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom));
+}
+
+/* A footer that stays put while the body scrolls. */
+.footer {
+  position: sticky;
+  bottom: 0;
+  flex: none;
+  padding: 12px 18px calc(18px + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ------------------------------------------------------------------
+   Tab bar
+   ------------------------------------------------------------------ */
+.tabs {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: 100%;
+  max-width: 480px;
+  z-index: 40;
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding: 9px 6px env(safe-area-inset-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: start;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--ink3);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.tab[aria-current='page'] {
+  color: var(--blue-deep);
+}
+
+.tab-fab {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--blue-deep);
+  color: var(--on-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -20px;
+  box-shadow: 0 6px 16px rgba(31, 92, 130, 0.34);
+  border: 3px solid var(--card);
+}
+
+/* ------------------------------------------------------------------
+   Surfaces
+   ------------------------------------------------------------------ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 15px;
+}
+
+.card.tight {
+  padding: 13px;
+}
+
+.card.flat {
+  box-shadow: none;
+}
+
+.card.sky {
+  background: var(--sky2);
+  border-color: var(--sky-line);
+  box-shadow: none;
+}
+
+.card.dashed {
+  background: transparent;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+/* A card that is also a button keeps the card look and loses the button look. */
+button.card,
+a.card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.sheet {
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 28px rgba(16, 32, 44, 0.1);
+  padding: 8px 18px calc(16px + env(safe-area-inset-bottom));
+}
+
+.grab {
+  width: 38px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--grab);
+  margin: 0 auto 12px;
+}
+
+/* ------------------------------------------------------------------
+   Type
+   ------------------------------------------------------------------ */
+.h1 {
+  font-family: 'Bricolage Grotesque', 'Schibsted Grotesk', system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.h2 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.lbl {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  margin: 0;
+}
+
+.mut {
+  color: var(--ink2);
+}
+.sm {
+  font-size: 12.5px;
+}
+.xs {
+  font-size: 11.5px;
+}
+
+.num {
+  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------
+   Layout helpers
+   ------------------------------------------------------------------ */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+.sep {
+  height: 1px;
+  background: var(--line);
+}
+.ico {
+  color: var(--ink2);
+  flex: none;
+}
+
+/* Colour-coded bullet — the bin fractions and the streak marker. The colour
+   is always set by the caller; only the shape lives here. */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* ------------------------------------------------------------------
+   Controls
+   ------------------------------------------------------------------ */
+.chips {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.chips.scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: -18px;
+  padding-inline: 18px;
+}
+.chips.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+
+.chip[aria-pressed='true'],
+.chip.on {
+  background: var(--blue-deep);
+  border-color: var(--blue-deep);
+  color: var(--on-blue);
+}
+
+/* A chip that carries information rather than a choice — it never looks
+   pressable, so it must not borrow the selected chip's filled blue. */
+.chip.soft {
+  background: var(--sky);
+  border-color: var(--sky-line2);
+  color: var(--blue-ink);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 18px;
+  border-radius: 15px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  width: 100%;
+}
+
+.btn.primary {
+  background: var(--blue-deep);
+  border-color: var(--blue-deep);
+  color: var(--on-blue);
+}
+
+.btn.sm {
+  height: 40px;
+  font-size: 13.5px;
+  border-radius: 12px;
+  width: auto;
+  padding: 0 14px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field {
+  width: 100%;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 13px;
+  /* 16px is the floor below which iOS Safari zooms the page on focus */
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* ------------------------------------------------------------------
+   Provenance tags — the visual heart of the product.
+   Every number on screen says where it came from.
+   ------------------------------------------------------------------ */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 21px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.tag.api {
+  background: var(--sky);
+  color: var(--blue-ink);
+}
+.tag.inp {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+.tag.est {
+  background: var(--stone-soft);
+  color: var(--stone);
+}
+.tag.warn {
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+.tag.plain {
+  background: var(--line2);
+  color: var(--ink2);
+}
+
+/* Reward. The only yellow in the product. */
+.coin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 25px;
+  padding: 0 9px 0 7px;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold-ink);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--sky);
+  overflow: hidden;
+}
+
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--blue-deep);
+}
+
+.thumb {
+  border-radius: 13px;
+  background: var(--sky);
+  border: 1px solid var(--sky-line);
+  overflow: hidden;
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--blue-deep);
+}
+
+/* ------------------------------------------------------------------
+   States
+   ------------------------------------------------------------------ */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink2);
+  font-size: 13px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--blue-deep);
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Phase 1 only: marks a screen whose data is not wired up yet, so nobody
+   demos it by accident. Deleted as each phase lands. */
+.stub {
+  border: 1px dashed var(--stone);
+  background: var(--stone-soft);
+  color: var(--stone);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}

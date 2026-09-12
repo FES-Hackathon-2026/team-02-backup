@@ -1,0 +1,407 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
+
+import Icon from '../components/Icon'
+import Screen from '../components/Screen'
+import { Coin, Label, Tag } from '../components/ui'
+import { useApi, type RouteComparison, type RouteLeg, type RouteOption } from '../lib/client'
+import { STADTTEILE } from '../lib/frankfurt'
+import { useSession } from '../lib/session'
+
+/**
+ * Phase 8 — the way to an action, with its cost shown.
+ *
+ * The screen exists because a journey is part of an action's impact, and a
+ * product that hides it is quietly lying. So all four ways are listed, the
+ * car included, each with the arithmetic that produced its number, and the
+ * car's row says plainly that it earns nothing.
+ *
+ * Location: nothing is read from the device until the person asks for it, it
+ * stops the moment they say so, and the coordinate is rounded before it is
+ * sent. Without it the comparison starts from the centre of their Stadtteil,
+ * which needs no permission at all.
+ */
+
+/** ~11 m. Enough to pick the right stop, not enough to point at a front door. */
+const PRECISION = 4
+const round = (v: number) => Math.round(v * 10 ** PRECISION) / 10 ** PRECISION
+
+/** 9.7 -> "9,7". German decimal comma, everywhere a distance is printed. */
+const km = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 1 })
+const num = (v: number, digits: number) =>
+  v.toLocaleString('de-DE', { maximumFractionDigits: digits })
+
+const MODE_ICON: Record<string, Parameters<typeof Icon>[0]['name']> = {
+  walk: 'users',
+  bike: 'route',
+  transit: 'truck',
+  car: 'truck',
+}
+
+interface Origin {
+  lat: number
+  lon: number
+  label: string
+  exact: boolean
+}
+
+export default function RouteScreen() {
+  const { questId } = useParams()
+  const { me } = useSession()
+
+  // ?at=08:15 pins the comparison to a time of day. The schedule is a real one
+  // and the night service is thin, so a demo at 2 a.m. would otherwise show
+  // honest but useless journeys.
+  const [params] = useSearchParams()
+  const at = /^\d{1,2}:\d{2}$/.test(params.get('at') ?? '') ? params.get('at') : null
+
+  const heimat = useMemo(() => {
+    const s = STADTTEILE.find((d) => d.id === me?.district.id)
+    return s ?? STADTTEILE[0]
+  }, [me?.district.id])
+
+  const [origin, setOrigin] = useState<Origin>({
+    lat: heimat.lat,
+    lon: heimat.lon,
+    label: `Mitte von ${heimat.name}`,
+    exact: false,
+  })
+  const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+  const [open, setOpen] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (origin.exact) return
+    setOrigin({ lat: heimat.lat, lon: heimat.lon, label: `Mitte von ${heimat.name}`, exact: false })
+    // only follows the district while no device position is in use
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [heimat.id])
+
+  const startLocating = useCallback(() => {
+    if (!('geolocation' in navigator)) {
+      setLocationError('Dieses Gerät gibt keinen Standort her.')
+      return
+    }
+    setLocating(true)
+    setLocationError(null)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocating(false)
+        // rounded here, on the device, before anything is sent
+        setOrigin({
+          lat: round(pos.coords.latitude),
+          lon: round(pos.coords.longitude),
+          label: 'Dein Standort',
+          exact: true,
+        })
+      },
+      (err) => {
+        setLocating(false)
+        setLocationError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Kein Zugriff auf den Standort — der Vergleich startet weiter in deinem Stadtteil.'
+            : 'Der Standort war nicht zu ermitteln. Es bleibt beim Stadtteil.',
+        )
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
+    )
+  }, [])
+
+  const stopLocating = useCallback(() => {
+    setOrigin({ lat: heimat.lat, lon: heimat.lon, label: `Mitte von ${heimat.name}`, exact: false })
+    setLocationError(null)
+  }, [heimat])
+
+  const path =
+    questId === undefined
+      ? null
+      : `/api/mobility/routes?questId=${encodeURIComponent(questId)}` +
+        `&fromLat=${origin.lat}&fromLon=${origin.lon}` +
+        (at === null ? '' : `&at=${encodeURIComponent(at)}`)
+
+  const { data, error, loading, reload } = useApi<RouteComparison>(path)
+
+  return (
+    <Screen
+      back
+      title="Hinweg"
+      sub={data?.target?.title ?? 'Route-Assistent'}
+    >
+      {/* --- where the comparison starts, and who decides that --- */}
+      <div className="card tight">
+        <div className="row" style={{ gap: 11 }}>
+          <span
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              flex: 'none',
+              background: 'var(--sky)',
+              color: 'var(--blue-deep)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Icon name="pin" size={19} />
+          </span>
+          <span className="grow">
+            <span className="sm" style={{ display: 'block', fontWeight: 700 }}>
+              Start: {origin.label}
+            </span>
+            <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
+              {origin.exact
+                ? `Auf ${PRECISION} Nachkommastellen gerundet (${origin.lat}, ${origin.lon}) — genauer verlässt nichts dein Gerät.`
+                : 'Ohne Standortfreigabe. Reicht für den Vergleich, trifft aber nicht die Haltestelle vor der Tür.'}
+            </span>
+          </span>
+        </div>
+
+        <div className="row" style={{ gap: 8, marginTop: 11 }}>
+          {origin.exact ? (
+            <button className="btn sm" onClick={stopLocating}>
+              <Icon name="cross" size={15} />
+              Standort beenden
+            </button>
+          ) : (
+            <button className="btn sm primary" onClick={startLocating} disabled={locating}>
+              {locating ? <span className="spinner" /> : <Icon name="pin" size={15} />}
+              {locating ? 'Suche …' : 'Standort verwenden'}
+            </button>
+          )}
+          {data !== null && (
+            <span className="xs mut" style={{ alignSelf: 'center' }}>
+              Abfahrt ab {data.atTime}
+              {at !== null && ' (gesetzt)'}
+            </span>
+          )}
+        </div>
+
+        {locationError !== null && (
+          <p className="xs" style={{ margin: '9px 0 0', color: 'var(--alert)' }}>
+            {locationError}
+          </p>
+        )}
+      </div>
+
+      {loading && (
+        <div className="empty">
+          <span className="spinner" />
+        </div>
+      )}
+
+      {error !== null && (
+        <div className="card">
+          <p className="sm" style={{ margin: 0 }}>
+            {error.code === 'mobility_data_missing'
+              ? 'Die Fahrplandaten sind noch nicht gebaut.'
+              : error.message}
+          </p>
+          <button className="btn sm" style={{ marginTop: 11 }} onClick={reload}>
+            Nochmal versuchen
+          </button>
+        </div>
+      )}
+
+      {data !== null && (
+        <>
+          <div className="between">
+            <p className="lbl">
+              {data.options.length} Wege · {km(data.directKm)} km Luftlinie
+            </p>
+            <span className="xs mut">sparsamster zuerst</span>
+          </div>
+
+          <div className="col" style={{ gap: 9 }}>
+            {data.options.map((o) => (
+              <OptionCard
+                key={o.mode}
+                option={o}
+                open={open === o.mode}
+                onToggle={() => setOpen(open === o.mode ? null : o.mode)}
+              />
+            ))}
+          </div>
+
+          {/* --- provenance, because every number above is one of two kinds --- */}
+          <div className="card flat">
+            <p className="lbl" style={{ marginTop: 0 }}>
+              Woher die Zahlen kommen
+            </p>
+
+            {data.schedule !== null && (
+              <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
+                <Tag von="api" icon>
+                  Fahrplan
+                </Tag>{' '}
+                {data.schedule.note} {data.schedule.limitation}
+              </p>
+            )}
+
+            <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
+              <Tag von="estimate" icon>
+                CO₂e
+              </Tag>{' '}
+              {data.assumptions.note} Auto {num(data.assumptions.carCo2PerKm, 3)} kg/km, ÖPNV{' '}
+              {num(data.assumptions.transitCo2PerKm, 3)} kg/km, Umwegfaktor{' '}
+              {num(data.assumptions.detourFactor, 1)}, {data.assumptions.pointsPerKgCo2} XP je kg.
+              Quelle: {data.assumptions.source}.
+            </p>
+
+            <div className="sep" style={{ margin: '11px 0' }} />
+
+            <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
+              {data.xpNote}
+            </p>
+          </div>
+        </>
+      )}
+    </Screen>
+  )
+}
+
+/* ------------------------------------------------------------------
+   One option
+   ------------------------------------------------------------------ */
+
+function OptionCard({
+  option,
+  open,
+  onToggle,
+}: {
+  option: RouteOption
+  open: boolean
+  onToggle: () => void
+}) {
+  const blocked = option.xp.effect === 'none'
+
+  return (
+    <div className="card tight" style={blocked ? { borderColor: 'var(--alert-soft)' } : undefined}>
+      <button
+        onClick={onToggle}
+        aria-expanded={open}
+        style={{
+          border: 'none',
+          background: 'none',
+          padding: 0,
+          width: '100%',
+          textAlign: 'left',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 11,
+        }}
+      >
+        <span
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            flex: 'none',
+            background: blocked ? 'var(--alert-soft)' : 'var(--sky)',
+            color: blocked ? 'var(--alert)' : 'var(--blue-deep)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Icon name={MODE_ICON[option.mode] ?? 'route'} size={20} />
+        </span>
+
+        <span className="grow">
+          <span className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
+            <b className="sm">{option.label}</b>
+            <span className="num sm">{option.minutes} Min</span>
+            <span className="xs mut">{km(option.km)} km</span>
+          </span>
+          <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
+            {option.detail}
+          </span>
+        </span>
+
+        <span style={{ textAlign: 'right', flex: 'none' }}>
+          <span className="row" style={{ gap: 5, justifyContent: 'flex-end' }}>
+            <span className="num sm">{option.co2Kg.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</span>
+            <span className="xs mut">kg</span>
+          </span>
+          <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
+            <Icon name="chevron" size={13} style={{ transform: open ? 'rotate(90deg)' : undefined }} />
+          </span>
+        </span>
+      </button>
+
+      {/* The point of the screen: what this way does to the credit. */}
+      <div className="row" style={{ gap: 7, marginTop: 10, flexWrap: 'wrap' }}>
+        {blocked ? (
+          <Label tone="warn">{option.xp.text}</Label>
+        ) : option.xp.effect === 'full' ? (
+          <Coin star>{option.xp.text}</Coin>
+        ) : (
+          <Coin>{option.xp.text}</Coin>
+        )}
+        <Tag von="estimate">
+          {option.mode === 'car' ? 'Vergleichswert' : option.savedVsCarText}
+        </Tag>
+      </div>
+
+      {open && (
+        <>
+          <div className="sep" style={{ margin: '12px 0 11px' }} />
+
+          <p className="xs" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
+            {option.xp.reason}
+          </p>
+
+          <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
+            <b>Rechenweg:</b> {option.formula}
+            <br />
+            {option.co2Note}
+          </p>
+
+          {option.note !== null && (
+            <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
+              {option.note}
+            </p>
+          )}
+
+          {option.legs !== null && (
+            <div className="col" style={{ gap: 7 }}>
+              {option.legs.map((leg, i) => (
+                <Leg key={i} leg={leg} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function Leg({ leg }: { leg: RouteLeg }) {
+  if (leg.kind === 'walk') {
+    return (
+      <div className="row xs mut" style={{ gap: 8 }}>
+        <Icon name="users" size={14} className="ico" />
+        <span>
+          {leg.to !== undefined ? `Zu Fuß zur Haltestelle ${leg.to}` : `Zu Fuß ab ${leg.from}`} ·{' '}
+          {Math.max(1, Math.round((leg.seconds ?? 0) / 60))} Min
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="row xs" style={{ gap: 8 }}>
+      <Icon name="truck" size={14} className="ico" />
+      <span className="grow">
+        <b>
+          {leg.mode} {leg.line}
+        </b>{' '}
+        Richtung {leg.headsign}
+        <span className="mut">
+          {' '}
+          · {leg.departTime} ab {leg.from} → {leg.arriveTime} {leg.to} ({leg.stops} Halte)
+        </span>
+      </span>
+    </div>
+  )
+}

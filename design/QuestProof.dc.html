@@ -1,0 +1,230 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+  <style>
+/* ReMain — "Mainwasser" design system.
+   Pastel river blue on cool paper, deep navy ink, yellow reserved for rewards.
+   Provenance colours are load-bearing: confirmed / stated / estimated must
+   never be confusable, because the brief requires them to be separated. */
+:root {
+  --paper: #F1F5F8;
+  --card: #FFFFFF;
+  --ink: #10202C;
+  --ink2: #526575;
+  --ink3: #8C9CA8;
+  --line: #DBE5EC;
+  --blue: #7FA8C4;
+  --blue-deep: #1F5C82;
+  --blue-ink: #14435F;
+  --sky: #D6E6F1;
+  --sky2: #EAF2F8;
+  --gold: #E3A81C;
+  --gold-ink: #8A6410;
+  --gold-soft: #FBF0D4;
+  --slate: #5F6280;
+  --slate-soft: #ECEEF5;
+  --stone: #7C6F61;
+  --stone-soft: #F1EDE7;
+  --alert: #B03A2B;
+  --alert-soft: #FAE7E3;
+  --sh: 0 1px 1px rgba(16,32,44,.04), 0 6px 18px rgba(16,32,44,.06);
+  --r: 18px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; font-family: 'Schibsted Grotesk', 'Segoe UI', system-ui, sans-serif; }
+a { color: var(--blue-deep); text-decoration: none; }
+a:hover { color: var(--blue-ink); }
+svg { display: block; }
+
+/* ---------- shell ---------- */
+.scr {
+  width: 390px; height: 844px; background: var(--paper); color: var(--ink);
+  display: flex; flex-direction: column; overflow: hidden; position: relative;
+  font-size: 14px; line-height: 1.42; letter-spacing: -0.005em;
+}
+.nav {
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 18px 12px; background: var(--paper);
+}
+.nav.solid { background: var(--card); border-bottom: 1px solid var(--line); }
+.nav-t { flex: 1; min-width: 0; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.nav-t small { display: block; font-size: 12px; font-weight: 500; color: var(--ink2); letter-spacing: 0; }
+.icobtn {
+  width: 44px; height: 44px; flex: none; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--card); border-radius: 14px; color: var(--ink);
+  padding: 0; cursor: pointer;
+}
+.body { flex: 1; min-height: 0; overflow: hidden; padding: 2px 18px 14px; display: flex; flex-direction: column; gap: 14px; }
+.body.flush { padding-left: 0; padding-right: 0; }
+
+/* ---------- tab bar ---------- */
+.tabs {
+  flex: none; height: 78px; background: var(--card); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: start;
+  padding: 9px 6px 0; position: relative;
+}
+.tab { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--ink3); font-size: 10.5px; font-weight: 600; }
+.tab.on { color: var(--blue-deep); }
+.tab-fab {
+  width: 54px; height: 54px; border-radius: 50%; background: var(--blue-deep); color: #fff;
+  display: flex; align-items: center; justify-content: center; margin-top: -20px;
+  box-shadow: 0 6px 16px rgba(31,92,130,.34); border: 3px solid var(--card);
+}
+
+/* ---------- surfaces ---------- */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--sh); padding: 15px; }
+.card.tight { padding: 13px; }
+.card.flat { box-shadow: none; }
+.card.sky { background: var(--sky2); border-color: #CFE2EE; box-shadow: none; }
+.sheet {
+  background: var(--card); border-radius: 24px 24px 0 0; border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 28px rgba(16,32,44,.10); padding: 8px 18px 16px; margin-top: auto;
+}
+.grab { width: 38px; height: 4px; border-radius: 4px; background: #CFDCE5; margin: 0 auto 12px; }
+
+/* ---------- type ---------- */
+.h1 { font-family: 'Bricolage Grotesque', 'Schibsted Grotesk', system-ui, sans-serif; font-size: 26px; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
+.h2 { font-size: 16px; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+.h3 { font-size: 14px; font-weight: 700; margin: 0; }
+.lbl { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--ink3); margin: 0; }
+.mut { color: var(--ink2); }
+.sm { font-size: 12.5px; }
+.xs { font-size: 11.5px; }
+.num { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+
+/* ---------- bits ---------- */
+.row { display: flex; align-items: center; gap: 10px; }
+.col { display: flex; flex-direction: column; gap: 10px; }
+.between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.grow { flex: 1; min-width: 0; }
+.chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 13px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+  font-size: 12.5px; font-weight: 600; color: var(--ink2); white-space: nowrap;
+}
+.chip.on { background: var(--blue-deep); border-color: var(--blue-deep); color: #fff; }
+.chip.soft { background: var(--sky); border-color: #C6DCEC; color: var(--blue-ink); }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px; padding: 0 18px;
+  border-radius: 15px; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%;
+}
+.btn.primary { background: var(--blue-deep); border-color: var(--blue-deep); color: #fff; }
+.btn.sm { height: 40px; font-size: 13.5px; border-radius: 12px; width: auto; padding: 0 14px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px; height: 21px; padding: 0 8px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap;
+}
+.tag.api { background: var(--sky); color: var(--blue-ink); }
+.tag.inp { background: var(--slate-soft); color: var(--slate); }
+.tag.est { background: var(--stone-soft); color: var(--stone); }
+.tag.warn { background: var(--alert-soft); color: var(--alert); }
+.dot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.coin {
+  display: inline-flex; align-items: center; gap: 5px; height: 25px; padding: 0 9px 0 7px; border-radius: 999px;
+  background: var(--gold-soft); color: var(--gold-ink); font-size: 12.5px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.bar { height: 8px; border-radius: 99px; background: var(--sky); overflow: hidden; }
+.bar > i { display: block; height: 100%; border-radius: 99px; background: var(--blue-deep); }
+.thumb { border-radius: 13px; background: var(--sky); border: 1px solid #CFE2EE; overflow: hidden; position: relative; flex: none; }
+.sep { height: 1px; background: var(--line); }
+.ico { color: var(--ink2); flex: none; }
+  </style>
+</helmet>
+<div class="scr">
+  <header class="nav solid">
+    <button class="icobtn" style="border:none;background:transparent;width:32px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5.5-6.4 6.5 6.4 6.5"/></svg></button>
+    <div class="nav-t">Quest abschließen<small>Müll am Mainufer</small></div>
+  </header>
+
+  <div class="body" style="gap:13px">
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <div>
+        <div class="thumb" style="width:100%;height:118px;position:relative">
+          <span style="position:absolute;inset:0;background:#D9E5D3"></span>
+          <span style="position:absolute;left:0;right:0;bottom:0;height:38px;background:#C3D5BB"></span>
+          <span style="position:absolute;left:12px;bottom:28px;width:26px;height:16px;border-radius:4px;background:#9AAE93"></span>
+          <span style="position:absolute;left:46px;bottom:22px;width:34px;height:22px;border-radius:5px;background:#8FA588"></span>
+          <span style="position:absolute;left:88px;bottom:30px;width:20px;height:13px;border-radius:4px;background:#A5B79D"></span>
+          <span style="position:absolute;right:16px;bottom:24px;width:24px;height:18px;border-radius:4px;background:#93A88C"></span>
+          <span style="position:absolute;right:26px;top:16px;width:7px;height:52px;border-radius:3px;background:#B3C4AC"></span>
+        </div>
+        <p class="xs mut" style="margin:7px 0 0;font-weight:600">Vorher · 14:06 · Meldung</p>
+      </div>
+      <div>
+        <div class="thumb" style="width:100%;height:118px;position:relative;border-color:var(--blue)">
+          <span style="position:absolute;inset:0;background:#DDE9D7"></span>
+          <span style="position:absolute;left:0;right:0;bottom:0;height:38px;background:#C7D9BF"></span>
+          <span style="position:absolute;right:26px;top:16px;width:7px;height:52px;border-radius:3px;background:#B3C4AC"></span>
+        </div>
+        <p class="xs mut" style="margin:7px 0 0;font-weight:600">Nachher · 14:20 · von dir</p>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:var(--blue);background:var(--sky2)">
+      <div class="row" style="gap:12px;margin-bottom:12px">
+        <span style="width:44px;height:44px;border-radius:14px;background:var(--blue-deep);color:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.6 4.2 4.3 8.8-9.6"/></svg></span>
+        <span class="grow">
+          <b class="h2" style="display:block">Plausibel bestätigt</b>
+          <span class="xs mut">Bildvergleich · Übereinstimmung 88 %</span>
+        </span>
+        <span class="tag est"><svg class="ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.4 1.9 5.1 5.1 1.9-5.1 1.9L12 17.4l-1.9-5.1L5 10.4l5.1-1.9z"/><path d="m18.4 15.6.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>KI</span>
+      </div>
+
+      <div class="col" style="gap:8px">
+        <div class="row" style="gap:8px;align-items:flex-start">
+          <span style="color:var(--blue-deep);flex:none;margin-top:1px"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.6 4.2 4.3 8.8-9.6"/></svg></span>
+          <span class="xs grow">Gleicher Bildausschnitt — Laterne und Uferkante decken sich</span>
+          <span class="tag est">Schätzung</span>
+        </div>
+        <div class="row" style="gap:8px;align-items:flex-start">
+          <span style="color:var(--blue-deep);flex:none;margin-top:1px"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.6 4.2 4.3 8.8-9.6"/></svg></span>
+          <span class="xs grow">Die gemeldeten Objekte sind nicht mehr im Bild</span>
+          <span class="tag est">Schätzung</span>
+        </div>
+        <div class="row" style="gap:8px;align-items:flex-start">
+          <span style="color:var(--blue-deep);flex:none;margin-top:1px"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.6 4.2 4.3 8.8-9.6"/></svg></span>
+          <span class="xs grow">Aufnahmeort 12 m vom Meldepunkt</span>
+          <span class="tag inp">GPS</span>
+        </div>
+        <div class="row" style="gap:8px;align-items:flex-start">
+          <span style="color:var(--blue-deep);flex:none;margin-top:1px"><svg class="ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5.5 12.6 4.2 4.3 8.8-9.6"/></svg></span>
+          <span class="xs grow">14 Minuten nach Quest-Start aufgenommen</span>
+          <span class="tag api">bestätigt</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card tight">
+      <div class="between" style="margin-bottom:9px">
+        <b class="sm">Gegenprüfung durch Nachbar:innen</b>
+        <span class="xs mut">1 von 2</span>
+      </div>
+      <div class="bar" style="margin-bottom:9px"><i style="width:50%"></i></div>
+      <p class="xs mut" style="margin:0;line-height:1.5">
+        Zwei Personen in der Nähe werden gefragt, ob der Ort sauber ist. Keine Namen,
+        keine Fotos von dir — nur ja oder nein.
+      </p>
+    </div>
+  </div>
+
+  <div style="flex:none;padding:12px 18px 22px;background:var(--card);border-top:1px solid var(--line)">
+    <div class="between" style="margin-bottom:10px">
+      <span class="xs mut">Nach der Gegenprüfung gutgeschrieben</span>
+      <span class="coin"><svg class="ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3.8 2.6 5.4 5.9.8-4.3 4.1 1.1 5.9L12 17.2l-5.3 2.8 1.1-5.9L3.5 10l5.9-.8z"/></svg>+120 XP</span>
+    </div>
+    <button class="btn primary">Fertig</button>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,9 +1,9 @@
 {
-  "name": "save2share",
+  "name": "remain",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Mobile-first PWA for the Frankfurt Impact Challenge — Team 02",
+  "description": "ReMain — mobile-first PWA for the Frankfurt Impact Challenge (Team 02)",
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
@@ -12,8 +12,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.22",
+    "leaflet": "^1.9.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

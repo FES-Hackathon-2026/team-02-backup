@@ -1,158 +1,86 @@
-import { useCallback, useEffect, useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
-import SettingsSheet from './components/SettingsSheet'
-import TabBar, { type TabId } from './components/TabBar'
-import { listUsers } from './lib/api'
-import { getActiveUserId, hasAnyKey, setActiveUserId, signOut } from './lib/config'
-import Discover, { type Opportunity } from './screens/Discover'
-import Fair from './screens/Fair'
-import Impact from './screens/Impact'
-import Login from './screens/Login'
-import Receipts from './screens/Receipts'
-import type { User } from './lib/types'
+import { SessionProvider, useSession } from './lib/session'
+import Abholung from './screens/Abholung'
+import Anmelden from './screens/Anmelden'
+import Belohnungen from './screens/Belohnungen'
+import Erkannt from './screens/Erkannt'
+import Fairteiler from './screens/Fairteiler'
+import Integrationen from './screens/Integrationen'
+import Kalender from './screens/Kalender'
+import Markt from './screens/Markt'
+import MarktDetail from './screens/MarktDetail'
+import Nachweis from './screens/Nachweis'
+import QuestProof from './screens/QuestProof'
+import Quests from './screens/Quests'
+import Review from './screens/Review'
+import RouteScreen from './screens/Route'
+import Scan from './screens/Scan'
+import Stadtteile from './screens/Stadtteile'
+import Start from './screens/Start'
+import Wirkung from './screens/Wirkung'
+import Wissen from './screens/Wissen'
+import Vytal from './screens/Vytal'
 
-type Phase = 'restoring' | 'signed-out' | 'signed-in'
-
+/**
+ * Real URLs, not tab state: a judge can be handed a link to one screen, the
+ * back button behaves, and a reload lands where it left off.
+ *
+ * BASE_URL covers both hosting shapes — a repository subpath on Pages and
+ * the domain root everywhere else — without a second config.
+ */
 export default function App() {
-  const [phase, setPhase] = useState<Phase>('restoring')
-  const [users, setUsers] = useState<User[]>([])
-  const [activeUserId, setActive] = useState<number | null>(null)
-  const [tab, setTab] = useState<TabId>('discover')
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  // false after an explicit sign-out, so the built-in key does not log you
-  // straight back in
-  const [autoStart, setAutoStart] = useState(true)
+  return (
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <SessionProvider>
+        <Gate />
+      </SessionProvider>
+    </BrowserRouter>
+  )
+}
 
-  /**
-   * Restore a previous session on load: a stored key plus a stored user id.
-   * The key is re-validated against the server rather than trusted, so a
-   * revoked or edited key drops you back to the login screen instead of
-   * failing later on every screen.
-   */
-  const restore = useCallback(async () => {
-    setPhase('restoring')
+function Gate() {
+  const { me, loading } = useSession()
 
-    const storedUserId = getActiveUserId()
-    if (!hasAnyKey() || storedUserId === null) {
-      setPhase('signed-out')
-      return
-    }
-
-    const res = await listUsers()
-    if (!res.ok || !res.data?.some((u) => u.id === storedUserId)) {
-      setPhase('signed-out')
-      return
-    }
-
-    setUsers(res.data)
-    setActive(storedUserId)
-    setPhase('signed-in')
-  }, [])
-
-  useEffect(() => {
-    void restore()
-  }, [restore])
-
-  function handleSignedIn(nextUsers: User[], userId: number) {
-    setAutoStart(true)
-    setUsers(nextUsers)
-    setActive(userId)
-    setPhase('signed-in')
-  }
-
-  function handleSignOut() {
-    signOut()
-    setAutoStart(false)
-    setUsers([])
-    setActive(null)
-    setSettingsOpen(false)
-    setTab('discover')
-    setPhase('signed-out')
-  }
-
-  function switchUser(id: number) {
-    setActiveUserId(id)
-    setActive(id)
-  }
-
-  function handleSelect(opportunity: Opportunity) {
-    // TODO(#1): open the action sheet — adjust amount and travel mode, show the
-    // live net-impact breakdown and the reward with its reasons, then write to
-    // the API (reserve -> confirm) and produce a receipt.
-    console.info('selected opportunity', opportunity)
-  }
-
-  if (phase === 'restoring') {
-    return (
-      <div className="login">
-        <div className="empty">
-          <span className="spinner" /> Restoring your session…
-        </div>
-      </div>
-    )
-  }
-
-  if (phase === 'signed-out') {
-    return <Login onSignedIn={handleSignedIn} autoStart={autoStart} />
-  }
-
-  const user = users.find((u) => u.id === activeUserId) ?? null
-
-  if (settingsOpen) {
+  // One request long. Anything more elaborate here flashes on every load.
+  if (loading) {
     return (
       <div className="app">
-        <header className="topbar">
-          <div className="title">Settings</div>
-        </header>
-        <SettingsSheet
-          onClose={() => setSettingsOpen(false)}
-          onKeyChange={() => void restore()}
-          onSignOut={handleSignOut}
-        />
+        <div className="empty" style={{ minHeight: '100dvh', justifyContent: 'center' }}>
+          <span className="spinner" />
+        </div>
       </div>
     )
   }
 
+  if (!me) return <Anmelden />
+
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="title">
-          Save2Share
-          <small>{user ? `Acting as ${user.display_name} · #${user.id}` : 'Rescue minus travel'}</small>
-        </div>
-        <button
-          className="chip"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Settings"
-          title="Settings"
-        >
-          ⚙
-        </button>
-      </header>
+    <Routes>
+      <Route path="/" element={<Start />} />
+      <Route path="/quests" element={<Quests />} />
+      <Route path="/scan" element={<Scan />} />
+      <Route path="/markt" element={<Markt />} />
+      <Route path="/wirkung" element={<Wirkung />} />
 
-      {users.length > 1 && (
-        <div className="screen" style={{ paddingBottom: 0 }}>
-          <div className="chips">
-            {users.map((u) => (
-              <button
-                key={u.id}
-                className="chip"
-                aria-pressed={u.id === activeUserId}
-                onClick={() => switchUser(u.id)}
-              >
-                {u.display_name} #{u.id} {u.verification.is_verified ? '✓' : ''}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <Route path="/kalender" element={<Kalender />} />
+      <Route path="/belohnungen" element={<Belohnungen />} />
+      <Route path="/stadtteile" element={<Stadtteile />} />
 
-      {tab === 'discover' && <Discover user={user} onSelect={handleSelect} />}
-      {tab === 'receipts' && <Receipts />}
-      {tab === 'impact' && <Impact />}
-      {tab === 'fair' && <Fair user={user} />}
+      {/* Wired ahead of time so the phases below never edit this file. */}
+      <Route path="/nachweis/:actionId" element={<Nachweis />} />
+      <Route path="/erkannt/:photoId" element={<Erkannt />} />
+      <Route path="/abholung" element={<Abholung />} />
+      <Route path="/wissen" element={<Wissen />} />
+      <Route path="/markt/:id" element={<MarktDetail />} />
+      <Route path="/quests/:id/nachweis" element={<QuestProof />} />
+      <Route path="/review/:submissionId" element={<Review />} />
+      <Route path="/route/:questId" element={<RouteScreen />} />
+      <Route path="/essen" element={<Fairteiler />} />
+      <Route path="/mehrweg" element={<Vytal />} />
+      <Route path="/integrationen" element={<Integrationen />} />
 
-      <TabBar active={tab} onChange={setTab} />
-    </div>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }

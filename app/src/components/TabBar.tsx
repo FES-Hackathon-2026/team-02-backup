@@ -1,33 +1,42 @@
-export type TabId = 'discover' | 'receipts' | 'impact' | 'fair'
+import { NavLink } from 'react-router-dom'
 
-const TABS: { id: TabId; label: string; path: string }[] = [
-  { id: 'discover', label: 'Discover', path: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14M20 20l-3.5-3.5' },
-  { id: 'receipts', label: 'Receipts', path: 'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6' },
-  { id: 'impact', label: 'Impact', path: 'M3 20h18M6 20v-6M11 20V7M16 20v-9M21 20V4' },
-  { id: 'fair', label: 'Fair', path: 'M12 3v18M5 7h14M7 7l-3 7h6zM17 7l-3 7h6z' },
-]
+import Icon, { type IconName } from './Icon'
+import { de } from '../lib/de'
 
-interface Props {
-  active: TabId
-  onChange: (tab: TabId) => void
+interface Tab {
+  to: string
+  icon: IconName
+  label: string
+  /** only '/' should match exactly; the others own their subtree */
+  end?: boolean
+  /** the raised centre button — the product's one hero action */
+  fab?: boolean
 }
 
-export default function TabBar({ active, onChange }: Props) {
+const TABS: Tab[] = [
+  { to: '/', icon: 'home', label: de.tabs.start, end: true },
+  { to: '/quests', icon: 'quest', label: de.tabs.quests },
+  { to: '/scan', icon: 'camera', label: de.tabs.scan, fab: true },
+  { to: '/markt', icon: 'market', label: de.tabs.markt },
+  { to: '/wirkung', icon: 'leaf', label: de.tabs.wirkung },
+]
+
+export default function TabBar() {
   return (
-    <nav className="tabbar" role="tablist" aria-label="Main sections">
+    <nav className="tabs" aria-label="Hauptbereiche">
       {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          role="tab"
-          aria-selected={active === tab.id}
-          aria-controls={`panel-${tab.id}`}
-          onClick={() => onChange(tab.id)}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d={tab.path} />
-          </svg>
-          {tab.label}
-        </button>
+        <NavLink key={tab.to} to={tab.to} end={tab.end} className="tab" aria-label={tab.label}>
+          {tab.fab ? (
+            <span className="tab-fab">
+              <Icon name={tab.icon} size={24} stroke={1.9} />
+            </span>
+          ) : (
+            <>
+              <Icon name={tab.icon} size={22} />
+              {tab.label}
+            </>
+          )}
+        </NavLink>
       ))}
     </nav>
   )

@@ -1,0 +1,60 @@
+<div class="scr">
+  <header class="nav solid">
+    <button class="icobtn" style="border:none;background:transparent;width:32px">{{ico:cross,22}}</button>
+    <div class="nav-t">Kurz gegenprüfen<small>dauert 20 Sekunden</small></div>
+  </header>
+
+  <div class="body" style="gap:14px">
+    <div class="card sky tight" style="display:flex;gap:10px;align-items:flex-start">
+      <span style="color:var(--blue-deep);flex:none;margin-top:1px">{{ico:pin,19}}</span>
+      <p class="xs mut" style="margin:0;line-height:1.5">
+        Du bist gerade <b style="color:var(--ink)">80 m</b> vom Untermainkai entfernt. Jemand hat dort
+        eben aufgeräumt. Stimmt das?
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <div>
+        <div class="thumb" style="width:100%;height:132px;position:relative">
+          <span style="position:absolute;inset:0;background:#D9E5D3"></span>
+          <span style="position:absolute;left:0;right:0;bottom:0;height:42px;background:#C3D5BB"></span>
+          <span style="position:absolute;left:12px;bottom:32px;width:26px;height:16px;border-radius:4px;background:#9AAE93"></span>
+          <span style="position:absolute;left:46px;bottom:26px;width:34px;height:22px;border-radius:5px;background:#8FA588"></span>
+          <span style="position:absolute;left:88px;bottom:34px;width:20px;height:13px;border-radius:4px;background:#A5B79D"></span>
+          <span style="position:absolute;right:24px;top:18px;width:7px;height:58px;border-radius:3px;background:#B3C4AC"></span>
+        </div>
+        <p class="xs mut" style="margin:7px 0 0;font-weight:600">Gemeldet · Di 14:06</p>
+      </div>
+      <div>
+        <div class="thumb" style="width:100%;height:132px;position:relative;border-color:var(--blue)">
+          <span style="position:absolute;inset:0;background:#DDE9D7"></span>
+          <span style="position:absolute;left:0;right:0;bottom:0;height:42px;background:#C7D9BF"></span>
+          <span style="position:absolute;right:24px;top:18px;width:7px;height:58px;border-radius:3px;background:#B3C4AC"></span>
+        </div>
+        <p class="xs mut" style="margin:7px 0 0;font-weight:600">Erledigt · Di 14:20</p>
+      </div>
+    </div>
+
+    <h2 class="h1" style="font-size:21px;margin-top:2px">Ist der Ort jetzt sauber?</h2>
+
+    <div class="col" style="gap:9px">
+      <button class="btn primary" style="justify-content:flex-start;gap:11px">{{ico:check,21,2.2}}Ja, sieht sauber aus</button>
+      <button class="btn" style="justify-content:flex-start;gap:11px">{{ico:cross,21,2.2}}Nein, liegt noch etwas</button>
+      <button class="btn" style="justify-content:flex-start;gap:11px;color:var(--ink2)">{{ico:info,21,2.2}}Kann ich von hier nicht sehen</button>
+    </div>
+
+    <div class="card flat tight" style="background:transparent;border-style:dashed">
+      <p class="xs mut" style="margin:0;line-height:1.55">
+        Deine Antwort ist anonym. Der Person, die aufgeräumt hat, zeigen wir nur die Summe —
+        nie, wer wie geantwortet hat. Zwei gleiche Antworten geben die Belohnung frei.
+      </p>
+    </div>
+  </div>
+
+  <div style="flex:none;padding:12px 18px 22px;background:var(--card);border-top:1px solid var(--line)">
+    <div class="between">
+      <span class="xs mut">Für deine Gegenprüfung</span>
+      <span class="coin">{{ico:star,13,2}}+15 XP</span>
+    </div>
+  </div>
+</div>

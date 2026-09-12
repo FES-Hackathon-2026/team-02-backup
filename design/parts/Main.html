@@ -1,0 +1,103 @@
+<div class="scr">
+  <header class="nav">
+    <div class="nav-t">Moin, Lena<small>Level 7 · Stadtheldin · Bockenheim</small></div>
+    <button class="icobtn">{{ico:bell,21}}</button>
+  </header>
+
+  <div class="body">
+    <!-- progress: the only place the reward colour appears on this screen -->
+    <div class="card" style="display:flex;align-items:center;gap:14px">
+      <div style="width:62px;height:62px;border-radius:50%;flex:none;background:conic-gradient(var(--blue-deep) 0 298deg, var(--sky) 298deg 360deg);display:flex;align-items:center;justify-content:center">
+        <div style="width:48px;height:48px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center">
+          <span class="num" style="font-size:20px;color:var(--blue-deep)">7</span>
+        </div>
+      </div>
+      <div class="grow">
+        <div class="between" style="margin-bottom:5px">
+          <span class="h3">1.240 / 1.500 XP</span>
+          <span class="coin">{{ico:star,13,2}}340</span>
+        </div>
+        <div class="sm mut">Noch 260 XP bis <b style="color:var(--ink)">Level 8</b></div>
+        <div class="row xs mut" style="gap:6px;margin-top:6px">
+          <span class="dot" style="background:var(--blue)"></span>5 Wochen in Folge aktiv
+        </div>
+      </div>
+    </div>
+
+    <!-- the one hero action of the whole app -->
+    <button class="card" style="display:flex;align-items:center;gap:13px;text-align:left;border:none;box-shadow:var(--sh);background:var(--blue-deep);color:#fff;padding:17px 16px;cursor:pointer;font-family:inherit">
+      <span style="width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;color:#fff;flex:none">{{ico:camera,23}}</span>
+      <span class="grow">
+        <span class="h2" style="display:block;color:#fff">Foto machen</span>
+        <span class="sm" style="display:block;color:#C4DDEE;margin-top:2px">Sperrmüll, Fundstück oder Frage — ReMain ordnet es ein</span>
+      </span>
+      <span style="color:#8FBEDD">{{ico:chevron,20}}</span>
+    </button>
+
+    <div class="card tight" style="display:flex;align-items:center;gap:12px">
+      <span style="width:40px;height:40px;border-radius:12px;background:var(--sky);color:var(--blue-deep);display:flex;align-items:center;justify-content:center;flex:none">{{ico:calendar,21}}</span>
+      <span class="grow">
+        <span class="sm" style="display:block;font-weight:700">Biotonne · morgen früh</span>
+        <span class="xs mut" style="display:block">Danach Papier am Di 16.09. <span class="tag api" style="margin-left:2px">FES-Kalender</span></span>
+      </span>
+      <span class="ico">{{ico:chevron,20}}</span>
+    </div>
+
+    <div>
+      <div class="between" style="margin-bottom:9px">
+        <p class="lbl">In deiner Nähe</p>
+        <span class="xs" style="color:var(--blue-deep);font-weight:700">Karte ansehen</span>
+      </div>
+      <div class="col" style="gap:9px">
+
+        <div class="card tight" style="display:flex;gap:11px;align-items:center">
+          <span class="thumb" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:var(--blue-deep)">{{ico:quest,22}}</span>
+          <span class="grow">
+            <span class="row" style="gap:6px"><b class="sm">Müll am Mainufer</b><span class="tag warn">seit 3 Tagen</span></span>
+            <span class="xs mut" style="display:block;margin-top:2px">400 m · 2 Personen unterwegs</span>
+          </span>
+          <span class="coin">+120</span>
+        </div>
+
+        <div class="card tight" style="display:flex;gap:11px;align-items:center">
+          <span class="thumb" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:var(--blue-deep)">{{ico:wrench,22}}</span>
+          <span class="grow">
+            <span class="row" style="gap:6px"><b class="sm">Waschmaschine</b><span class="tag est">Pumpe defekt</span></span>
+            <span class="xs mut" style="display:block;margin-top:2px">Nordend · kostenlos abzugeben</span>
+          </span>
+          <span class="ico">{{ico:chevron,19}}</span>
+        </div>
+
+        <div class="card tight" style="display:flex;gap:11px;align-items:center">
+          <span class="thumb" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;color:var(--blue-deep)">{{ico:cup,22}}</span>
+          <span class="grow">
+            <span class="row" style="gap:6px"><b class="sm">Vytal-Schale offen</b></span>
+            <span class="xs mut" style="display:block;margin-top:2px">Rückgabe bis Fr · 3 Orte in 600 m</span>
+          </span>
+          <span class="ico">{{ico:chevron,19}}</span>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card sky">
+      <div class="between" style="margin-bottom:8px">
+        <span class="h3">Frankfurt diese Woche</span>
+        <span class="tag api">{{ico:check,12,2.4}}bestätigt</span>
+      </div>
+      <div class="row" style="align-items:baseline;gap:7px;margin-bottom:8px">
+        <span class="num" style="font-size:24px;color:var(--blue-deep)">3.812</span>
+        <span class="sm mut">von 5.000 Aktionen</span>
+      </div>
+      <div class="bar"><i style="width:76%"></i></div>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <span class="tab on">{{ico:home,22}}Start</span>
+    <span class="tab">{{ico:quest,22}}Quests</span>
+    <span class="tab"><span class="tab-fab">{{ico:camera,24,1.9}}</span></span>
+    <span class="tab">{{ico:market,22}}Markt</span>
+    <span class="tab">{{ico:leaf,22}}Wirkung</span>
+  </nav>
+</div>
