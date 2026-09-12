@@ -26,8 +26,25 @@ CREATE TABLE IF NOT EXISTS users (
   district_id  TEXT NOT NULL REFERENCES districts(id),
   role         TEXT NOT NULL DEFAULT 'citizen',   -- citizen | business
   is_demo      INTEGER NOT NULL DEFAULT 0,        -- seeded, not a real sign-up
-  created_at   TEXT NOT NULL
+  created_at   TEXT NOT NULL,
+
+  -- Identity. 'guest' is the name-and-Stadtteil sign-in that needs no
+  -- account; 'google' is a Firebase-verified Google account. A guest row
+  -- becomes a google row in place when the same device signs in, which is
+  -- what keeps the XP earned before signing in.
+  auth_provider TEXT NOT NULL DEFAULT 'guest',    -- guest | google
+  -- Firebase's `sub` claim: stable for the life of the account and the only
+  -- thing we trust to identify a returning person.
+  google_uid    TEXT,
+  email         TEXT,
+  photo_url     TEXT,
+  last_seen_at  TEXT
 );
+
+-- Partial, so the many guest rows with a NULL uid do not collide. Two rows
+-- can never claim the same Google account.
+CREATE UNIQUE INDEX IF NOT EXISTS users_google_uid
+  ON users(google_uid) WHERE google_uid IS NOT NULL;
 
 -- Real Frankfurt facilities from OpenStreetMap. Not invented, not editable
 -- by the app — refreshed by scripts/fetch-places.mjs.

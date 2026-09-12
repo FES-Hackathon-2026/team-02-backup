@@ -26,6 +26,43 @@ mkdirSync(dirname(file), { recursive: true })
 export const db = new Database(file)
 db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
+
+/**
+ * Columns added to a table that already exists.
+ *
+ * schema.sql is all CREATE TABLE IF NOT EXISTS, which is what makes a
+ * restart safe — but it also means a new column never reaches a database
+ * that was created before it. Anyone with a remain.db from last week would
+ * otherwise get "no such column: google_uid" and have to delete the file,
+ * losing the demo content with it.
+ *
+ * So: additive columns are declared BOTH in schema.sql (for a fresh file)
+ * and here (for an existing one). ALTER TABLE ADD COLUMN is instant in
+ * SQLite and this runs before the schema, because an index declared over a
+ * column that is not there yet would throw first.
+ */
+const ADDED_COLUMNS = {
+  users: [
+    ['auth_provider', "TEXT NOT NULL DEFAULT 'guest'"],
+    ['google_uid', 'TEXT'],
+    ['email', 'TEXT'],
+    ['photo_url', 'TEXT'],
+    ['last_seen_at', 'TEXT'],
+  ],
+}
+
+for (const [table, columns] of Object.entries(ADDED_COLUMNS)) {
+  const exists = db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(table)
+  if (!exists) continue // fresh database — schema.sql below creates it whole
+
+  const have = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name))
+  for (const [name, decl] of columns) {
+    if (!have.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${decl}`)
+  }
+}
+
 db.exec(readFileSync(join(SRC, 'schema.sql'), 'utf8'))
 
 export const dbFile = file
