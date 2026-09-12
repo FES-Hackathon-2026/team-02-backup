@@ -64,3 +64,9 @@ Für EFA dokumentiert [EFA_HERKUNFT.json](docs/EFA_HERKUNFT.json) den Frankfurt-
 - Die Verkehrsdaten enthalten keine Handy-GPS-Spuren, keine bestätigten individuellen Verkehrsmittelnutzungen und keine Emissionsfaktoren für den Vergleich von ÖPNV und PKW.
 
 Die gelieferten Originalzeilen sind erhalten, bei EFA zusätzlich in der separaten Originalsicherung. Die AFZ- und Sharing-Dateien wurden um synthetische Beispiele ergänzt. Die EFA-Arbeitsdatei wurde auf Frankfurt eingeschränkt und ebenfalls synthetisch ergänzt; Haltestellenmittelwerte, Tagesgang und GTFS-Archiv sind unverändert.
+
+
+
+
+video recording of the app
+https://drive.google.com/file/d/1CKfVWsK_C6VvvuJivSVayqIA0VgM5IUn/view?usp=sharing
