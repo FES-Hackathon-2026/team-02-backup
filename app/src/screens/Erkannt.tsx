@@ -289,7 +289,7 @@ export default function Erkannt() {
         <button
           key={route.id}
           className={route.primary ? 'card sky' : 'card'}
-          onClick={() => navigate(route.to, { state: { scan } })}
+          onClick={() => navigate(route.to.startsWith('/abholung') ? `/mitteilungen?photo=${encodeURIComponent(scan.photoId)}` : route.to, { state: { scan } })}
         >
           <div className="row">
             <Thumb icon={ROUTE_ICON[route.id]} size={42} />

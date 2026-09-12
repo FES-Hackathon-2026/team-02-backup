@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
-import CollectionOpportunity from '../components/CollectionOpportunity'
 import { Bar, Coin, Tag, Thumb } from '../components/ui'
 import { useApi, type FesCalendar, type PickupNotices, type MarketItem, type Quest, type Season, type Impact } from '../lib/client'
 import { useSession } from '../lib/session'
@@ -21,8 +20,7 @@ export default function Start() {
   if (!me) return null
   const quest = quests.data?.quests[0]
   const item = market.data?.items[0]
-  const next = kalender.data?.dates[0]
-  const own = kalender.data?.dates.find(d => d.own)
+  const next = kalender.data?.dates.find(d => !d.own)
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
   return <Screen title={`Moin, ${me.name}`} sub={`Level ${me.level} · ${me.district.name}`} tabs action={
@@ -50,13 +48,10 @@ export default function Start() {
     </section>
     {(quests.error || market.error || kalender.error || impact.error || season.error || notices.error) && <div className="card tight" role="alert"><p className="sm">Einige Daten konnten nicht geladen werden.</p><button className="btn sm" onClick={() => { quests.reload(); market.reload(); kalender.reload(); impact.reload(); season.reload(); notices.reload() }}>Erneut laden</button></div>}
     {city && <button className="card sky" onClick={() => navigate('/stadtteile')}><div className="between"><p className="lbl">Frankfurt diese Woche</p><Tag von="api" /></div><p className="sm"><b className="num" style={{ fontSize: 24 }}>{city.weekXp.toLocaleString('de-DE')}</b> / {city.goalXp.toLocaleString('de-DE')} XP</p><Bar value={city.weekXp} max={city.goalXp} /></button>}
-    {own && <button className="card tight row" onClick={() => navigate(`/abholung/${own.pickupId}`)}><Thumb icon="truck" /><span className="grow"><b>Deine Abholung</b><span className="xs mut" style={{ display: 'block' }}>{own.label} · Details und Erinnerungen</span></span><Icon name="chevron" size={18} /></button>}
-    <CollectionOpportunity />
     <details className="card home-more"><summary>Mehr entdecken</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
       <button className="btn" onClick={() => navigate('/essen')}><Icon name="leaf" size={18} />Essen retten</button>
       <button className="btn" onClick={() => navigate('/wissen')}><Icon name="info" size={18} />Was mache ich damit?</button>
-      <button className="btn" onClick={() => navigate('/abholung')}><Icon name="truck" size={18} />Sperrmüll anmelden</button>
-      <button className="btn" onClick={() => navigate('/touren')}>{me.role === 'driver' ? 'Meine Sammeltouren' : 'Fahrer:innen-Ansicht · Demo'}</button>
+      {me.role === 'driver' && <button className="btn" onClick={() => navigate('/touren')}>Meine Sammeltouren</button>}
       <button className="btn" onClick={() => navigate('/integrationen')}>Verbindungen und Datenquellen</button>
       <button className="btn" onClick={() => { void signOut().catch(() => setError('Abmelden fehlgeschlagen. Bitte erneut versuchen.')) }}>Abmelden</button>
       {error && <p role="alert">{error}</p>}

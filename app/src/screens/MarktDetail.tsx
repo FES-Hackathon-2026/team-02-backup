@@ -1,9 +1,10 @@
+import MarketPhoto from '../components/MarketPhoto'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import Icon, { type IconName } from '../components/Icon'
+import Icon from '../components/Icon'
 import Screen from '../components/Screen'
-import { Coin, Label, Tag, Thumb } from '../components/ui'
+import { Coin, Label, Tag } from '../components/ui'
 import { ApiError, api, useApi, type MarketDetail } from '../lib/client'
 import { useSession } from '../lib/session'
 
@@ -15,12 +16,6 @@ import { useSession } from '../lib/session'
  * reach the ledger. Nothing on this screen has a price.
  */
 
-const KATEGORIE_ICON: Record<string, IconName> = {
-  elektro: 'market',
-  moebel: 'home',
-  fahrrad: 'route',
-  sonstiges: 'wrench',
-}
 
 /** The state chain, visible rather than implied. */
 const KETTE = [
@@ -122,15 +117,7 @@ export default function MarktDetail() {
       {/* --- the thing itself --- */}
       <div className="card tight">
         <div className="row" style={{ gap: 13, alignItems: 'flex-start' }}>
-          {item.photoId ? (
-            <img
-              src={`/api/photos/${item.photoId}`}
-              alt=""
-              style={{ width: 92, height: 92, borderRadius: 15, objectFit: 'cover', flex: 'none' }}
-            />
-          ) : (
-            <Thumb icon={KATEGORIE_ICON[item.category] ?? 'market'} size={92} />
-          )}
+        <MarketPhoto item={item} size={160} credits />
 
           <div className="grow col" style={{ gap: 7, alignItems: 'flex-start' }}>
             <b style={{ fontSize: 15.5, lineHeight: 1.3 }}>{item.title}</b>

@@ -21,7 +21,7 @@ export default function Mitteilungen() {
     <CollectionOpportunity />
     {data.loading && <p role="status">Mitteilungen laden …</p>}
     {(data.error || error) && <div role="alert"><p>{error || data.error?.message}</p><button className="btn" onClick={() => { setError(''); data.reload() }}>Erneut laden</button></div>}
-    {data.data?.notifications.length === 0 && <div className="card"><h2 className="h2">Noch keine Mitteilungen</h2><p>Nach deiner ersten Anmeldung findest du hier den Termin und seine Änderungen.</p><button className="btn" onClick={() => navigate('/abholung')}>Abholung planen</button></div>}
+    {data.data?.notifications.length === 0 && <div className="card"><h2 className="h2">Noch keine Mitteilungen</h2><p>Nach deiner ersten Anmeldung findest du hier den Termin und seine Änderungen.</p></div>}
     {data.data?.notifications.map(n => <button key={n.id} className={n.read ? 'card' : 'card sky'} onClick={() => void open(n.id, n.pickupId)}>
       <div className="between"><b>{n.read ? 'Abholung' : 'Neu · Abholung'}</b><Tag von="simulated" /></div><p className="sm">{n.message}</p><span className="xs mut">{n.at.slice(0, 10).split('-').reverse().join('.')} · {n.at.slice(11, 16)} Uhr</span></button>)}
   </Screen>

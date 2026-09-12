@@ -678,3 +678,7 @@ button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(
 .quiz-answer { display: flex; align-items: center; gap: 9px; padding: 10px; min-height: 44px; margin: 5px 0; border-radius: 13px; background: var(--sky2); font-size: 13px; }
 .quiz-answer input { accent-color: var(--blue-deep); flex: none; }
 .level-bonus { background: var(--gold-soft); color: var(--gold-ink); border-radius: 16px; padding: 15px; text-align: center; font-weight: 700; }
+
+.market-photo { display: flex; flex-direction: column; gap: 5px; max-width: 45%; }
+.market-photo img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 15px; background: var(--sky); }
+.photo-credit { overflow-wrap: anywhere; line-height: 1.4; }

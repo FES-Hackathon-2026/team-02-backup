@@ -152,7 +152,7 @@ export default function Wissen() {
 
           {/* 3 — booking, when that is the answer */}
           {eintrag.route === 'pickup' && (
-            <button className="btn primary" onClick={() => navigate(`/abholung?category=${eintrag.id}`)}>
+            <button className="btn primary" onClick={() => navigate(`/mitteilungen?category=${eintrag.id}`)}>
               <Icon name="truck" size={19} />
               Abholung anmelden
             </button>

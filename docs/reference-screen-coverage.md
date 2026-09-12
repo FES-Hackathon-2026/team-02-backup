@@ -7,7 +7,7 @@ The compact reference style is applied through the shared shell: cool paper, rou
 
 | Artboard | Connected implementation |
 | --- | --- |
-| Main | `/`: level progress, earned coins, scan, calendar, nearby quests/market/returns, city progress, notifications, collection opportunities and extra actions |
+| Main | `/`: level progress, earned coins, scan, calendar, nearby quests/market/returns, city progress, notification entry and extra actions |
 | Scan | `/scan`: camera/gallery, modes, classification, persistent result, additional-item basket and safe hazard routes |
 | SofaDetail | `/erkannt/:photoId`: large photo, classification/correction, expandable reasoning, transport lookup, market and knowledge handoffs |
 | SperrmuellBooking | `/abholung`: editable address summary, optional contact details, item basket, future shared periods, existing-booking match, capacity checks and confirmation sheet |
@@ -17,7 +17,7 @@ The compact reference style is applied through the shared shell: cool paper, rou
 | LevelUp | Global modal after server-confirmed level increase, exactly-once +50 bonus and level-8 Klimaheld badge |
 | PeerReview | `/review/:submissionId`: paired photos, three answers, anonymity, quorum and one-time reviewer reward |
 | QuestRoute | `/route/:questId`: transport comparison, saved declared mode, claim/start, route details and proof handoff; mode used by ledger and receipt |
-| Kalender | `/kalender`: month navigation, date selection/filtering, booked collections, detail links, cancellation and registration |
+| Kalender | `/kalender`: month navigation, date selection/filtering, booked collections, detail links, cancellation and registration through notifications |
 | WasMacheIchDamit | `/wissen`: scan category preserved, category picker, disposal rules, alternatives, collection date, source information and a three-question quiz with an exactly-once +10 bonus |
 | EssenRetten | `/essen`: provider account/verification, filters, requests, pickups, history, receipts and connection retry |
 | Mehrweg | `/mehrweg`: selectable active containers, return partner, return, repeat protection, all returned containers and receipts |
@@ -47,3 +47,11 @@ Additional collection screens remain integrated: `/abholung/:pickupId`, `/mittei
 - Live foodsharing writes and every camera/device combination were not exercised. No real rescue was reserved during verification.
 
 Local setup restored the supplied foodsharing configuration in ignored `server/.env` and generated ignored GTFS data. Neither credentials nor generated data are part of the branch changes. The GTFS builder now supports macOS libarchive tar when 7-Zip is absent.
+
+## Notification entry and market photographs
+
+Collection opportunities and citizen booking shortcuts were removed from the dashboard. New collection requests start in notifications; calendar, knowledge and scan handoffs lead there, preserving query parameters and scan state. Existing booking deep links and in-progress basket scanning still work. Opportunity lookup has loading, retry and no-capacity states.
+
+Repair-market cards and details prefer uploaded item photos. Missing or failed uploads use labeled category-example photographs for furniture, electrical appliances and bicycles. These are real photographs, not evidence of the advertised item. Unknown categories keep an explicit missing-photo state. Attribution and license links appear on the detail screen; asset provenance is in `app/public/images/market/CREDITS.md`.
+
+Current verification: frontend build passes; downloaded JPEGs inspected. Native browser control failed to start, and a fresh Claude reference fetch returned only the frame shell. The earlier documented reference inspection and current flow code were used for this update; exact fresh visual parity is not claimed.

@@ -1,7 +1,8 @@
+import MarketPhoto from '../components/MarketPhoto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import Icon, { type IconName } from '../components/Icon'
+import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Label, Tag, Thumb } from '../components/ui'
 import {
@@ -28,12 +29,6 @@ import { useMe } from '../lib/session'
  * Nothing here has a price. Free-to-take is the design.
  */
 
-const KATEGORIE_ICON: Record<string, IconName> = {
-  elektro: 'market',
-  moebel: 'home',
-  fahrrad: 'route',
-  sonstiges: 'wrench',
-}
 
 const UMKREIS = [
   { km: 25, label: 'ganz Frankfurt' },
@@ -345,15 +340,7 @@ function AngebotKarte({ item }: { item: MarketItem }) {
   return (
     <Link className="card tight" to={`/markt/${item.id}`}>
       <span className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
-        {item.photoId ? (
-          <img
-            src={`/api/photos/${item.photoId}`}
-            alt=""
-            style={{ width: 82, height: 92, borderRadius: 13, objectFit: 'cover', flex: 'none' }}
-          />
-        ) : (
-          <Thumb icon={KATEGORIE_ICON[item.category] ?? 'market'} size={82} />
-        )}
+        <MarketPhoto item={item} size={82} />
 
         <span className="grow col" style={{ gap: 5, alignItems: 'flex-start' }}>
           <span className="between" style={{ width: '100%', alignItems: 'flex-start' }}>

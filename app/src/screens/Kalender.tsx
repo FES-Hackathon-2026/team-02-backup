@@ -68,7 +68,7 @@ export default function Kalender() {
       action={
         <button
           className="icobtn"
-          onClick={() => navigate('/abholung')}
+          onClick={() => navigate('/mitteilungen')}
           aria-label="Sperrmüll anmelden"
         >
           <Icon name="plus" size={21} />
@@ -159,7 +159,7 @@ export default function Kalender() {
             </ul>
           </details>
 
-          <button className="btn" onClick={() => navigate('/abholung')}>
+          <button className="btn" onClick={() => navigate('/mitteilungen')}>
             <Icon name="truck" size={19} />
             Sperrmüll anmelden
           </button>

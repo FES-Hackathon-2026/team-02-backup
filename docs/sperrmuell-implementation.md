@@ -7,7 +7,7 @@ The Claude reference was inspected in native Chrome, including citizen and drive
 | Reference touchpoint | Implementation |
 |---|---|
 | Citizen / driver role selection | Existing citizen session; separate `/touren` driver demo. Provisioned driver sessions can access server-backed manifests. |
-| Nearby collection notification | Shared-tour opportunity card on home and in `/mitteilungen`, based on current district availability. |
+| Nearby collection notification | Shared-tour opportunity card only in `/mitteilungen`, based on current district availability. |
 | Collection area and period | District-based collection periods; approximate area map on booking details. |
 | Name, email, mobile, address, postcode | Prefilled name, address/district, optional contact fields and placement instructions. Stored with the request. |
 | Camera and AI recognition | Existing working camera/upload and correction flow retained. Result now checks upcoming pickups; further scans can return to the basket. |
