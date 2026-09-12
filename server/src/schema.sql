@@ -260,3 +260,27 @@ CREATE TABLE IF NOT EXISTS pickup_contacts (
   postcode TEXT NOT NULL DEFAULT '',
   placement TEXT NOT NULL DEFAULT ''
 );
+
+-- A journey is a declared mode, never a GPS measurement. Frozen once proof is submitted.
+CREATE TABLE IF NOT EXISTS quest_journeys (
+  quest_id TEXT NOT NULL REFERENCES quests(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  mode TEXT NOT NULL CHECK(mode IN ('walk','bike','transit','car')),
+  started_at TEXT NOT NULL,
+  PRIMARY KEY (quest_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS reward_events (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  base_xp INTEGER NOT NULL,
+  details TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS referrals (
+  referred_id INTEGER PRIMARY KEY REFERENCES users(id),
+  referrer_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  CHECK(referred_id <> referrer_id)
+);

@@ -21,6 +21,7 @@ import metaRoutes from './routes/meta.js'
 import photoRoutes from './routes/photos.js'
 import receiptRoutes from './routes/receipt.js'
 import scanRoutes from './routes/scan.js'
+import progressionRoutes from './routes/progression.js'
 import sessionRoutes from './routes/session.js'
 import { seed } from './seed.js'
 
@@ -53,6 +54,7 @@ await app.register(marketWriteRoutes) // phase 6
 await app.register(questsWriteRoutes) // phase 7
 await app.register(mobilityRoutes)   // phase 8
 await app.register(vytalRoutes)      // phase 9
+await app.register(progressionRoutes)
 await app.register(rewardRoutes)     // phase 10
 
 /* ------------------------------------------------------------------

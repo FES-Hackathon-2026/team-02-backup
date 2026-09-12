@@ -1,3 +1,4 @@
+import { bindInvitation } from '../engine/progression.js'
 import { all, now, one, run } from '../db.js'
 import { totals } from '../engine/totals.js'
 import { clearSession, currentUser, requireUser, setSession } from '../session.js'
@@ -46,6 +47,7 @@ export default async function sessionRoutes(app) {
     )
     const user = one('SELECT * FROM users WHERE id = ?', Number(result.lastInsertRowid))
 
+    bindInvitation(user.id, request.body?.inviteCode)
     setSession(reply, user.id)
     return reply.code(201).send(publicUser(user))
   })

@@ -1,3 +1,4 @@
+import { BonusReceipts } from '../components/ReferenceActions'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Screen from '../components/Screen'
@@ -16,6 +17,7 @@ export default function Mitteilungen() {
   }
   return <Screen back title="Mitteilungen" sub={`${data.data?.unread ?? 0} ungelesen`}>
     <p className="sm mut">Deine Abholungen und eingeschalteten Erinnerungen. Demo-Termine bleiben als simuliert gekennzeichnet.</p>
+    <BonusReceipts />
     <CollectionOpportunity />
     {data.loading && <p role="status">Mitteilungen laden …</p>}
     {(data.error || error) && <div role="alert"><p>{error || data.error?.message}</p><button className="btn" onClick={() => { setError(''); data.reload() }}>Erneut laden</button></div>}

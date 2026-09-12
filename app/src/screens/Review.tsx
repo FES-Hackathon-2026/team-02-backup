@@ -1,3 +1,4 @@
+import { useSession } from '../lib/session'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -57,6 +58,7 @@ const OPTIONS: { id: QuestAnswer; label: string; hint: string; icon: 'check' | '
 export default function Review() {
   const { submissionId } = useParams()
   const navigate = useNavigate()
+  const { refresh } = useSession()
 
   const [detail, setDetail] = useState<QuestDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,6 +83,7 @@ export default function Review() {
     setError(null)
     try {
       const answered = await api.post<QuestDetail>(`/api/reviews/${submissionId}`, { answer })
+      void refresh()
       setResult(answered)
       setDetail(answered)
     } catch (err) {
@@ -121,7 +124,7 @@ export default function Review() {
       sub={answered ? 'danke' : 'eine Frage, zwanzig Sekunden'}
     >
       {/* ------- the two photos, as large as they go ------- */}
-      <div className="col" style={{ gap: 9 }}>
+      <div className="review-photos">
         <Bild id={quest.photoId} label="Vorher" sub={quest.createdBy ?? 'gemeldet'} />
         <Bild
           id={submission.photoId}

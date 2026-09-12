@@ -394,7 +394,7 @@ export default async function marketWriteRoutes(app) {
 
     let photoId = null
     if (body.photoId) {
-      const photo = one('SELECT id FROM photos WHERE id = ?', body.photoId)
+      const photo = one('SELECT id FROM photos WHERE id = ? AND user_id = ?', body.photoId, user.id)
       if (!photo) {
         return reply.code(422).send({ error: 'unknown_photo', message: 'Dieses Foto kennen wir nicht.' })
       }

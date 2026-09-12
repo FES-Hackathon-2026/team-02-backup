@@ -1,3 +1,4 @@
+import { grantProgression } from './progression.js'
 import { now, one, run, tx } from '../db.js'
 import { dayBefore, placeKeyOf, subjectOf } from './context.js'
 import { causesTravel, calcImpact } from './impact.js'
@@ -41,7 +42,10 @@ import { totals } from './totals.js'
  *            hint: string|null, breakdown: {label: string, value: string}[], totals: object}
  *          | {ok: false, code: 'already_paid', message: string}}
  */
-export function award({ userId, kind, refTable, refId, tier, reason, xp, eventKey }) {
+export function award(input) { return tx(() => awardInside(input))() }
+
+function awardInside({ userId, kind, refTable, refId, tier, reason, xp, eventKey }) {
+  const beforeLevel = totals(userId).level
   if (eventKey) {
     const seen = one('SELECT id FROM ledger_entries WHERE event_key = ?', eventKey)
     if (seen) {
@@ -97,6 +101,8 @@ export function award({ userId, kind, refTable, refId, tier, reason, xp, eventKe
     )
     return id
   })()
+
+  if (kind !== 'bonus' && decision.xp > 0) grantProgression(userId, { kind, subject, beforeLevel })
 
   return {
     ok: true,

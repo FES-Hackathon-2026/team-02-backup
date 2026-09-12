@@ -1,3 +1,4 @@
+import { useSession } from '../lib/session'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -46,6 +47,7 @@ function frist(hoursLeft: number) {
 }
 
 export default function Vytal() {
+  const { refresh } = useSession()
   const state = useApi<VytalState>('/api/vytal/containers')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<VytalReturnResult | null>(null)
@@ -53,7 +55,9 @@ export default function Vytal() {
   const [ort, setOrt] = useState<string | null>(null)
   const [groesse, setGroesse] = useState('bowl_1000')
 
-  const aktiv = state.data?.active[0] ?? null
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const [allReturns, setAllReturns] = useState(false)
+  const aktiv = state.data?.active.find(c => c.container_id === activeId) ?? state.data?.active[0] ?? null
   const partners = state.data?.partners ?? []
   const rueckgabeort = ort ?? partners[0]?.partner_id ?? null
 
@@ -61,7 +65,9 @@ export default function Vytal() {
     setBusy(true)
     setProblem(null)
     try {
-      return await api.post<T>(path, body)
+      const response = await api.post<T>(path, body)
+      void refresh()
+      return response
     } catch (error) {
       setProblem(
         error instanceof ApiError
@@ -97,16 +103,8 @@ export default function Vytal() {
 
   return (
     <Screen back title="Mehrweg" sub="Vytal · nachgebauter Dienst">
-      <div className="card tight row" style={{ gap: 10, borderColor: 'var(--stone)' }}>
-        <Icon name="info" size={18} className="ico" />
-        <p className="xs mut grow" style={{ margin: 0 }}>
-          Ohne Sandbox-Zugang stammen diese Ereignisse aus unserem Nachbau. Die{' '}
-          <b>Form</b> ist die echte — Behälter-ID, Partner-ID, Ereignis-ID —, deshalb ist
-          der Umstieg später eine Adapterdatei.
-        </p>
-        <Tag von="simulated" icon />
-      </div>
-
+      <div className="between"><span className="sm mut">{state.data?.active.length ?? 0} Behälter offen</span><Tag von="simulated" /></div>
+      {state.error && <div className="card tight" role="alert"><p>{state.error.message}</p><button className="btn" onClick={state.reload}>Erneut laden</button></div>}
       {problem && (
         <div className="card tight row" style={{ gap: 9, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
@@ -123,6 +121,7 @@ export default function Vytal() {
         </div>
       )}
 
+      {(state.data?.active.length ?? 0) > 1 && <div className="chips scroll">{state.data!.active.map(c => <button className="chip" key={c.container_id} aria-pressed={aktiv?.container_id === c.container_id} onClick={() => setActiveId(c.container_id)}>{c.label} · {c.container_id}</button>)}</div>}
       {/* What you are holding. */}
       {aktiv && <Aktiv container={aktiv} />}
 
@@ -169,7 +168,7 @@ export default function Vytal() {
       )}
 
       {/* Nothing borrowed: offer the loan, and be clear who normally triggers it. */}
-      {!state.loading && !aktiv && (
+      {!state.loading && !state.error && !aktiv && (
         <div className="card">
           <b className="h3">Gerade kein Behälter unterwegs</b>
           <p className="sm mut" style={{ margin: '6px 0 12px' }}>
@@ -236,9 +235,9 @@ export default function Vytal() {
       {/* Returned before. */}
       {(state.data?.returned.length ?? 0) > 0 && (
         <div>
-          <p className="lbl" style={{ marginBottom: 9 }}>Zurückgegeben</p>
+          <div className="between"><p className="lbl" style={{ marginBottom: 9 }}>Zurückgegeben</p>{state.data!.returned.length > 8 && <button className="text-link" onClick={() => setAllReturns(v => !v)}>{allReturns ? 'Weniger' : 'Alle Rückgaben'}</button>}</div>
           <div className="col" style={{ gap: 9 }}>
-            {state.data!.returned.slice(0, 8).map((c) => (
+            {state.data!.returned.slice(0, allReturns ? undefined : 8).map((c) => (
               <div key={c.container_id} className="card tight row" style={{ gap: 10 }}>
                 <Thumb icon="cup" size={38} />
                 <span className="grow">

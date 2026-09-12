@@ -1,3 +1,4 @@
+import { useSession } from '../lib/session'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -73,6 +74,7 @@ const uhr = (iso: string) =>
   })
 
 export default function Fairteiler() {
+  const { refresh } = useSession()
   /** Which of the team's two foodsharing test users is acting. */
   const [as, setAs] = useState<number | null>(null)
   const [filter, setFilter] = useState<Filter>('alle')
@@ -98,7 +100,9 @@ export default function Fairteiler() {
     setProblem(null)
     setNote(null)
     try {
-      return await api.post<unknown>(path, body)
+      const response = await api.post<unknown>(path, body)
+      void refresh()
+      return response
     } catch (error) {
       setProblem(
         error instanceof ApiError
@@ -140,14 +144,14 @@ export default function Fairteiler() {
       title="Essen retten"
       sub={
         <>
-          foodsharing · <b>echte Schnittstelle</b>
+          foodsharing · <b>{state.error?.code === 'no_key' ? 'Verbindung einrichten' : 'Schnittstelle'}</b>
         </>
       }
     >
       {/* Who is acting. The team key carries two test users in deliberately
           different verification states — that is what makes the locked
           Geschäftsrettung below the real thing rather than a mock-up. */}
-      <div className="card tight">
+      <details className="card tight"><summary>foodsharing-Konto und Freigaben</summary>
         <div className="between" style={{ marginBottom: 9 }}>
           <span className="lbl">Handelnder foodsharing-Nutzer</span>
           <Tag von="api" icon />
@@ -179,7 +183,7 @@ export default function Fairteiler() {
           Der Schlüssel liegt auf dem Server. Verifiziert heißt: Geschäftsrettungen sind
           freigeschaltet.
         </p>
-      </div>
+      </details>
 
       {/* What just happened. */}
       {result && <Erfolg result={result} onClose={() => setResult(null)} />}
@@ -235,7 +239,7 @@ export default function Fairteiler() {
       {nearby.error && (
         <div className="card tight">
           <b className="sm">foodsharing antwortet nicht</b>
-          <p className="sm mut" style={{ margin: '5px 0 10px' }}>{nearby.error.message}</p>
+          <p className="sm mut" style={{ margin: '5px 0 10px' }}>{nearby.error.code === 'no_key' ? 'foodsharing ist noch nicht verbunden. Nach Einrichtung des Zugangs erscheinen hier verfügbare Rettungen.' : nearby.error.message}</p><Link className="btn sm" to="/integrationen">Verbindung ansehen</Link>
           <button className="btn sm" onClick={() => nearby.reload()}>
             Nochmal versuchen
           </button>
@@ -274,7 +278,7 @@ export default function Fairteiler() {
               />
             ))}
           </div>
-          {!alle && items.length > 10 && (
+          {!alle && items.length > 9 && (
             <button className="btn sm" style={{ width: '100%', marginTop: 10 }} onClick={() => setAlle(true)}>
               Alle {items.length} zeigen
             </button>

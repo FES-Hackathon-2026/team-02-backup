@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom'
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 
 import { ApiError, api, type Me } from './client'
@@ -15,7 +16,7 @@ interface SessionValue {
   loading: boolean
   /** true when the server could not be reached at all */
   offline: boolean
-  signIn: (name: string, districtId: string) => Promise<void>
+  signIn: (name: string, districtId: string, inviteCode?: string) => Promise<void>
   signOut: () => Promise<void>
   refresh: () => Promise<void>
 }
@@ -23,6 +24,7 @@ interface SessionValue {
 const SessionContext = createContext<SessionValue | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
   const [me, setMe] = useState<Me | null>(null)
   const [loading, setLoading] = useState(true)
   const [offline, setOffline] = useState(false)
@@ -46,10 +48,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void refresh()
+  }, [refresh, pathname])
+
+  useEffect(() => {
+    const update = () => { if (!document.hidden) void refresh() }
+    window.addEventListener('focus', update)
+    document.addEventListener('visibilitychange', update)
+    return () => { window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', update) }
   }, [refresh])
 
-  const signIn = useCallback(async (name: string, districtId: string) => {
-    setMe(await api.post<Me>('/api/session', { name, districtId }))
+  const signIn = useCallback(async (name: string, districtId: string, inviteCode?: string) => {
+    setMe(await api.post<Me>('/api/session', { name, districtId, inviteCode }))
     setOffline(false)
   }, [])
 

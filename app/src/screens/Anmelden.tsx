@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 import Icon from '../components/Icon'
@@ -14,6 +15,7 @@ import { useSession } from '../lib/session'
  * district — but it stays a normal dropdown, so refusing costs nothing.
  */
 export default function Anmelden() {
+  const [params] = useSearchParams()
   const { signIn, offline } = useSession()
   const [name, setName] = useState('')
   const [districtId, setDistrictId] = useState('')
@@ -43,7 +45,7 @@ export default function Anmelden() {
     setError(null)
     setBusy(true)
     try {
-      await signIn(name, districtId)
+      await signIn(name, districtId, params.get('invite') ?? undefined)
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : 'Der Server antwortet gerade nicht.',

@@ -289,7 +289,7 @@ function confirmedActions(userId) {
             MIN(l.reason)             AS reason
        FROM actions a
        LEFT JOIN ledger_entries l ON l.action_id = a.id
-      WHERE a.user_id = ? AND a.status = 'confirmed'
+      WHERE a.user_id = ? AND a.status = 'confirmed' AND a.kind <> 'bonus'
       GROUP BY a.id
       ORDER BY a.created_at DESC`,
     userId,
@@ -415,7 +415,7 @@ function statedFor(userId) {
  */
 function streakFor(userId) {
   const rows = all(
-    "SELECT created_at FROM actions WHERE user_id = ? AND status = 'confirmed'",
+    "SELECT created_at FROM actions WHERE user_id = ? AND status = 'confirmed' AND kind <> 'bonus'",
     userId,
   )
   if (rows.length === 0) return { weeks: 0, active: false, note: null, sinceLabel: null }
@@ -450,10 +450,11 @@ function streakFor(userId) {
  * the daily cap and the repeat damper already say that more is not the
  * point, so a badge for the hundredth photo would argue with our own rules.
  */
-function badgesFor(actions, streak) {
+function badgesFor(actions, streak, level) {
   const kinds = new Set(actions.map((a) => a.kind))
 
   return [
+    { id: 'klimaheld', title: 'Frankfurt Klimaheld', icon: 'spark', note: 'Level 8 erreicht.', value: Math.min(level, 8), goal: 8, earned: level >= 8 },
     {
       id: 'erste-aktion',
       title: 'Erste Aktion',
@@ -757,7 +758,7 @@ export default async function rewardRoutes(app) {
       stated: statedFor(user.id),
       estimated: co2For(user, actions),
       streak,
-      badges: badgesFor(actions, streak),
+      badges: badgesFor(actions, streak, totals(user.id).level),
       percentile: percentileFor(user.id),
       recent: actions.slice(0, 5).map((a) => ({
         actionId: a.id,

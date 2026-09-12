@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
 import Abholung from './screens/Abholung'
@@ -21,6 +21,7 @@ import RouteScreen from './screens/Route'
 import Scan from './screens/Scan'
 import Stadtteile from './screens/Stadtteile'
 import Start from './screens/Start'
+import LevelUp from './components/LevelUp'
 import Wirkung from './screens/Wirkung'
 import Wissen from './screens/Wissen'
 import Vytal from './screens/Vytal'
@@ -37,6 +38,7 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <SessionProvider>
         <Gate />
+        <LevelUp />
       </SessionProvider>
     </BrowserRouter>
   )
@@ -44,6 +46,7 @@ export default function App() {
 
 function Gate() {
   const { me, loading } = useSession()
+  const { pathname } = useLocation()
 
   // One request long. Anything more elaborate here flashes on every load.
   if (loading) {
@@ -59,7 +62,7 @@ function Gate() {
   if (!me) return <Anmelden />
 
   return (
-    <Routes>
+    <Routes key={pathname}>
       <Route path="/" element={<Start />} />
       <Route path="/quests" element={<Quests />} />
       <Route path="/scan" element={<Scan />} />

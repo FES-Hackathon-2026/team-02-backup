@@ -1,3 +1,4 @@
+import CollectionCalendar from '../components/CollectionCalendar'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -24,6 +25,7 @@ import { useSession } from '../lib/session'
 export default function Kalender() {
   const navigate = useNavigate()
   const { me } = useSession()
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [storniert, setStorniert] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const [arbeitet, setArbeitet] = useState<string | null>(null)
@@ -50,6 +52,7 @@ export default function Kalender() {
   }
 
   const daten = kalender.data?.dates ?? []
+  const shown = selectedDay ? daten.filter(d => d.date.slice(0, 10) === selectedDay) : daten
   const eigene = daten.filter((d) => d.own).length
 
   return (
@@ -87,13 +90,14 @@ export default function Kalender() {
 
       {kalender.data && (
         <>
+          <CollectionCalendar dates={daten} selected={selectedDay} onSelect={setSelectedDay} />
           <div className="between">
-            <p className="lbl">Als Nächstes</p>
+            <p className="lbl">{selectedDay ? `Termine am ${selectedDay.split('-').reverse().join('.')}` : 'Als Nächstes'}</p>
             <Tag von="simulated" icon />
           </div>
 
           <div className="col" style={{ gap: 9 }}>
-            {daten.map((d) => (
+            {shown.map((d) => (
               <Zeile
                 key={d.id}
                 termin={d}
@@ -103,10 +107,10 @@ export default function Kalender() {
             ))}
           </div>
 
-          {daten.length === 0 && (
+          {shown.length === 0 && (
             <div className="empty">
               <Icon name="calendar" size={28} />
-              {de.state.empty}
+              {selectedDay ? 'Für diesen Tag liegt kein Termin vor.' : de.state.empty}
             </div>
           )}
 

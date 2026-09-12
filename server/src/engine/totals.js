@@ -27,7 +27,7 @@ export function totals(userId) {
     userId,
   )
   const actions = one(
-    "SELECT COUNT(*) AS n FROM actions WHERE user_id = ? AND status = 'confirmed'",
+    "SELECT COUNT(*) AS n FROM actions WHERE user_id = ? AND status = 'confirmed' AND kind <> 'bonus'",
     userId,
   )
 

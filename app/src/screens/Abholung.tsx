@@ -48,6 +48,8 @@ export default function Abholung() {
     }
   }
   useEffect(() => { if (recoverKey) void recover() }, [recoverKey])
+  const [addressEditing, setAddressEditing] = useState(() => !draft.address.trim())
+  const [itemEditing, setItemEditing] = useState(!photoId)
   const [edited, setEdited] = useState(false)
   useEffect(() => {
     if (scan.data && !edited && !state?.scan && !draft.category) setDraft(d => ({ ...d, category: scan.data!.category, volumeM3: scan.data!.estimatedVolumeM3 }))
@@ -110,44 +112,46 @@ export default function Abholung() {
     } catch (e) { setSubmitError((e as Error).message); setReview(false); if (!(e instanceof ApiError) || e.status >= 500) setRecoverKey(requestKey); else { try { sessionStorage.removeItem(pendingStorageKey) } catch { /* Optional storage. */ } } }
     finally { setBusy(false) }
   }
-  return <Screen back title="Abholung planen" sub="Gemeinsam sammeln · Eine Tour statt Einzelfahrten" footer={
+  return <Screen back title="Sperrmüll anmelden" sub="Gegenstände · Abholort · Sammeltour" footer={
     already ? <button className="btn primary" onClick={() => navigate(`/abholung/${result!.pickup!.id}`)}>Vorhandenen Termin öffnen</button>
       : <button className="btn primary" disabled={!ready || busy} onClick={() => setReview(true)}><Icon name="truck" size={18} />{matched ? 'Gegenstand hinzufügen' : 'Abholung prüfen und eintragen'}</button>
   }>
     {recoverKey && <div className="card sky" role="status"><p>{recoveryError || 'Wir prüfen, ob deine letzte Anmeldung gespeichert wurde …'}</p><button className="btn" onClick={() => void recover()}>Anfragestatus prüfen</button></div>}
     {submitError && <div className="card" role="alert"><p>{submitError}</p><p className="xs mut">Du kannst dieselbe Anmeldung erneut senden. Doppelte Anfragen werden nur einmal gespeichert.</p><button className="btn sm" onClick={() => setRetry(v => v + 1)}>Verfügbarkeit erneut prüfen</button></div>}
-    <div className="card sky"><div className="between"><h1 className="h2">Dein Platz auf der Sammeltour</h1><Tag von="simulated" /></div>
-      <p className="sm pickup-status" style={{ marginTop: 10 }}>Wir bündeln Anfragen im Sammelgebiet. Du wählst einen Zeitraum; nach Buchungsschluss planen wir die gemeinsame Tour und teilen dein Ankunftsfenster mit.</p>
-      <p className="xs mut">In ReMain eingetragen, nicht bei FES gebucht. Termine und Kapazität sind simuliert.</p></div>
-    {photoId && <div className="card row"><img className="thumb" src={`/api/photos/${encodeURIComponent(photoId)}`} alt="Gescannter Gegenstand" width={64} height={64} />
-      <div><b>{scan.data?.subtype || state?.scan?.subtype || 'Dein Gegenstand'}</b><p className="xs mut">Kategorie und Volumen aus dem Scan prüfen.</p><Tag von="estimate" /></div></div>}
+    <div className="between"><span className="lbl">Gemeinsam sammeln</span><Tag von="simulated" /></div>
     {scan.error && <p role="alert">{scan.error.message}</p>}
-    <div className="card pickup-fields"><h2 className="h2">Deine Gegenstände · {others.length + 1} / 3</h2>
+    <section className="card pickup-fields"><div className="between"><h2 className="lbl">Abholadresse</h2><button className="text-link" disabled={addressEditing && draft.address.trim().length < 5} onClick={() => setAddressEditing(v => !v)}>{addressEditing ? 'Fertig' : 'Ändern'}</button></div>
+      {!addressEditing && <div className="row"><Icon name="pin" size={22} /><div><b>{draft.address || 'Adresse ergänzen'}</b><p className="xs mut">{STADTTEILE.find(d => d.id === draft.districtId)?.name} · {draft.contact?.fullName || me?.name}</p></div></div>}
+      {addressEditing && <div className="pickup-fields">
+      <label className="sm">Vor- und Nachname<input className="field" autoComplete="name" value={draft.contact?.fullName ?? me?.name ?? ''} onChange={e => editContact({ fullName: e.target.value })} /></label>
+      <label className="sm">Straße und Hausnummer<input className="field" autoComplete="street-address" value={draft.address} onChange={e => edit({ address: e.target.value })} placeholder="Zum Beispiel Leipziger Straße 12" /></label>
+      <label className="sm">Stadtteil<select className="field" value={draft.districtId} onChange={e => edit({ districtId: e.target.value })}>{STADTTEILE.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
+      <details><summary className="sm">Kontakt und Zugang (optional)</summary><div className="pickup-fields">
+      <label className="sm">E-Mail (optional)<input className="field" type="email" autoComplete="email" value={draft.contact?.email ?? ''} onChange={e => editContact({ email: e.target.value })} /></label>
+      <label className="sm">Mobilnummer (optional)<input className="field" type="tel" autoComplete="tel" value={draft.contact?.phone ?? ''} onChange={e => editContact({ phone: e.target.value })} /></label>
+      <label className="sm">PLZ (optional)<input className="field" inputMode="numeric" autoComplete="postal-code" value={draft.contact?.postcode ?? ''} onChange={e => editContact({ postcode: e.target.value })} /></label>
+      <label className="sm">Abstellort / Zugangshinweis (optional)<input className="field" value={draft.contact?.placement ?? ''} onChange={e => editContact({ placement: e.target.value })} placeholder="Zum Beispiel vor dem Hauseingang" /></label>
+      </div></details>
+      <p className="xs mut">Deine Angaben · Frankfurt am Main. Kontaktdaten werden für diese Anfrage gespeichert; keine SMS oder E-Mail wird versendet.</p>
+      <p className="xs mut">Ein vorhandener Termin muss zur gleichen Adresse passen und genügend Platz bieten.</p>
+      </div>}
+    </section>
+    <div className="card pickup-fields"><div className="between"><h2 className="lbl">Gegenstände · {others.length + 1} / 3</h2><span className="xs mut">{totalVolume.toLocaleString('de-DE')} / 6 m³</span></div>
+      <div className="row">{photoId && <img className="thumb" src={`/api/photos/${encodeURIComponent(photoId)}`} alt="Gescannter Gegenstand" width={60} height={60} />}<div className="grow"><b>{currentItem.label}</b><p className="xs mut">{cat?.name || 'Kategorie prüfen'} · {draft.volumeM3.toLocaleString('de-DE')} m³</p></div><button className="text-link" onClick={() => setItemEditing(v => !v)}>{itemEditing ? 'Fertig' : 'Ändern'}</button></div>
       {others.map((item, index) => <div className="between" key={item.photoId || index}><span className="sm">{item.label} · {item.volumeM3.toLocaleString('de-DE')} m³</span><button className="btn sm" onClick={() => setCart(others.filter((_, i) => i !== index))}>Entfernen</button></div>)}
       {catalog.error && <button className="btn" onClick={catalog.reload}>Kategorien erneut laden</button>}
-      <label className="sm">Kategorie<select className="field" value={cat?.id ?? ''} onChange={e => edit({ category: e.target.value })}>
+      {(itemEditing || !cat || !valid) && <div className="pickup-fields"><label className="sm">Kategorie<select className="field" value={cat?.id ?? ''} onChange={e => edit({ category: e.target.value })}>
         <option value="">Kategorie wählen</option>{catalog.data?.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-      <label className="sm">Volumen in m³<input className="field" type="number" min="0.01" max="6" step="0.01" value={Number.isNaN(draft.volumeM3) ? '' : draft.volumeM3} onChange={e => edit({ volumeM3: e.target.valueAsNumber })} /></label>
-      <p className="sm"><b>Geschätztes Gesamtvolumen: {totalVolume.toLocaleString('de-DE')} m³</b></p>
+      <label className="sm">Volumen in m³<input className="field" type="number" min="0.01" max="6" step="0.01" value={Number.isNaN(draft.volumeM3) ? '' : draft.volumeM3} onChange={e => edit({ volumeM3: e.target.valueAsNumber })} /></label></div>}
+
       {others.length < 2 && <button className="btn" disabled={!valid} onClick={() => {
         const next = [...others, currentItem]
-        try { sessionStorage.setItem(cartKey, JSON.stringify(next)); sessionStorage.setItem(`${cartKey}:details`, JSON.stringify({ address: draft.address, districtId: draft.districtId, contact: draft.contact })) } catch { return }
+        try { sessionStorage.setItem(cartKey, JSON.stringify(next)); sessionStorage.setItem(`${cartKey}:details`, JSON.stringify({ address: draft.address, districtId: draft.districtId, contact: draft.contact })) } catch { setSubmitError('Zwischenspeicher nicht verfügbar. Bitte diese Anmeldung zuerst abschließen.'); return }
         navigate('/scan?pickupCart=1')
       }}>Weiteren Gegenstand fotografieren</button>}
       {cat?.note && <p className="xs mut">{cat.note}</p>}
       {cat && !cat.collectable && <div role="status"><p>{cat.alternative?.why}</p><button className="btn" onClick={() => navigate(`/wissen?category=${cat.id}`)}>{cat.alternative?.what || 'Passende Entsorgung finden'}</button></div>}
       {cat?.collectable && !valid && <p role="alert">Bitte ein Volumen größer als 0 und höchstens 6 m³ angeben. Größere Mengen benötigen eine andere Entsorgung.</p>}
-    </div>
-    <div className="card pickup-fields"><h2 className="h2">Deine Angaben und Abholort</h2>
-      <label className="sm">Vor- und Nachname<input className="field" autoComplete="name" value={draft.contact?.fullName ?? me?.name ?? ''} onChange={e => editContact({ fullName: e.target.value })} /></label>
-      <label className="sm">E-Mail (optional)<input className="field" type="email" autoComplete="email" value={draft.contact?.email ?? ''} onChange={e => editContact({ email: e.target.value })} /></label>
-      <label className="sm">Mobilnummer (optional)<input className="field" type="tel" autoComplete="tel" value={draft.contact?.phone ?? ''} onChange={e => editContact({ phone: e.target.value })} /></label>
-      <label className="sm">Straße und Hausnummer<input className="field" autoComplete="street-address" value={draft.address} onChange={e => edit({ address: e.target.value })} placeholder="Zum Beispiel Leipziger Straße 12" /></label>
-      <label className="sm">Stadtteil<select className="field" value={draft.districtId} onChange={e => edit({ districtId: e.target.value })}>{STADTTEILE.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select></label>
-      <label className="sm">PLZ (optional)<input className="field" inputMode="numeric" autoComplete="postal-code" value={draft.contact?.postcode ?? ''} onChange={e => editContact({ postcode: e.target.value })} /></label>
-      <label className="sm">Abstellort / Zugangshinweis (optional)<input className="field" value={draft.contact?.placement ?? ''} onChange={e => editContact({ placement: e.target.value })} placeholder="Zum Beispiel vor dem Hauseingang" /></label>
-      <p className="xs mut">Deine Angaben · Frankfurt am Main. Kontaktdaten werden für diese Anfrage gespeichert; keine SMS oder E-Mail wird versendet.</p>
-      <p className="xs mut">Ein vorhandener Termin muss zur gleichen Adresse passen und genügend Platz bieten.</p>
     </div>
     <div className="card" aria-live="polite"><h2 className="h2">Sammelzeitraum wählen</h2>
       {!valid ? <p>Bitte zuerst Gegenstand und Volumen prüfen.</p> : !result && !error ? <p><span className="spinner" /> Termine werden geprüft …</p> : null}
@@ -164,6 +168,7 @@ export default function Abholung() {
       {(result?.state === 'no_availability' || (newDate && alternative.data && !alternative.data.slots.some(s => s.available))) && <p>Im angebotenen Zeitraum ist kein Transport frei. Bitte später erneut prüfen oder eine passende Abgabestelle wählen.</p>}
       {error && <div role="alert"><p>{error}</p><button className="btn" onClick={() => setRetry(v => v + 1)}>Erneut prüfen</button></div>}
     </div>
+    <details className="card tight"><summary>So funktioniert die Sammeltour</summary><p className="sm">Du wählst einen Zeitraum. Nach Buchungsschluss planen wir die gemeinsame Tour und teilen dein Ankunftsfenster und den Bereitstellzeitpunkt mit.</p><p className="xs mut">In ReMain eingetragen, nicht bei FES gebucht. Termine und Kapazität sind simuliert. Erinnerungen erscheinen in deinen Mitteilungen.</p></details>
     <button className="btn" onClick={() => navigate('/kalender')}>Meine Termine im Kalender</button>
     {review && <DecisionSheet title={matched ? 'Zur Sammeltour hinzufügen?' : 'Anfrage bestätigen?'} busy={busy} onClose={() => setReview(false)}>
       <Tag von="simulated" /><p>{others.length + 1} {others.length === 0 ? 'Gegenstand' : 'Gegenstände'} · {totalVolume.toLocaleString('de-DE')} m³<br />{draft.address}<br />{matched ? result?.pickup?.label : chosen?.periodLabel || chosen?.label}</p>

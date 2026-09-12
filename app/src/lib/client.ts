@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Client for the ReMain API.
@@ -158,7 +158,7 @@ export interface Load<T> {
 }
 
 export function useApi<T>(path: string | null): Load<T> {
-  const [data, setData] = useState<T | null>(null)
+  const [result, setResult] = useState<{ path: string; data: T } | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
   const [loading, setLoading] = useState(path !== null)
   const [nonce, setNonce] = useState(0)
@@ -175,7 +175,7 @@ export function useApi<T>(path: string | null): Load<T> {
     api
       .get<T>(path)
       .then((result) => {
-        if (!cancelled) setData(result)
+        if (!cancelled) setResult({ path, data: result })
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -194,7 +194,8 @@ export function useApi<T>(path: string | null): Load<T> {
     }
   }, [path, nonce])
 
-  return { data, error, loading, reload: () => setNonce((n) => n + 1) }
+  const reload = useCallback(() => setNonce(n => n + 1), [])
+  return { data: result?.path === path ? result.data : null, error, loading, reload }
 }
 
 /* ------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 import Icon from './Icon'
 import TabBar from './TabBar'
@@ -38,12 +38,13 @@ export default function Screen({
   children,
 }: Props) {
   const navigate = useNavigate()
+  const location = useLocation()
 
   return (
-    <div className={tabs ? 'app has-tabs' : 'app'}>
+    <div className={tabs ? 'app has-tabs' : 'app'} data-screen={location.pathname.split('/')[1] || 'start'}>
       <header className={back ? 'nav solid' : 'nav'}>
         {back && (
-          <button className="icobtn bare" onClick={() => navigate(-1)} aria-label={de.action.back}>
+          <button className="icobtn bare" onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/')} aria-label={de.action.back}>
             <Icon name="back" size={22} />
           </button>
         )}

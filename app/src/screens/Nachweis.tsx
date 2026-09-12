@@ -19,7 +19,7 @@ import { de } from '../lib/de'
  */
 export default function Nachweis() {
   const { actionId } = useParams()
-  const { data, error, loading } = useApi<Receipt>(`/api/receipt/${actionId}`)
+  const { data, error, loading, reload } = useApi<Receipt>(`/api/receipt/${actionId}`)
   const [showRules, setShowRules] = useState(false)
 
   if (loading) {
@@ -38,7 +38,7 @@ export default function Nachweis() {
       <Screen back title="Nachweis">
         <div className="empty">
           <Icon name="info" size={26} />
-          <p className="sm mut">{error?.message ?? de.state.error}</p>
+          <p className="sm mut">{error?.message ?? de.state.error}</p><button className="btn" onClick={reload}>Erneut laden</button>
         </div>
       </Screen>
     )

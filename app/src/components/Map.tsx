@@ -40,6 +40,7 @@ interface Props {
   radiusKm?: number
   selectedId?: string | null
   onSelect?: (id: string) => void
+  fitMarkers?: boolean
   height?: number
   /** a still map for a detail screen: no dragging, no zooming */
   still?: boolean
@@ -94,6 +95,7 @@ export default function Map({
   radiusKm,
   selectedId = null,
   onSelect,
+  fitMarkers = false,
   height = 240,
   still = false,
   zoom = 13,
@@ -149,6 +151,14 @@ export default function Map({
     if (!map.current || selectedId) return
     map.current.setView([centre.lat, centre.lon], map.current.getZoom(), { animate: false })
   }, [centre.lat, centre.lon, selectedId])
+
+  const boundsKey = markers.map(m => `${m.id}:${m.lat}:${m.lon}`).join('|')
+  useEffect(() => {
+    if (!fitMarkers || !map.current || selectedId || markers.length === 0) return
+    const points: L.LatLngTuple[] = markers.map(m => [m.lat, m.lon])
+    if (me) points.push([me.lat, me.lon])
+    map.current.fitBounds(points, { padding: [30, 30], maxZoom: 14, animate: false })
+  }, [fitMarkers, boundsKey, selectedId, me?.lat, me?.lon])
 
   /** The pins. */
   useEffect(() => {

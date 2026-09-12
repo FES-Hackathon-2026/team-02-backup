@@ -176,14 +176,7 @@ export default function Markt() {
         </button>
       }
     >
-      <div className="card sky tight row" style={{ alignItems: 'flex-start', gap: 10 }}>
-        <Icon name="wrench" size={19} style={{ color: 'var(--blue-deep)', marginTop: 1 }} />
-        <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-          Fast ganz. Nur ein kleiner Defekt.{' '}
-          <b style={{ color: 'var(--ink)' }}>Betriebe und Bastler:innen holen kostenlos ab</b> —
-          bevor daraus Sperrmüll wird.
-        </p>
-      </div>
+      <div className="between"><p className="sm mut" style={{ margin: 0 }}>Rettet Sachen vor dem Sperrmüll</p><button className="btn sm" onClick={() => setAnbieten(true)}>Anbieten</button></div>
 
       <Segment modus={modus} onChange={setModus} offen={wartetAufDich || undefined} />
 
@@ -356,10 +349,10 @@ function AngebotKarte({ item }: { item: MarketItem }) {
           <img
             src={`/api/photos/${item.photoId}`}
             alt=""
-            style={{ width: 66, height: 66, borderRadius: 13, objectFit: 'cover', flex: 'none' }}
+            style={{ width: 82, height: 92, borderRadius: 13, objectFit: 'cover', flex: 'none' }}
           />
         ) : (
-          <Thumb icon={KATEGORIE_ICON[item.category] ?? 'market'} size={66} />
+          <Thumb icon={KATEGORIE_ICON[item.category] ?? 'market'} size={82} />
         )}
 
         <span className="grow col" style={{ gap: 5, alignItems: 'flex-start' }}>

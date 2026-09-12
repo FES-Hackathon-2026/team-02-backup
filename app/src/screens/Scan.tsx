@@ -402,7 +402,7 @@ export default function Scan() {
       >
         <button
           className="icobtn"
-          onClick={() => navigate(-1)}
+          onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/')}
           aria-label={de.action.close}
           style={glas}
         >

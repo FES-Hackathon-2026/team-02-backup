@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Coin, Label, Tag } from '../components/ui'
-import { useApi, type RouteComparison, type RouteLeg, type RouteOption } from '../lib/client'
+import { api, useApi, type QuestDetail, type RouteComparison, type RouteLeg, type RouteOption } from '../lib/client'
 import { STADTTEILE } from '../lib/frankfurt'
 import { useSession } from '../lib/session'
 
@@ -47,6 +47,10 @@ interface Origin {
 
 export default function RouteScreen() {
   const { questId } = useParams()
+  const navigate = useNavigate()
+  const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState('')
+  const journey = useApi<{ journey: { mode: string; startedAt: string } | null }>(questId ? `/api/quests/${questId}/journey` : null)
   const { me } = useSession()
 
   // ?at=08:15 pins the comparison to a time of day. The schedule is a real one
@@ -121,14 +125,30 @@ export default function RouteScreen() {
 
   const { data, error, loading, reload } = useApi<RouteComparison>(path)
 
+  const selected = data?.options.find(o => o.mode === open) ?? data?.options.find(o => o.mode === data.best)
+  async function startJourney() {
+    if (!questId || !selected || starting) return
+    setStarting(true); setStartError('')
+    try {
+      const proof = await api.get<QuestDetail>(`/api/quests/${questId}/proof`)
+      if (proof.canClaim) await api.post(`/api/quests/${questId}/claim`)
+      else if (proof.role !== 'claimer') throw new Error(proof.claimBlockedWhy || 'Diese Quest steht nicht zum Übernehmen bereit.')
+      await api.post(`/api/quests/${questId}/journey`, { mode: selected.mode })
+      journey.reload()
+    } catch (error) { setStartError(error instanceof Error ? error.message : 'Fahrt konnte nicht gestartet werden.') }
+    finally { setStarting(false) }
+  }
   return (
     <Screen
       back
       title="Hinweg"
       sub={data?.target?.title ?? 'Route-Assistent'}
+      footer={journey.data?.journey ? <button className="btn primary" onClick={() => navigate(`/quests/${questId}/nachweis`)}>Am Ziel · Nachweis aufnehmen</button> : <button className="btn primary" disabled={!selected || starting} onClick={() => void startJourney()}>{starting ? 'Wird gespeichert …' : `Fahrt starten${selected ? ` · ${selected.label}` : ''}`}</button>}
     >
+      {startError && <p className="card tight" role="alert">{startError}</p>}
+      {journey.data?.journey && <div className="card sky" role="status"><b>Hinweg gestartet</b><p className="sm">{data?.options.find(o => o.mode === journey.data!.journey!.mode)?.label ?? journey.data.journey.mode} · deine Angabe</p><p className="xs mut">Verkehrsmittel gespeichert. Keine GPS-Aufzeichnung. Der Nachweis und die geltenden Regeln entscheiden über die Gutschrift.</p></div>}
       {/* --- where the comparison starts, and who decides that --- */}
-      <div className="card tight">
+      <details className="card tight"><summary>Start: {origin.label} · Ändern</summary>
         <div className="row" style={{ gap: 11 }}>
           <span
             style={{
@@ -182,7 +202,7 @@ export default function RouteScreen() {
             {locationError}
           </p>
         )}
-      </div>
+      </details>
 
       {loading && (
         <div className="empty">
