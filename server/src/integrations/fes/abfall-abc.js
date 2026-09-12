@@ -276,6 +276,34 @@ const ENTRIES = [
     reuse: null,
     legal: [HIERARCHIE, '§ 6 KrWG — Beseitigung steht auf der letzten Stufe der Abfallhierarchie.'],
   },
+    {
+      /**
+       * The catch-all, and the one entry that has to exist.
+       *
+       * `sonstiges` is where the scan agent puts anything it cannot place —
+       * including, deliberately, a photo it cannot read at all. Without a row
+       * here that answer routed to this screen and found nothing, so the most
+       * likely outcome of a bad photo was a dead end with an apology on it.
+       * The rule below is the honest general one rather than a guess at the
+       * object: check the exclusions first, and if none apply it is Restmüll.
+       */
+      id: 'sonstiges',
+      name: 'Unklarer Gegenstand',
+      aliases: ['unklar', 'unbekannt', 'divers', 'sonstige'],
+      bin: 'Erst prüfen, dann Restmüll',
+      fraktion: 'rest',
+      route: 'tonne',
+      why: 'Wenn nicht klar ist, was es ist, entscheidet die Ausnahme: Schadstoff, Elektro, Batterie und Bioabfall müssen getrennt werden. Trifft nichts davon zu, bleibt der Restmüll.',
+      notAllowed: [
+        'Nichts mit Warnsymbol, Batterie oder Kabel in den Restmüll.',
+        'Im Zweifel nicht raten — am Wertstoffhof schaut jemand drauf.',
+      ],
+      reuse: {
+        titel: 'Noch brauchbar?',
+        text: 'Ganze, funktionierende Dinge gehören eher auf den Markt als in eine Tonne.',
+      },
+      legal: [HIERARCHIE],
+    },
   {
     id: 'bauschutt',
     name: 'Bauschutt',

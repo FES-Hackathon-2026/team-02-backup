@@ -130,7 +130,7 @@ export const CATEGORIES = {
     volumeM3: 0.1,
     reuse: 0.2,
     bulky: false,
-    bin: 'Unklare Fälle klärt der Wertstoffhof — dort schaut jemand drauf, bevor etwas falsch landet.',
+    bin: 'Im Zweifel zum Wertstoffhof.',
   },
 }
 
