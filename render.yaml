@@ -26,8 +26,12 @@ services:
     region: frankfurt
     # The client is built first, then the server serves app/dist from the same
     # origin — which is why there is no CORS config anywhere in this project.
+    # --include=dev is load-bearing: NODE_ENV=production below makes npm omit
+    # devDependencies, and vite + typescript both live there. Without it the
+    # client build dies on `Cannot find type definition file for 'vite/client'`.
+    # The server install stays production-only — it has no devDependencies.
     buildCommand: >-
-      cd app && npm ci && npm run build &&
+      cd app && npm ci --include=dev && npm run build &&
       cd ../server && npm ci
     startCommand: cd server && npm start
     healthCheckPath: /api/health
