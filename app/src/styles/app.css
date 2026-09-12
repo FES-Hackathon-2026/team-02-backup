@@ -753,11 +753,6 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .level-water-badge { position: absolute; z-index: 1; bottom: -3px; right: -3px; background: var(--card); border: 2px solid var(--paper); border-radius: 50%; width: 27px; height: 27px; display: grid; place-items: center; color: var(--blue-deep); font-size: 14px; font-weight: 700; }
 @keyframes level-water-drift { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @media (prefers-reduced-motion: reduce) { .level-wave { animation: none; will-change: auto; }.level-water-fill { transition: none; } }
-button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(--on-blue); box-shadow: 0 7px 18px rgba(31, 92, 130, .2); }
-.scan-hero .h2 { color: inherit; }
-.hero-camera { width: 48px; height: 48px; display: grid; place-items: center; background: rgba(255,255,255,.16); border-radius: 14px; flex: none; }
-.hero-modes { gap: 6px; margin-top: 7px; color: var(--on-blue2); flex-wrap: wrap; }
-.hero-modes svg { background: rgba(255,255,255,.13); padding: 3px; box-sizing: content-box; border-radius: 6px; }
 .nearby-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .nearby-grid .card { padding: 11px; min-width: 0; }
 .nearby-grid .thumb { width: 100%; height: 62px; margin-bottom: 8px; border: 0; }
@@ -791,7 +786,7 @@ button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(
 .level-celebration .num { font-size: 48px; margin-top: 16px; }
 .level-celebration p { margin-bottom: 0; }
 [data-screen=quests] .map-wrap { border-radius: 24px; }
-@media (max-width: 359px) { .body { padding-left: 12px; padding-right: 12px; }.nearby-grid { gap: 6px; }.hero-modes .xs { display: none; } }
+@media (max-width: 359px) { .body { padding-left: 12px; padding-right: 12px; }.nearby-grid { gap: 6px; } }
 .impact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .impact-grid .card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 15px; }
 .impact-grid .card > svg { color: var(--blue-deep); }
@@ -806,7 +801,7 @@ button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(
 .pickup-slot { padding-left: 38px; position: relative; }
 .pickup-slot:before { content: ''; width: 16px; height: 16px; border: 1px solid var(--blue); border-radius: 50%; position: absolute; left: 12px; top: 16px; }
 .pickup-slot[aria-pressed=true]:before { background: var(--blue-deep); box-shadow: inset 0 0 0 3px var(--card); }
-.scan-hero svg, .tab-fab svg { color: inherit; }
+.tab-fab svg { color: inherit; }
 .quiz-question { border: 0; padding: 0; margin: 0; min-width: 0; }
 .quiz-question legend { font-weight: 700; padding: 0 0 8px; }
 .quiz-answer { display: flex; align-items: center; gap: 9px; padding: 10px; min-height: 44px; margin: 5px 0; border-radius: 13px; background: var(--sky2); font-size: 13px; }
@@ -834,8 +829,6 @@ button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(
 .nearby-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .nearby-grid > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 .badge-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.hero-modes { flex-wrap: wrap; }
-.hero-modes .xs { font-size: 14px; }
 .quiz-answer { font-size: 15px; padding: 13px; }
 
 /* Market: one search bar, a focused filter sheet, and quiet applied filters. */
@@ -867,7 +860,7 @@ button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(
 .market-filter-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-top: 8px; }
 [data-screen='markt'] .body > .between { gap: 14px; align-items: start; }
 [data-screen='markt'] .card.tight { padding: 16px; }
-@media (max-width: 359px) { .market-filter-trigger { flex-wrap: wrap; gap: 4px; padding: 9px; }.market-segment { font-size: 14px; }.hero-modes .xs { display: block; } }
+@media (max-width: 359px) { .market-filter-trigger { flex-wrap: wrap; gap: 4px; padding: 9px; }.market-segment { font-size: 14px; } }
 
 .tag, .lbl, .comparison-label { font-size: 14px; }
 

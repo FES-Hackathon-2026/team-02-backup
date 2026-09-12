@@ -580,15 +580,7 @@ export interface FoodLock {
   nextStep: string | null
 }
 
-/** One of the team's two foodsharing test users. */
-export interface FoodUser {
-  id: number
-  name: string | null
-  isDefault: boolean
-  isVerified: boolean
-  status: string
-}
-
+/** The one foodsharing account the app acts as, as the API describes it. */
 export interface FoodState {
   tier: 'confirmed'
   source: string
@@ -597,7 +589,6 @@ export interface FoodState {
     display_name: string | null
     verification: { status: string; is_verified: boolean; next_step: string | null }
   }
-  users: FoodUser[]
   lock: FoodLock | null
 }
 
