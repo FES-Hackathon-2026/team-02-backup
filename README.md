@@ -70,3 +70,6 @@ Die gelieferten Originalzeilen sind erhalten, bei EFA zusätzlich in der separat
 
 video recording of the app
 https://drive.google.com/file/d/1CKfVWsK_C6VvvuJivSVayqIA0VgM5IUn/view?usp=sharing
+
+PPT Link:
+https://docs.google.com/presentation/d/1SOK8T11qSL8BzFr_Tm4s1VPzz2MVSqxE/edit?usp=sharing&ouid=105551975437791196867&rtpof=true&sd=true
