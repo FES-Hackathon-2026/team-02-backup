@@ -30,7 +30,7 @@ export default function Start() {
   const nextReturn = activeContainers.reduce<number | null>((value, item) => item.hoursLeft === null ? value : value === null ? item.hoursLeft : Math.min(value, item.hoursLeft), null)
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
-  return <Screen title={`Moin, ${me.name}`} sub={`Level ${me.level} · ${me.district.name}`} tabs action={
+  return <Screen title={`Hallo ${me.name}`} sub={`Level ${me.level} · ${me.district.name}`} tabs action={
     <span className="row"><button className="icobtn" aria-label="Einstellungen" onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`}>
       <Icon name="bell" size={21} />{!!notices.data?.unread && <span className="notification-dot" />}
     </button></span>
@@ -42,7 +42,7 @@ export default function Start() {
     </div>
     <button className="card row scan-hero" onClick={() => navigate('/scan')}>
       <span className="hero-camera"><Icon name="camera" size={25} /></span>
-      <span className="grow"><b className="h2">Foto machen</b><span className="row hero-modes"><Icon name="truck" size={16} /><Icon name="pin" size={16} /><Icon name="info" size={16} /><span className="xs">Sperrmüll · Fund · Frage</span></span></span><Icon name="chevron" size={20} />
+      <span className="grow"><b className="h2">Gegenstand scannen</b><span className="row hero-modes"><Icon name="truck" size={16} /><Icon name="pin" size={16} /><Icon name="info" size={16} /><span className="xs">Erkennen und richtig weitergeben</span></span></span><Icon name="chevron" size={20} />
     </button>
     <WeeklyGoal />
     <button className="card tight row" onClick={() => navigate('/essen')}><Thumb icon="leaf" /><span className="grow"><b className="sm">Essen retten</b><span className="xs mut" style={{ display: 'block' }}>{food.error ? 'foodsharing antwortet gerade nicht — erneut versuchen' : foodTop ? `${foodTop.title}${foodTop.hoursLeft == null ? '' : ` · noch ${Math.max(1, Math.round(foodTop.hoursLeft))} h`}` : 'Offene Angebote und Fairteiler entdecken'}</span></span><Icon name="chevron" size={17} /></button>
@@ -57,7 +57,7 @@ export default function Start() {
     </section>
     {(quests.error || market.error || kalender.error || impact.error || season.error || notices.error) && <div className="card tight" role="alert"><p className="sm">Einige Daten konnten nicht geladen werden.</p><button className="btn sm" onClick={() => { quests.reload(); market.reload(); kalender.reload(); impact.reload(); season.reload(); notices.reload() }}>Erneut laden</button></div>}
     {city && <button className="card sky" onClick={() => navigate('/stadtteile')}><div className="between"><p className="lbl">Frankfurt diese Woche</p><Tag von="api" /></div><p className="sm"><b className="num" style={{ fontSize: 24 }}>{city.weekXp.toLocaleString('de-DE')}</b> / {city.goalXp.toLocaleString('de-DE')} XP</p><Bar value={city.weekXp} max={city.goalXp} /></button>}
-    <details className="card home-more"><summary>Mehr entdecken</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
+    <details className="card home-more"><summary>Weitere Angebote</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
       <button className="btn" onClick={() => navigate('/essen')}><Icon name="leaf" size={18} />Essen retten</button>
       <button className="btn" onClick={() => navigate('/wissen')}><Icon name="info" size={18} />Was mache ich damit?</button>
       {me.role === 'driver' && <button className="btn" onClick={() => navigate('/touren')}>Meine Sammeltouren</button>}

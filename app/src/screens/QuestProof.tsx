@@ -580,7 +580,7 @@ function Foto({
             borderRadius: 'var(--r)',
             border: '1px dashed var(--line)',
             margin: 0,
-            fontSize: 12,
+            fontSize: 14,
           }}
         >
           <Icon name="camera" size={20} />

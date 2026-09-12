@@ -8,6 +8,8 @@ import type { SVGProps } from 'react'
  * the design canvas can never drift apart. Edit the paths there, not here.
  */
 const PATHS = {
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
+  filter: '<path d="M4 7h6m4 0h6M4 17h2m4 0h10"/><circle cx="12" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   home: '<path d="M3.6 10.4 12 3.5l8.4 6.9"/><path d="M5.8 9.2V20.5h12.4V9.2"/><path d="M9.8 20.5v-5.2h4.4v5.2"/>',
   quest: '<path d="M6 21.5V3.2"/><path d="M6 4.2h11l-2.3 3.7L17 11.6H6"/>',
   camera: '<path d="M3.5 8.6h3.2l1.6-2.2h7.4l1.6 2.2h3.2v10.8H3.5z"/><circle cx="12" cy="13.6" r="3.3"/>',

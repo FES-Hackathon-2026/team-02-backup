@@ -27,13 +27,13 @@ export default function TabBar() {
       {TABS.map((tab) => (
         <NavLink key={tab.to} to={tab.to} end={tab.end} className="tab" aria-label={tab.label}>
           {tab.fab ? (
-            <span className="tab-fab">
+            <><span className="tab-fab">
               <Icon name={tab.icon} size={24} stroke={1.9} />
-            </span>
+            </span><span className="tab-label">{tab.label}</span></>
           ) : (
             <>
               <Icon name={tab.icon} size={22} />
-              {tab.label}
+              <span className="tab-label">{tab.label}</span>
             </>
           )}
         </NavLink>

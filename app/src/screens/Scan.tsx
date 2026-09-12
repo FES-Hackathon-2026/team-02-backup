@@ -430,7 +430,7 @@ export default function Scan() {
             borderRadius: 15,
             background: 'rgba(9,16,22,.82)',
             border: '1px solid rgba(255,255,255,.16)',
-            fontSize: 12.5,
+            fontSize: 14,
             lineHeight: 1.5,
             color: '#dce9f2',
           }}
@@ -470,7 +470,7 @@ export default function Scan() {
             justifyContent: 'center',
             gap: 7,
             color: '#c6dae8',
-            fontSize: 12.5,
+            fontSize: 14,
             fontWeight: 600,
             textAlign: 'center',
           }}

@@ -229,3 +229,27 @@ test('account deletion cleans collection, referral, journey and partner records'
 test('demo switching rejects real accounts and drivers', async () => {
   await call('POST', '/api/session/switch', { userId: 1 }, 2, 403)
 })
+
+test('market search combines category, distance and words before sorting and limiting', async () => {
+  const stamp = '2026-01-01T00:00:00.000Z'
+  const add = (id, title, category, lat, date, status = 'open') => run(
+    `INSERT INTO market_items(id,user_id,title,defect,condition,category,district_id,lat,lon,status,created_at)
+     VALUES (?,1,?,'Lehne lose','gebraucht',?,'bockenheim',?,8.64,?,?)`, id, title, category, lat, status, date)
+  for (let i = 0; i < 65; i++) add(`filter-filler-${i}`, 'Filtertest Lampe', 'elektro', 50.12, stamp)
+  add('filter-near', 'Filtertest Stuhl Eiche', 'moebel', 50.121, stamp)
+  add('filter-new', 'Filtertest Stuhl Buche', 'moebel', 50.13, '2026-02-01T00:00:00.000Z')
+  add('filter-far', 'Filtertest Stuhl Kiefer', 'moebel', 50.5, stamp)
+  add('filter-closed', 'Filtertest Stuhl Alt', 'moebel', 50.12, stamp, 'reserved')
+  const base = '/api/market?lat=50.12&lon=8.64&r=2&category=moebel&q=FILTERTEST%20STUHL'
+  const near = await call('GET', `${base}&sort=distance`)
+  assert.deepEqual(near.items.map(item => item.id), ['filter-near', 'filter-new'])
+  assert.equal(near.total, 2)
+  const recent = await call('GET', `${base}&sort=newest`)
+  assert.deepEqual(recent.items.map(item => item.id), ['filter-new', 'filter-near'])
+  const detail = await call('GET', '/api/market?q=filtertest%20eiche%20lose')
+  assert.deepEqual(detail.items.map(item => item.id), ['filter-near'])
+  const many = await call('GET', '/api/market?q=filtertest&lat=50.12&lon=8.64&r=2')
+  assert.equal(many.items.length, 60)
+  assert.equal(many.total, 67)
+  assert.equal((await call('GET', '/api/market?q=nonexistent-item')).total, 0)
+})

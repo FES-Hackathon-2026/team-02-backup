@@ -16,7 +16,7 @@ export default function Mitteilungen() {
     catch (e) { setError((e as Error).message) }
   }
   return <Screen back title="Mitteilungen" sub={`${data.data?.unread ?? 0} ungelesen`}>
-    <p className="sm mut">Deine Abholungen und eingeschalteten Erinnerungen. Demo-Termine bleiben als simuliert gekennzeichnet.</p>
+    <p className="sm mut">Hier findest du deine Abholtermine und Erinnerungen. Die Abholung ist derzeit eine Demo.</p>
     <BonusReceipts />
     <CollectionOpportunity />
     {data.loading && <p role="status">Mitteilungen laden …</p>}

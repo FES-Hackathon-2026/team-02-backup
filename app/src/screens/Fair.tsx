@@ -93,7 +93,7 @@ export default function Fair({ user }: Props) {
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 800,
-                fontSize: 13,
+                fontSize: 14,
                 background: r.ok ? 'var(--accent-soft)' : 'var(--bad-soft)',
                 color: r.ok ? 'var(--accent)' : 'var(--bad)',
               }}
@@ -101,7 +101,7 @@ export default function Fair({ user }: Props) {
               {r.ok ? '✓' : '✕'}
             </div>
             <div>
-              <b style={{ fontSize: 13.5 }}>{r.title}</b>
+              <b style={{ fontSize: 14 }}>{r.title}</b>
               <div className="tiny muted" style={{ marginTop: 2 }}>
                 {r.detail}
               </div>
