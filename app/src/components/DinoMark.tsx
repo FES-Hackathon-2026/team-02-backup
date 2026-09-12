@@ -1,6 +1,6 @@
 import fessie from '../assets/fessie.svg'
 
-/** Dragon silhouette for ReMain's assistant, redrawn as resolution-independent SVG. */
+/** Fessie's yellow dragon face, sharp at every display size. */
 export default function DinoMark({ size = 46 }: { size?: number }) {
   return <img
     src={fessie}

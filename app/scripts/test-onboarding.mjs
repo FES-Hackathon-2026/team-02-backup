@@ -21,6 +21,11 @@ for (const blocked of [false, true]) {
       stored.set('remain.onboarding.v1', 'done')
       assert.equal(hasCompletedOnboarding(), true, 'Existing completion is restored')
       stored.clear()
+      for (const key of ['remain.introduced', 'remain.introduced.v2']) {
+        stored.set(key, '1')
+        assert.equal(hasCompletedOnboarding(), true, 'Previous introductions remain completed')
+        stored.clear()
+      }
     }
     completeOnboarding()
     assert.equal(hasCompletedOnboarding(), true, 'Completing or skipping works even without storage')

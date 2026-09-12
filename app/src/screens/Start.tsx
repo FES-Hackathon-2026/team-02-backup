@@ -2,6 +2,7 @@ import { t, getLocale } from './../lib/i18n'
 import { WeeklyGoal } from '../components/ReferenceActions'
 import { useState } from 'react'
 import DashboardTour from '../components/DashboardTour'
+import { finishDashboardTour, hasSeenDashboardTour } from '../lib/dashboardTour'
 import { useNavigate } from 'react-router-dom'
 import DecisionSheet from '../components/DecisionSheet'
 import Icon, { type IconName } from '../components/Icon'
@@ -107,8 +108,7 @@ export default function Start() {
   const navigate = useNavigate()
   const { me, signOut } = useSession()
   const [error, setError] = useState('')
-  // Preview mode: show the tour on every dashboard visit, regardless of saved completion.
-  const [tourOpen, setTourOpen] = useState(true)
+  const [tourOpen, setTourOpen] = useState(() => !!me && !hasSeenDashboardTour(me.id))
   const quests = useApi<{ quests: Quest[] }>('/api/quests')
   const market = useApi<{ items: MarketItem[] }>('/api/market')
   const season = useApi<Season>('/api/season')
@@ -126,7 +126,7 @@ export default function Start() {
       <Icon name="bell" size={21} />{t((!!notices.data?.unread || !!tour.data?.slot) && <span className="notification-dot" />)}
     </button></span>
   }>
-    {tourOpen && <DashboardTour onFinish={() => setTourOpen(false)} />}
+    {tourOpen && <DashboardTour onFinish={() => { finishDashboardTour(me.id); setTourOpen(false) }} />}
     <div className="card home-progress">
       <div className="row home-progress-top">
       <button className="level-water" onClick={() => navigate('/wirkung')} aria-label={t(`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`)}>

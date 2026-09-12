@@ -2,6 +2,7 @@ import { useLanguage } from './lib/i18n'
 import { useEffect, useState } from 'react'
 import { SplashScreen } from './components/BrandMark'
 import Onboarding from './screens/Onboarding'
+import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding'
 
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
@@ -39,9 +40,6 @@ import Vytal from './screens/Vytal'
  * BASE_URL covers both hosting shapes — a repository subpath on Pages and
  * the domain root everywhere else — without a second config.
  */
-/** Marks that this device has seen the introduction. */
-const INTRO_KEY = 'remain.introduced.v2'
-
 export default function App() {
   useLanguage()
   return (
@@ -56,31 +54,13 @@ export default function App() {
 
 function Gate() {
   const { me, loading } = useSession()
-  const { pathname, search } = useLocation()
+  const { pathname } = useLocation()
   const [splash, setSplash] = useState(true)
-  // Once per device, not once per launch. The intro exists to answer "what
-  // is this", and a person who has answered that and come back is being
-  // asked to sit through it again — the fastest way to make a good intro
-  // feel like an obstacle. Skip counts as seen: skipping IS the answer.
-  //
-  // localStorage rather than the session, so closing the tab does not reset
-  // it; a browser that refuses storage simply shows the intro again, which
-  // is the harmless direction to fail.
-  const [introduced, setIntroduced] = useState(() => {
-    if (new URLSearchParams(search).get('onboarding') === '1') return false
-    try {
-      return localStorage.getItem(INTRO_KEY) !== null
-    } catch {
-      return false
-    }
-  })
+  // Completion and skipping persist across launches, including previous app versions.
+  const [introduced, setIntroduced] = useState(hasCompletedOnboarding)
 
   const finishIntro = () => {
-    try {
-      localStorage.setItem(INTRO_KEY, '1')
-    } catch {
-      /* it will introduce itself again next time */
-    }
+    completeOnboarding()
     setIntroduced(true)
   }
   useEffect(() => {

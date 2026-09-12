@@ -2,7 +2,11 @@ const KEY = 'remain.onboarding.v1'
 let completedInMemory = false
 
 export function hasCompletedOnboarding(): boolean {
-  try { return completedInMemory || localStorage.getItem(KEY) === 'done' }
+  try {
+    return completedInMemory || localStorage.getItem(KEY) === 'done'
+      || localStorage.getItem('remain.introduced.v2') !== null
+      || localStorage.getItem('remain.introduced') !== null
+  }
   catch { return completedInMemory }
 }
 

@@ -973,14 +973,14 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 }
 .agent-fab:hover { background: var(--sky2); }
 
-/* Fessie's reference mark: white dragon on a red circle at every theme. */
+/* A warm, light surface keeps Fessie's yellow face clear in both themes. */
 .agent-fab {
   padding: 0;
-  background: #ef171f;
-  border-color: #ef171f;
-  box-shadow: 0 6px 18px rgba(160, 20, 28, .24);
+  background: #fff9ef;
+  border-color: #edcfa4;
+  box-shadow: 0 6px 18px rgba(36, 53, 80, .2);
 }
-.agent-fab:hover { background: #ef171f; filter: brightness(.94); }
+.agent-fab:hover { background: #fff1dc; }
 
 /* Draggable, which needs the browser to stop claiming the gesture.
    The global `touch-action: manipulation` lets a touch scroll the page, so a
