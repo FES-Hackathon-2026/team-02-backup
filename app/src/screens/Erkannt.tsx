@@ -289,7 +289,7 @@ export default function Erkannt() {
         <button
           key={route.id}
           className={route.primary ? 'card sky' : 'card'}
-          onClick={() => navigate(route.to.startsWith('/abholung') ? `/mitteilungen?photo=${encodeURIComponent(scan.photoId)}` : route.to, { state: { scan } })}
+          onClick={() => navigate(zielFuer(route.id, scan), { state: { scan } })}
         >
           <div className="row">
             <Thumb icon={ROUTE_ICON[route.id]} size={42} />
@@ -599,4 +599,48 @@ function Gefahrstoff({
       )}
     </Screen>
   )
+}
+
+/**
+ * Where a route button actually goes.
+ *
+ * Two of the four used to go nowhere useful, because each destination reads
+ * the handover differently and router state alone does not reach either:
+ *
+ *   pickup   went to /mitteilungen?photo=…, and Mitteilungen never reads
+ *            `photo` — so the flagship Sperrmüll flow landed on a
+ *            notifications list and the photo was dropped. /abholung takes
+ *            photo, category and volume as query params and pre-fills from
+ *            them, which is what this always should have been.
+ *   market   went to /markt with router state, but Markt opens its offer
+ *            sheet from `?anbieten=1&photo=…` — so the sheet never opened and
+ *            the person arrived at an ordinary list.
+ *
+ * quest and knowledge do read router state, so they are unchanged; state is
+ * still passed everywhere so nothing has to refetch what we already hold.
+ */
+function zielFuer(id: string, scan: ScanResult): string {
+  if (id === 'pickup') {
+    const q = new URLSearchParams({
+      photo: scan.photoId,
+      category: scan.category,
+      volume: String(scan.estimatedVolumeM3),
+    })
+    return `/abholung?${q}`
+  }
+
+  if (id === 'market') {
+    const q = new URLSearchParams({
+      anbieten: '1',
+      photo: scan.photoId,
+      kategorie: scan.category,
+      titel: scan.subtype,
+    })
+    return `/markt?${q}`
+  }
+
+  // Quests and Wissen both read the scan out of router state, so they need
+  // no query string — and adding one that neither reads would only look
+  // like a handover that is not happening.
+  return id === 'knowledge' ? '/wissen' : '/quests'
 }
