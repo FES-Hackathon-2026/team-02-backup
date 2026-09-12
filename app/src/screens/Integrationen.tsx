@@ -55,7 +55,7 @@ export default function Integrationen() {
   const data = register.data
 
   return (
-    <Screen back title="Integrationen" sub="was echt ist und was nachgebaut" gap={13}>
+    <Screen back title="Verbundene Dienste" sub="Datenquellen und Verbindungen" gap={13}>
       {register.error && (
         <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />

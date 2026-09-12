@@ -30,13 +30,21 @@ export default function Start() {
   const nextReturn = activeContainers.reduce<number | null>((value, item) => item.hoursLeft === null ? value : value === null ? item.hoursLeft : Math.min(value, item.hoursLeft), null)
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
-  return <Screen title={`Hallo ${me.name}`} sub={`Level ${me.level} · ${me.district.name}`} tabs action={
+  return <Screen title={`Hallo ${me.name}`} tabs action={
     <span className="row"><button className="icobtn" aria-label="Einstellungen" onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`}>
       <Icon name="bell" size={21} />{!!notices.data?.unread && <span className="notification-dot" />}
     </button></span>
   }>
     <div className="card row home-progress">
-      <button className="level-water" style={{ background: `linear-gradient(to top, var(--blue-deep) ${progress}%, var(--sky) ${progress}%)` }} onClick={() => navigate('/wirkung')} aria-label={`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`}><span>{me.level}</span></button>
+      <button className="level-water" onClick={() => navigate('/wirkung')} aria-label={`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`}>
+        <span className="level-water-tank" aria-hidden="true">
+          <span className="level-water-fill" style={{ height: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}>
+            <svg className="level-wave level-wave-back" viewBox="0 0 120 16" preserveAspectRatio="none"><path d="M0 8 Q15 -3 30 8 T60 8 T90 8 T120 8 V16 H0 Z" /></svg>
+            <svg className="level-wave level-wave-front" viewBox="0 0 120 16" preserveAspectRatio="none"><path d="M0 8 Q15 -3 30 8 T60 8 T90 8 T120 8 V16 H0 Z" /></svg>
+          </span>
+        </span>
+        <span className="level-water-badge">{me.level}</span>
+      </button>
       <div className="grow"><b>{me.xp.toLocaleString('de-DE')} XP</b><span className="xs mut row" style={{ gap: 5, marginTop: 4 }}><Icon name="clock" size={13} />{impact.data ? `${impact.data.streak.weeks} ${impact.data.streak.weeks === 1 ? 'Woche' : 'Wochen'}` : `${me.actions} ${me.actions === 1 ? 'Aktion' : 'Aktionen'}`}</span></div>
       <button className="reward-link" onClick={() => navigate('/belohnungen')} aria-label={`${me.coins} Münzen einlösen`}><Coin star>{me.coins}</Coin></button>
     </div>

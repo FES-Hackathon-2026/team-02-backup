@@ -36,7 +36,7 @@ export default function Touren() {
     finally { setBusy(false) }
   }
   const tours = driver ? data.data?.tours ?? [] : [demo]
-  return <Screen back title={driver ? 'Meine Sammeltouren' : 'Fahrer:innen-Demo'} sub={driver ? 'Freigeschaltete Fahrer:innen-Ansicht' : 'Getrennte Demo · Keine echten Abholadressen'}>
+  return <Screen back title={driver ? 'Meine Sammeltouren' : 'Fahrer:innen-Demo'} sub={driver ? 'Deine Stopps und Abholungen' : 'Beispieltour mit erfundenen Adressen'}>
     {!driver && <div className="card sky"><h1 className="h2">Ein Fahrzeug, eine gemeinsame Tour</h1><p className="sm">Die Referenzreise mit sieben fiktiven Stopps. Änderungen hier betreffen nur diese Vorschau. Bürger:innen sehen in ihren echten Anfragen ausschließlich den eigenen Stopp.</p><button className="btn sm" onClick={() => { setDemo(DEMO); setMessage('Demo zurückgesetzt.') }}>Demo neu starten</button></div>}
     {data.loading && <p role="status">Touren laden …</p>}
     {data.error && <button className="btn" onClick={data.reload}>Touren erneut laden</button>}

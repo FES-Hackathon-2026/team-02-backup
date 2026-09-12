@@ -107,7 +107,7 @@ export default function Erkannt() {
 
   if (laden) {
     return (
-      <Screen back title="Erkannt" sub={de.state.loading}>
+      <Screen back title="Dein Scan" sub={de.state.loading}>
         <div className="empty">
           <span className="spinner" />
         </div>
@@ -117,7 +117,7 @@ export default function Erkannt() {
 
   if (!scan) {
     return (
-      <Screen back title="Erkannt" sub="nichts gefunden">
+      <Screen back title="Dein Scan" sub="Der Gegenstand wurde nicht erkannt">
         <div className="empty">
           <Icon name="camera" size={28} />
           {fehler ?? 'Zu diesem Foto liegt keine Erkennung vor.'}
@@ -238,7 +238,7 @@ export default function Erkannt() {
   return (
     <Screen
       back
-      title="Erkannt"
+      title="Dein Scan"
       sub={scan.modeLabel}
       action={
         <button className="icobtn" onClick={() => navigate('/scan')} aria-label="Neu scannen">

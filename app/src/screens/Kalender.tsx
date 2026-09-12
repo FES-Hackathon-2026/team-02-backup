@@ -59,11 +59,7 @@ export default function Kalender() {
     <Screen
       back
       title="Abfuhrkalender"
-      sub={
-        kalender.data
-          ? `${kalender.data.district.name} · Ortsbezirk ${kalender.data.district.bezirk}`
-          : `${me.district.name} · Ortsbezirk ${me.district.bezirk}`
-      }
+      sub="Wann deine Tonnen geleert werden"
       gap={13}
       action={
         <button

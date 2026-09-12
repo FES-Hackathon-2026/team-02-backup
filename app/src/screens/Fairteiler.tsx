@@ -142,18 +142,14 @@ export default function Fairteiler() {
     <Screen
       back
       title="Essen retten"
-      sub={
-        <>
-          foodsharing · <b>{state.error?.code === 'no_key' ? 'Verbindung einrichten' : 'Schnittstelle'}</b>
-        </>
-      }
+      sub={state.error?.code === 'no_key' ? 'foodsharing ist gerade nicht verfügbar' : 'Lebensmittel in deiner Nähe abholen'}
     >
       {/* Who is acting. The team key carries two test users in deliberately
           different verification states — that is what makes the locked
           Geschäftsrettung below the real thing rather than a mock-up. */}
       <details className="card tight"><summary>foodsharing-Konto und Freigaben</summary>
         <div className="between" style={{ marginBottom: 9 }}>
-          <span className="lbl">Handelnder foodsharing-Nutzer</span>
+          <span className="lbl">Dein foodsharing-Konto</span>
           <Tag von="api" icon />
         </div>
         <div className="chips">

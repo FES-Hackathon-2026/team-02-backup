@@ -95,7 +95,7 @@ export default function Review() {
 
   if (loading) {
     return (
-      <Screen back title="Kurz gegenprüfen" sub="dauert 20 Sekunden">
+      <Screen back title="Foto prüfen">
         <div className="empty">
           <span className="spinner" />
         </div>
@@ -105,7 +105,7 @@ export default function Review() {
 
   if (!detail?.submission) {
     return (
-      <Screen back title="Kurz gegenprüfen">
+      <Screen back title="Foto prüfen">
         <div className="empty">
           <Icon name="cross" size={24} />
           {error ?? 'Zu diesem Nachweis gibt es nichts zu prüfen.'}
@@ -120,8 +120,8 @@ export default function Review() {
   return (
     <Screen
       back
-      title="Kurz gegenprüfen"
-      sub={answered ? 'danke' : 'eine Frage, zwanzig Sekunden'}
+      title="Foto prüfen"
+      sub={answered ? 'Danke für deine Rückmeldung' : 'Wurde der Ort aufgeräumt?'}
     >
       {/* ------- the two photos, as large as they go ------- */}
       <div className="review-photos">

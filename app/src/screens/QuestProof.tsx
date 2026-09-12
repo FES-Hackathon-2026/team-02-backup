@@ -256,7 +256,7 @@ export default function QuestProof() {
     <Screen
       back
       title={quest.title}
-      sub={`${quest.district ?? 'Frankfurt'} · ${quest.xp} XP`}
+      sub="Zeig, was du aufgeräumt hast"
       footer={
         canSubmit ? (
           <button className="btn primary" disabled={busy} onClick={() => fileRef.current?.click()}>

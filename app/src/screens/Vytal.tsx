@@ -122,7 +122,7 @@ export default function Vytal() {
   const nichtEingerichtet = status.data && !status.data.configured
 
   return (
-    <Screen back title="Mehrweg" sub="Vytal · echte Schnittstelle">
+    <Screen back title="Mehrweg" sub="Behälter ausleihen und zurückgeben">
       {/* Who we are in this transaction. The one thing that is easy to get
           wrong about this integration, so it is the first thing said. */}
       {status.data?.store && (

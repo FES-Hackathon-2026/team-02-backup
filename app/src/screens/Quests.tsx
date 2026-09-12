@@ -129,10 +129,10 @@ export default function Quests() {
       title="Quests"
       sub={
         loading
-          ? 'wird geladen …'
+          ? 'Aufgaben werden geladen …'
           : tab === 'pruefen'
-            ? `${reviewable.length} warten auf eine zweite Meinung`
-            : `${shown.length} im Umkreis von ${radius} km`
+            ? `${reviewable.length} ${reviewable.length === 1 ? 'Foto wartet' : 'Fotos warten'} auf Prüfung`
+            : `${shown.length} ${shown.length === 1 ? 'Aufgabe' : 'Aufgaben'} in deiner Nähe`
       }
       tabs
       action={

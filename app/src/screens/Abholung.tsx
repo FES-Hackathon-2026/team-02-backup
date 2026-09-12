@@ -112,7 +112,7 @@ export default function Abholung() {
     } catch (e) { setSubmitError((e as Error).message); setReview(false); if (!(e instanceof ApiError) || e.status >= 500) setRecoverKey(requestKey); else { try { sessionStorage.removeItem(pendingStorageKey) } catch { /* Optional storage. */ } } }
     finally { setBusy(false) }
   }
-  return <Screen back title="Sperrmüll anmelden" sub="Gegenstände · Abholort · Sammeltour" footer={
+  return <Screen back title="Sperrmüll anmelden" sub="Was möchtest du abholen lassen?" footer={
     already ? <button className="btn primary" onClick={() => navigate(`/abholung/${result!.pickup!.id}`)}>Vorhandenen Termin öffnen</button>
       : <button className="btn primary" disabled={!ready || busy} onClick={() => setReview(true)}><Icon name="truck" size={18} />{matched ? 'Gegenstand hinzufügen' : 'Abholung prüfen und eintragen'}</button>
   }>

@@ -51,7 +51,7 @@ export default function Nachweis() {
     <Screen
       back
       title="Nachweis"
-      sub={`${action.kindLabel} #${action.id} · ${action.whenLabel}`}
+      sub={`${action.kindLabel} vom ${action.whenLabel}`}
       gap={12}
     >
       <Block

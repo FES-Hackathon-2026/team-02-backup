@@ -174,7 +174,7 @@ export default function Markt() {
   return (
     <Screen
       title="Reparatur-Markt"
-      sub={exact ? 'Angebote in deiner Nähe' : me.district.name}
+      sub="Gebrauchtes aus deiner Nähe"
       tabs
       action={
         <button className="icobtn" aria-label="Etwas anbieten" onClick={() => setAnbieten(true)}>

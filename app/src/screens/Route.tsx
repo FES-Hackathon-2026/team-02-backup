@@ -141,8 +141,8 @@ export default function RouteScreen() {
   return (
     <Screen
       back
-      title="Hinweg"
-      sub={data?.target?.title ?? 'Route-Assistent'}
+      title="Dein Weg dorthin"
+      sub={data?.target?.title ?? 'Route wird geladen …'}
       footer={journey.data?.journey ? <button className="btn primary" onClick={() => navigate(`/quests/${questId}/nachweis`)}>Am Ziel · Nachweis aufnehmen</button> : <button className="btn primary" disabled={!selected || starting} onClick={() => void startJourney()}>{starting ? 'Wird gespeichert …' : `Fahrt starten${selected ? ` · ${selected.label}` : ''}`}</button>}
     >
       {startError && <p className="card tight" role="alert">{startError}</p>}

@@ -29,7 +29,7 @@ export default function AbholungDetail() {
     } catch (e) { setError((e as Error).message) }
     finally { setBusy(false) }
   }
-  return <Screen back title="Deine Abholung" sub={p?.reference || 'Termin laden'} action={<button className="btn sm" onClick={() => navigate('/mitteilungen')}>Mitteilungen</button>}>
+  return <Screen back title="Deine Abholung" sub={p ? `Buchungsnummer ${p.reference}` : 'Dein Termin wird geladen …'} action={<button className="btn sm" onClick={() => navigate('/mitteilungen')}>Mitteilungen</button>}>
     {data.loading && <p role="status">Termin wird geladen …</p>}
     {data.error && <div role="alert"><p>{data.error.message}</p><button className="btn" onClick={data.reload}>Erneut laden</button></div>}
     {message && <p className="card sky sm" role="status">{message}</p>}

@@ -15,7 +15,7 @@ export default function Mitteilungen() {
     try { await api.post(`/api/fes/notifications/${id}/read`); navigate(`/abholung/${pickupId}`) }
     catch (e) { setError((e as Error).message) }
   }
-  return <Screen back title="Mitteilungen" sub={`${data.data?.unread ?? 0} ungelesen`}>
+  return <Screen back title="Mitteilungen" sub={data.data?.unread ? `${data.data.unread} ${data.data.unread === 1 ? 'neue Nachricht' : 'neue Nachrichten'}` : undefined}>
     <p className="sm mut">Hier findest du deine Abholtermine und Erinnerungen. Die Abholung ist derzeit eine Demo.</p>
     <BonusReceipts />
     <CollectionOpportunity />

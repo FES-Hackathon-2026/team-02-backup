@@ -49,7 +49,7 @@ export default function Wirkung() {
   return (
     <Screen
       title="Wirkung"
-      sub={`${me.name} · ${me.district.name}`}
+      sub="Was du bisher erreicht hast"
       tabs
       action={
         <button
