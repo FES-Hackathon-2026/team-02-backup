@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import { InviteNeighbour } from '../components/ReferenceActions'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -42,7 +43,7 @@ const STEP_ICON: Record<string, IconName> = {
   camera: 'camera',
 }
 
-const zahl = (value: number) => value.toLocaleString('de-DE')
+const zahl = (value: number) => value.toLocaleString(getLocale())
 
 export default function Stadtteile() {
   const [showAll, setShowAll] = useState(false)
@@ -63,15 +64,15 @@ export default function Stadtteile() {
   return (
     <Screen
       back
-      title="Stadtteile"
-      sub={data ? `Saison ${data.season.number} · Woche ${data.season.week} von ${data.season.weeks}` : undefined}
+      title={t("Stadtteile")}
+      sub={t(data ? `Saison ${data.season.number} · Woche ${data.season.week} von ${data.season.weeks}` : undefined)}
       gap={12}
     >
-      {problem && (
+      {t(problem && (
         <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
           <span className="sm grow">
-            {problem.status === 0 ? de.state.offline : problem.message}
+            {t(problem.status === 0 ? de.state.offline : problem.message)}
           </span>
           <button
             className="btn sm"
@@ -80,28 +81,28 @@ export default function Stadtteile() {
               impact.reload()
             }}
           >
-            {de.action.retry}
+            {t(de.action.retry)}
           </button>
         </div>
-      )}
+      ))}
 
-      {season.loading && !data && (
+      {t(season.loading && !data && (
         <div className="empty">
           <span className="spinner" />
-          <p className="sm mut">{de.state.loading}</p>
+          <p className="sm mut">{t(de.state.loading)}</p>
         </div>
-      )}
+      ))}
 
-      {meiner && <div className="card district-goal"><p className="lbl">{rows[0]?.id === meiner.id ? 'Gemeinsam vorn' : 'Bis Platz 1'}</p><strong className="num">{zahl(Math.max(0, spitze - meiner.seasonXp))} XP</strong><p className="sm mut">{rows[0]?.name} führt · {meiner.name} auf Platz {rows.findIndex(d => d.id === meiner.id) + 1} von {rows.length}</p></div>}
+      {t(meiner && <div className="card district-goal"><p className="lbl">{t(rows[0]?.id === meiner.id ? 'Gemeinsam vorn' : 'Bis Platz 1')}</p><strong className="num">{t(zahl(Math.max(0, spitze - meiner.seasonXp)))} {t(" XP")}</strong><p className="sm mut">{t(rows[0]?.name)} {t(" führt · ")}{t(meiner.name)} {t(" auf Platz ")}{t(rows.findIndex(d => d.id === meiner.id) + 1)} {t(" von ")}{t(rows.length)}</p></div>)}
       {/* --- the season, and what the reset does ------------------------- */}
-      {data && (
+      {t(data && (
         <div className="card tight">
           <div className="between" style={{ marginBottom: 8 }}>
             <b className="sm">
-              Saison {data.season.number} · {data.season.startLabel} bis {data.season.endLabel}
+              {t("Saison ")}{t(data.season.number)} {t(" · ")}{t(data.season.startLabel)} {t(" bis ")}{t(data.season.endLabel)}
             </b>
             <Label>
-              noch {data.season.daysLeft} {data.season.daysLeft === 1 ? 'Tag' : 'Tage'}
+              {t("noch ")}{t(data.season.daysLeft)} {t(data.season.daysLeft === 1 ? 'Tag' : 'Tage')}
             </Label>
           </div>
           <Bar
@@ -109,13 +110,13 @@ export default function Stadtteile() {
             max={data.season.weeks * 7}
           />
           <p className="xs mut" style={{ margin: '9px 0 0', lineHeight: 1.55 }}>
-            {data.season.note}
+            {t(data.season.note)}
           </p>
         </div>
-      )}
+      ))}
 
       {/* --- own share, as a band ---------------------------------------- */}
-      {meiner && (
+      {t(meiner && (
         <div className="card" style={{ borderColor: 'var(--blue)', background: 'var(--sky2)' }}>
           <div className="row" style={{ gap: 14 }}>
             <span
@@ -136,49 +137,47 @@ export default function Stadtteile() {
             </span>
             <span className="grow" style={{ minWidth: 0 }}>
               <b className="h2" style={{ display: 'block' }}>
-                {meiner.name}
+                {t(meiner.name)}
               </b>
               <span className="xs mut" style={{ display: 'block', marginTop: 5 }}>
-                {zahl(meiner.seasonXp)} XP diese Saison · {meiner.people}{' '}
-                {meiner.people === 1 ? 'Person' : 'Personen'} aktiv
-              </span>
+                {t(zahl(meiner.seasonXp))} {t(" XP diese Saison · ")}{t(meiner.people)}{t(' ')}
+                {t(meiner.people === 1 ? 'Person' : 'Personen')} {t(" aktiv")}</span>
             </span>
           </div>
 
           <div className="sep" style={{ margin: '12px 0' }} />
 
-          {band?.label ? (
+          {t(band?.label ? (
             <>
               <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
                 <span className="num" style={{ fontSize: 22, color: 'var(--blue-deep)' }}>
-                  {band.label}
+                  {t(band.label)}
                 </span>
                 <Tag von="api" />
               </div>
               <p className="xs mut" style={{ margin: '7px 0 0', lineHeight: 1.55 }}>
-                {band.note}
+                {t(band.note)}
               </p>
             </>
           ) : (
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-              {band?.note ?? 'Dein Anteil erscheint, sobald die erste Aktion bestätigt ist.'}
+              {t(band?.note ?? 'Dein Anteil erscheint, sobald die erste Aktion bestätigt ist.')}
             </p>
-          )}
+          ))}
         </div>
-      )}
+      ))}
 
-      {rows.length > 8 && <button className="text-link" onClick={() => setShowAll(v => !v)}>{showAll ? 'Weniger Stadtteile' : `Alle ${rows.length} Stadtteile anzeigen`}</button>}
+      {t(rows.length > 8 && <button className="text-link" onClick={() => setShowAll(v => !v)}>{t(showAll ? 'Weniger Stadtteile' : `Alle ${rows.length} Stadtteile anzeigen`)}</button>)}
       {/* --- the table ---------------------------------------------------- */}
-      {rows.length > 0 ? (
+      {t(rows.length > 0 ? (
         <div className="card tight">
           <div className="between" style={{ marginBottom: 11 }}>
             <p className="lbl" style={{ margin: 0 }}>
-              Diese Saison
-            </p>
+              {t("Diese Saison")}</p>
             <Tag von="api" icon />
           </div>
           <div className="col" style={{ gap: 11 }}>
-            {(showAll ? rows : rows.slice(0, 8)).map((s, i) => {
+            {t((showAll ? rows : rows.slice(0, 8)).map((s, i) => {
               const mine = s.id === me.district.id
               const trend = TREND[s.trend] ?? TREND.flat
               return (
@@ -191,7 +190,7 @@ export default function Stadtteile() {
                       color: mine ? 'var(--blue-deep)' : 'var(--ink3)',
                     }}
                   >
-                    {i + 1}
+                    {t(i + 1)}
                   </span>
                   <span className="grow" style={{ minWidth: 0 }}>
                     <span className="between">
@@ -202,14 +201,14 @@ export default function Stadtteile() {
                         className="sm num"
                         style={mine ? { color: 'var(--blue-deep)' } : undefined}
                       >
-                        {zahl(s.seasonXp)}
+                        {t(zahl(s.seasonXp))}
                       </span>
                     </span>
                     <span style={{ display: 'block', marginTop: 5 }}>
                       <Bar value={s.seasonXp} max={spitze} />
                     </span>
                     <span className="xs mut" style={{ display: 'block', marginTop: 4 }}>
-                      {s.trendLabel}
+                      {t(s.trendLabel)}
                     </span>
                   </span>
                   <Icon
@@ -220,25 +219,24 @@ export default function Stadtteile() {
                   />
                 </div>
               )
-            })}
+            }))}
           </div>
         </div>
       ) : (
         !season.loading && (
           <div className="empty">
             <p className="sm mut">
-              Noch hat kein Stadtteil Punkte. Die erste bestätigte Aktion eröffnet die Tabelle.
-            </p>
+              {t("Noch hat kein Stadtteil Punkte. Die erste bestätigte Aktion eröffnet die Tabelle.")}</p>
           </div>
         )
-      )}
+      ))}
 
       {/* --- the retention engine ---------------------------------------- */}
-      {steps.length > 0 && (
+      {t(steps.length > 0 && (
         <>
-          <p className="lbl">So kommt {me.district.name} nach vorn</p>
+          <p className="lbl">{t("So kommt ")}{me.district.name} {t(" nach vorn")}</p>
           <div className="col" style={{ gap: 9 }}>
-            {steps.map((step) => (
+            {t(steps.map((step) => (
               <Link
                 key={step.id}
                 to={step.to}
@@ -251,30 +249,28 @@ export default function Stadtteile() {
                   <Spot icon={STEP_ICON[step.icon] ?? 'quest'} />
                   <span className="grow" style={{ minWidth: 0 }}>
                     <b className="sm" style={{ display: 'block' }}>
-                      {step.title}
+                      {t(step.title)}
                     </b>
-                    <span className="xs mut">{step.detail}</span>
+                    <span className="xs mut">{t(step.detail)}</span>
                   </span>
-                  <Coin>+{step.xp}</Coin>
+                  <Coin>{t("+")}{t(step.xp)}</Coin>
                 </span>
               </Link>
-            ))}
+            )))}
           </div>
-          {data?.home && (
+          {t(data?.home && (
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-              {data.home.xpNote}
+              {t(data.home.xpNote)}
             </p>
-          )}
+          ))}
         </>
-      )}
+      ))}
 
       <div className="card dashed tight">
         <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-          {data?.note ??
-            'Stadtteile werden verglichen, Personen nicht.'}{' '}
-          Einzelne Personen werden nie gegeneinander gestellt — die eigene Position steht nur als
-          Band, nie als Platz.
-        </p>
+          {t(data?.note ??
+            'Stadtteile werden verglichen, Personen nicht.')}{t(' ')}
+          {t("Einzelne Personen werden nie gegeneinander gestellt — die eigene Position steht nur als Band, nie als Platz.")}</p>
       </div>
       <InviteNeighbour />
     </Screen>

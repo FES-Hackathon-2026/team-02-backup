@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DecisionSheet from './DecisionSheet'
@@ -17,12 +18,12 @@ export function WeeklyGoal() {
   const data = useApi<Progression>('/api/progression')
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
-  if (data.error) return <button className="btn sm" onClick={data.reload}>Wochenziel erneut laden</button>
+  if (data.error) return <button className="btn sm" onClick={data.reload}>{t("Wochenziel erneut laden")}</button>
   if (!data.data) return null
   const weekly = data.data.weekly
   return <>
-    <button className="card tight" onClick={() => setOpen(true)}><div className="between" style={{ marginBottom: 9 }}><b className="sm">Wochenziel · {Math.min(weekly.count, weekly.goal)}/{weekly.goal}</b><Coin>+{weekly.xp}</Coin></div><Bar value={weekly.count} max={weekly.goal} /></button>
-    {open && <DecisionSheet title="Dein Wochenziel" onClose={() => setOpen(false)}><p>Fünf bewertete Aktionen in einer Kalenderwoche bringen einmalig 30 Bonus-XP. Bonusgutschriften zählen nicht als zusätzliche Aktionen. Die Woche beginnt montags in Frankfurt.</p><p className="sm">{weekly.earned ? 'Geschafft! Der Bonus ist bereits gutgeschrieben.' : `Noch ${Math.max(0, weekly.goal - weekly.count)} Aktionen bis zum Bonus.`}</p><button className="btn primary" onClick={() => { setOpen(false); navigate('/wirkung') }}>Deine Wirkung ansehen</button></DecisionSheet>}
+    <button className="card tight" onClick={() => setOpen(true)}><div className="between" style={{ marginBottom: 9 }}><b className="sm">{t("Wochenziel · ")}{t(Math.min(weekly.count, weekly.goal))}{t("/")}{t(weekly.goal)}</b><Coin>{t("+")}{t(weekly.xp)}</Coin></div><Bar value={weekly.count} max={weekly.goal} /></button>
+    {t(open && <DecisionSheet title={t("Dein Wochenziel")} onClose={() => setOpen(false)}><p>{t("Fünf bewertete Aktionen in einer Kalenderwoche bringen einmalig 30 Bonus-XP. Bonusgutschriften zählen nicht als zusätzliche Aktionen. Die Woche beginnt montags in Frankfurt.")}</p><p className="sm">{t(weekly.earned ? 'Geschafft! Der Bonus ist bereits gutgeschrieben.' : `Noch ${Math.max(0, weekly.goal - weekly.count)} Aktionen bis zum Bonus.`)}</p><button className="btn primary" onClick={() => { setOpen(false); navigate('/wirkung') }}>{t("Deine Wirkung ansehen")}</button></DecisionSheet>)}
   </>
 }
 export function InviteNeighbour() {
@@ -36,9 +37,9 @@ export function InviteNeighbour() {
     catch { setMessage('Bitte den Link markieren und kopieren.') }
   }
   return <>
-    <button className="card row" disabled={!data.data} onClick={() => setOpen(true)}><Icon name="users" size={23} /><span className="grow"><b>Nachbar:in einladen</b><span className="xs mut" style={{ display: 'block' }}>Nach der ersten bewerteten Foto-Aktion</span></span><Coin>+50</Coin></button>
-    {data.error && <button className="btn sm" onClick={data.reload}>Einladung erneut laden</button>}
-    {open && <DecisionSheet title="Gemeinsam für Frankfurt" onClose={() => setOpen(false)}><p>Teile diesen Link. Meldet sich darüber eine neue Person an und bestätigt ihre erste bewertete Aktion mit Foto, erhältst du einmalig 50 Bonus-XP.</p><label className="sm">Dein Einladungslink<input className="field" readOnly value={url.href} onFocus={e => e.target.select()} /></label><button className="btn primary" onClick={() => void copy()}>Link kopieren</button>{message && <p role="status">{message}</p>}</DecisionSheet>}
+    <button className="card row" disabled={!data.data} onClick={() => setOpen(true)}><Icon name="users" size={23} /><span className="grow"><b>{t("Nachbar:in einladen")}</b><span className="xs mut" style={{ display: 'block' }}>{t("Nach der ersten bewerteten Foto-Aktion")}</span></span><Coin>{t("+50")}</Coin></button>
+    {t(data.error && <button className="btn sm" onClick={data.reload}>{t("Einladung erneut laden")}</button>)}
+    {t(open && <DecisionSheet title={t("Gemeinsam für Frankfurt")} onClose={() => setOpen(false)}><p>{t("Teile diesen Link. Meldet sich darüber eine neue Person an und bestätigt ihre erste bewertete Aktion mit Foto, erhältst du einmalig 50 Bonus-XP.")}</p><label className="sm">{t("Dein Einladungslink")}<input className="field" readOnly value={url.href} onFocus={e => e.target.select()} /></label><button className="btn primary" onClick={() => void copy()}>{t("Link kopieren")}</button>{t(message && <p role="status">{t(message)}</p>)}</DecisionSheet>)}
   </>
 }
 interface QuizResult { passed: boolean; correct: boolean[]; explanations: string[]; credit?: { xp: number; coins: number; actionId: number; repeat: boolean } }
@@ -61,14 +62,14 @@ export function KnowledgeQuiz() {
     finally { setBusy(false) }
   }
   return <>
-    <button className="card row" onClick={() => setOpen(true)}><Icon name="spark" size={22} /><span className="grow"><b>3 kurze Fragen dazu</b><span className="xs mut" style={{ display: 'block' }}>Wissen testen · einmaliger Bonus</span></span><Coin>+10</Coin></button>
-    {open && <DecisionSheet title="Abfallwissen testen" onClose={() => setOpen(false)} busy={busy}>
-      {quiz.loading && <p role="status">Fragen laden …</p>}
-      {(quiz.error || error) && <div role="alert"><p>{error || quiz.error?.message}</p>{quiz.error && <button className="btn" onClick={quiz.reload}>Erneut laden</button>}</div>}
-      {!result?.passed && quiz.data?.questions.map((q, i) => <fieldset className="quiz-question" key={q.id}><legend>{i + 1}. {q.title}</legend>{q.options.map((option, index) => <label className="quiz-answer" key={option}><input type="radio" name={`quiz-${q.id}`} checked={answers[i] === index} onChange={() => { setAnswers(a => ({ ...a, [i]: index })); setResult(null) }} disabled={busy} />{option}</label>)}</fieldset>)}
-      {result && !result.passed && <div role="status"><b>Noch nicht alles richtig.</b>{result.explanations.map((text, i) => !result.correct[i] && <p className="sm" key={text}>{text}</p>)}</div>}
-      {result?.passed ? <><p role="status">Alle drei richtig! {result.credit?.repeat ? 'Dein Quizbonus wurde bereits gutgeschrieben.' : `+${result.credit?.xp ?? 0} XP gutgeschrieben.`}</p><button className="btn primary" onClick={() => { setOpen(false); navigate(`/nachweis/${result.credit!.actionId}`) }}>Nachweis ansehen</button></> : <button className="btn primary" disabled={busy || !quiz.data || Object.keys(answers).length !== 3} onClick={() => void submit()}>{busy ? 'Wird geprüft …' : 'Antworten prüfen'}</button>}
-    </DecisionSheet>}
+    <button className="card row" onClick={() => setOpen(true)}><Icon name="spark" size={22} /><span className="grow"><b>{t("3 kurze Fragen dazu")}</b><span className="xs mut" style={{ display: 'block' }}>{t("Wissen testen · einmaliger Bonus")}</span></span><Coin>{t("+10")}</Coin></button>
+    {t(open && <DecisionSheet title={t("Abfallwissen testen")} onClose={() => setOpen(false)} busy={busy}>
+      {t(quiz.loading && <p role="status">{t("Fragen laden …")}</p>)}
+      {t((quiz.error || error) && <div role="alert"><p>{t(error || quiz.error?.message)}</p>{t(quiz.error && <button className="btn" onClick={quiz.reload}>{t("Erneut laden")}</button>)}</div>)}
+      {t(!result?.passed && quiz.data?.questions.map((q, i) => <fieldset className="quiz-question" key={q.id}><legend>{t(i + 1)}{t(". ")}{t(q.title)}</legend>{t(q.options.map((option, index) => <label className="quiz-answer" key={option}><input type="radio" name={`quiz-${q.id}`} checked={answers[i] === index} onChange={() => { setAnswers(a => ({ ...a, [i]: index })); setResult(null) }} disabled={busy} />{t(option)}</label>))}</fieldset>))}
+      {t(result && !result.passed && <div role="status"><b>{t("Noch nicht alles richtig.")}</b>{t(result.explanations.map((text, i) => !result.correct[i] && <p className="sm" key={text}>{t(text)}</p>))}</div>)}
+      {t(result?.passed ? <><p role="status">{t("Alle drei richtig! ")}{t(result.credit?.repeat ? 'Dein Quizbonus wurde bereits gutgeschrieben.' : `+${result.credit?.xp ?? 0} XP gutgeschrieben.`)}</p><button className="btn primary" onClick={() => { setOpen(false); navigate(`/nachweis/${result.credit!.actionId}`) }}>{t("Nachweis ansehen")}</button></> : <button className="btn primary" disabled={busy || !quiz.data || Object.keys(answers).length !== 3} onClick={() => void submit()}>{t(busy ? 'Wird geprüft …' : 'Antworten prüfen')}</button>)}
+    </DecisionSheet>)}
   </>
 }
 
@@ -76,5 +77,5 @@ export function BonusReceipts() {
   const data = useApi<Progression>('/api/progression')
   const navigate = useNavigate()
   if (!data.data?.bonuses.length) return null
-  return <details className="card tight"><summary>Bonusgutschriften</summary><div className="col" style={{ gap: 8 }}>{data.data.bonuses.map(b => <button className="btn" key={b.actionId} onClick={() => navigate(`/nachweis/${b.actionId}`)}><span className="grow">{b.title}</span><Coin>+{b.xp}</Coin></button>)}</div></details>
+  return <details className="card tight"><summary>{t("Bonusgutschriften")}</summary><div className="col" style={{ gap: 8 }}>{t(data.data.bonuses.map(b => <button className="btn" key={b.actionId} onClick={() => navigate(`/nachweis/${b.actionId}`)}><span className="grow">{t(b.title)}</span><Coin>{t("+")}{t(b.xp)}</Coin></button>))}</div></details>
 }

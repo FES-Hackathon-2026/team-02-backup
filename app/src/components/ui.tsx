@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import type { ReactNode } from 'react'
 
 import Icon from './Icon'
@@ -44,12 +45,12 @@ export function Tag({
   icon?: boolean
 }) {
   return (
-    <span className={`tag ${HERKUNFT_CLASS[von]}`} title={HERKUNFT_TITLE[von]}>
-      {icon && von === 'api' && <Icon name="check" size={12} stroke={2.4} />}
-      {icon && (von === 'estimate' || von === 'simulated') && (
+    <span className={`tag ${HERKUNFT_CLASS[von]}`} title={t(HERKUNFT_TITLE[von])}>
+      {t(icon && von === 'api' && <Icon name="check" size={12} stroke={2.4} />)}
+      {t(icon && (von === 'estimate' || von === 'simulated') && (
         <Icon name="spark" size={12} stroke={2} />
-      )}
-      {children ?? HERKUNFT_LABEL[von]}
+      ))}
+      {t(children ?? HERKUNFT_LABEL[von])}
     </span>
   )
 }
@@ -62,7 +63,7 @@ export function Label({
   tone?: 'plain' | 'warn'
   children: ReactNode
 }) {
-  return <span className={`tag ${tone}`}>{children}</span>
+  return <span className={`tag ${tone}`}>{t(children)}</span>
 }
 
 /* ------------------------------------------------------------------
@@ -72,8 +73,8 @@ export function Label({
 export function Coin({ children, star = false }: { children: ReactNode; star?: boolean }) {
   return (
     <span className="coin">
-      {star && <Icon name="star" size={13} stroke={2} />}
-      {children}
+      {t(star && <Icon name="star" size={13} stroke={2} />)}
+      {t(children)}
     </span>
   )
 }
@@ -123,7 +124,7 @@ export function Thumb({
 export function Stub({ phase, children }: { phase: number; children: ReactNode }) {
   return (
     <p className="stub">
-      <b>Phase {phase}</b> — {children}
+      <b>{t("Phase ")}{t(phase)}</b> {t(" — ")}{t(children)}
     </p>
   )
 }

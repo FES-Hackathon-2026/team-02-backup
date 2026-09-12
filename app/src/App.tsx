@@ -1,3 +1,4 @@
+import { useLanguage } from './lib/i18n'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
@@ -35,6 +36,7 @@ import Vytal from './screens/Vytal'
  * the domain root everywhere else — without a second config.
  */
 export default function App() {
+  useLanguage()
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <SessionProvider>

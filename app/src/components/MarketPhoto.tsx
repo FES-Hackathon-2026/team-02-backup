@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useState } from 'react'
 import type { MarketItem } from '../lib/client'
 import { Thumb } from './ui'
@@ -15,8 +16,8 @@ export default function MarketPhoto({ item, size = 92, credits = false }: { item
   const original = upload && !failed.includes(upload)
   const src = original ? upload : example ? `/images/market/${example.file}.jpg` : null
   return <span className="market-photo" style={{ width: size, flex: 'none' }}>
-    {src && !failed.includes(src) ? <img src={src} alt={original ? item.title : `${example.alt} — Kategoriebeispiel, nicht dieser Gegenstand`} loading="lazy" width={size} height={size} onError={() => setFailed(previous => [...previous, src])} /> : <Thumb icon="camera" size={size} />}
-    {!original && <span className="xs mut">{src && !failed.includes(src) ? 'Beispielfoto' : 'Kein Foto verfügbar'}</span>}
-    {credits && !original && example && <span className="photo-credit xs mut"><a href={`https://commons.wikimedia.org/wiki/File:${encodeURIComponent(example.title)}`} target="_blank" rel="noreferrer">Foto: {example.author}</a> · <a href={`https://creativecommons.org/licenses/by-sa/${example.license}/`} target="_blank" rel="noreferrer">CC BY-SA {example.license}</a><br />Kategoriebeispiel; Ausschnitt für die Anzeige.</span>}
+    {t(src && !failed.includes(src) ? <img src={src} alt={t(original ? item.title : `${example.alt} — Kategoriebeispiel, nicht dieser Gegenstand`)} loading="lazy" width={size} height={size} onError={() => setFailed(previous => [...previous, src])} /> : <Thumb icon="camera" size={size} />)}
+    {t(!original && <span className="xs mut">{t(src && !failed.includes(src) ? 'Beispielfoto' : 'Kein Foto verfügbar')}</span>)}
+    {t(credits && !original && example && <span className="photo-credit xs mut"><a href={`https://commons.wikimedia.org/wiki/File:${encodeURIComponent(example.title)}`} target="_blank" rel="noreferrer">{t("Foto: ")}{t(example.author)}</a> {t(" · ")}<a href={`https://creativecommons.org/licenses/by-sa/${example.license}/`} target="_blank" rel="noreferrer">{t("CC BY-SA ")}{t(example.license)}</a><br />{t("Kategoriebeispiel; Ausschnitt für die Anzeige.")}</span>)}
   </span>
 }

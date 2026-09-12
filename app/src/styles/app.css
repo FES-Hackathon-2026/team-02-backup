@@ -869,3 +869,10 @@ button.scan-hero { padding: 17px 16px; background: var(--blue-deep); color: var(
 .market-offer-price { font-size: 14px; font-weight: 600; color: var(--blue-deep); }
 .market-offer .market-photo { margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { .market-offer { transition: none; } }
+
+/* Reserve space for the route icon; the text action takes the remaining width. */
+.quest-card-actions { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 10px; align-items: stretch; margin-top: 12px; }
+.quest-card-actions > * { min-width: 0; }
+.quest-card-actions .btn { min-height: 52px; height: auto; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
+.quest-card-actions .quest-main-action { padding: 12px 14px; }
+.quest-card-actions .quest-route-action { width: 52px; padding: 12px; }

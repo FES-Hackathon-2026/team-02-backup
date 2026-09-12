@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 /**
  * Personal and collective impact.
  *
@@ -7,11 +8,10 @@
 export default function Impact() {
   return (
     <div className="screen" id="panel-impact" role="tabpanel">
-      <h2>Your contribution</h2>
+      <h2>{t("Your contribution")}</h2>
       <div className="empty">
-        Nothing confirmed yet.
-        <br />
-        <span className="tiny">Only actions the API confirmed are counted here.</span>
+        {t("Nothing confirmed yet.")}<br />
+        <span className="tiny">{t("Only actions the API confirmed are counted here.")}</span>
       </div>
 
       {/* TODO(#4): personal + collective impact.

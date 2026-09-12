@@ -1,3 +1,5 @@
+import LanguagePicker from '../components/LanguagePicker'
+import { t } from './../lib/i18n'
 import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
@@ -103,42 +105,41 @@ export default function Anmelden() {
         className="body"
         style={{ justifyContent: 'center', gap: 22, paddingBottom: 40, minHeight: '100dvh' }}
       >
+        <div style={{ alignSelf: 'flex-end', minWidth: 180 }}><LanguagePicker /></div>
         <div>
           <h1
             className="h1"
             style={{ fontSize: 38, color: 'var(--blue-deep)', letterSpacing: '-0.04em' }}
           >
-            ReMain
-          </h1>
+            {t("ReMain")}</h1>
           <p className="mut" style={{ marginTop: 8, fontSize: 15, maxWidth: '30ch' }}>
-            {step === 'district'
+            {t(step === 'district'
               ? greeting
                 ? `Willkommen, ${greeting} — fehlt nur noch dein Stadtteil.`
                 : 'Fast geschafft — fehlt nur noch dein Stadtteil.'
-              : 'Ein Foto — und Frankfurt weiß, was damit zu tun ist.'}
+              : 'Ein Foto — und Frankfurt weiß, was damit zu tun ist.')}
           </p>
         </div>
 
-        {step === 'choose' && (
+        {t(step === 'choose' && (
           <div className="col" style={{ gap: 14 }}>
-            {googleOffered && (
+            {t(googleOffered && (
               <>
                 <GoogleButton onClick={() => void google()} busy={busy === 'google'} />
                 <div className="or">
-                  <span>oder</span>
+                  <span>{t("oder")}</span>
                 </div>
               </>
-            )}
+            ))}
 
             <button className="btn primary" onClick={() => setStep('guest')}>
-              Ohne Konto starten
-            </button>
+              {t("Ohne Konto starten")}</button>
 
-            {error !== null && <ErrorNote>{error}</ErrorNote>}
+            {t(error !== null && <ErrorNote>{t(error)}</ErrorNote>)}
           </div>
-        )}
+        ))}
 
-        {step === 'district' && (
+        {t(step === 'district' && (
           <div className="col" style={{ gap: 14 }}>
             <DistrictField
               value={districtId}
@@ -146,27 +147,27 @@ export default function Anmelden() {
               located={located}
               autoFocus
             />
-            {error !== null && <ErrorNote>{error}</ErrorNote>}
+            {t(error !== null && <ErrorNote>{t(error)}</ErrorNote>)}
             <button
               className="btn primary"
               onClick={() => void google(districtId)}
               disabled={districtId === '' || busy !== null}
             >
-              {busy === 'google' ? 'Einen Moment …' : 'Fertig'}
+              {t(busy === 'google' ? 'Einen Moment …' : 'Fertig')}
             </button>
           </div>
-        )}
+        ))}
 
-        {step === 'guest' && (
+        {t(step === 'guest' && (
           <form onSubmit={guest} className="col" style={{ gap: 14 }}>
             <label className="col" style={{ gap: 7 }}>
-              <span className="lbl">Wie heißt du?</span>
+              <span className="lbl">{t("Wie heißt du?")}</span>
               <input
                 id="name"
                 className="field"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Vorname reicht"
+                placeholder={t("Vorname reicht")}
                 autoComplete="given-name"
                 maxLength={40}
                 required
@@ -176,17 +177,17 @@ export default function Anmelden() {
 
             <DistrictField value={districtId} onChange={setDistrictId} located={located} />
 
-            {error !== null && <ErrorNote>{error}</ErrorNote>}
+            {t(error !== null && <ErrorNote>{t(error)}</ErrorNote>)}
 
             <button
               className="btn primary"
               type="submit"
               disabled={name.trim().length < 2 || districtId === '' || busy !== null}
             >
-              {busy === 'guest' ? 'Einen Moment …' : 'Los geht’s'}
+              {t(busy === 'guest' ? 'Einen Moment …' : 'Los geht’s')}
             </button>
 
-            {googleOffered && (
+            {t(googleOffered && (
               <button
                 type="button"
                 className="btn ghost"
@@ -195,33 +196,26 @@ export default function Anmelden() {
                   setStep('choose')
                 }}
               >
-                Zurück
-              </button>
-            )}
+                {t("Zurück")}</button>
+            ))}
           </form>
-        )}
+        ))}
 
         <p className="xs mut" style={{ lineHeight: 1.55 }}>
-          {step === 'guest' ? (
+          {t(step === 'guest' ? (
             <>
-              Kein Passwort, keine E-Mail. Der Name steht auf deinen Quests, der Stadtteil zählt
-              auf das Stadtziel ein. Ohne Konto bleibt dein Fortschritt in diesem Browser — meldest
-              du dich später mit Google an, nehmen wir ihn mit.
-            </>
+              {t("Kein Passwort, keine E-Mail. Der Name steht auf deinen Quests, der Stadtteil zählt auf das Stadtziel ein. Ohne Konto bleibt dein Fortschritt in diesem Browser — meldest du dich später mit Google an, nehmen wir ihn mit.")}</>
           ) : (
             <>
-              Mit Google übernehmen wir Name, E-Mail und Profilbild — mehr nicht, und kein Zugriff
-              auf dein Konto. Dein Standort wird nur benutzt, wenn du eine Aktion startest.
-            </>
-          )}
+              {t("Mit Google übernehmen wir Name, E-Mail und Profilbild — mehr nicht, und kein Zugriff auf dein Konto. Dein Standort wird nur benutzt, wenn du eine Aktion startest.")}</>
+          ))}
         </p>
 
-        {offline && (
+        {t(offline && (
           <p className="stub">
-            Der Server ist gerade nicht erreichbar. Läuft <code>npm start</code> in{' '}
-            <code>server/</code>?
-          </p>
-        )}
+            {t("Der Server ist gerade nicht erreichbar. Läuft ")}<code>{t("npm start")}</code> {t(" in")}{t(' ')}
+            <code>{t("server/")}</code>{t("?")}</p>
+        ))}
       </div>
     </div>
   )
@@ -234,7 +228,7 @@ function ErrorNote({ children }: { children: React.ReactNode }) {
       role="alert"
       style={{ height: 'auto', padding: '8px 10px', lineHeight: 1.4 }}
     >
-      {children}
+      {t(children)}
     </p>
   )
 }
@@ -252,7 +246,7 @@ function DistrictField({
 }) {
   return (
     <label className="col" style={{ gap: 7 }}>
-      <span className="lbl">Dein Stadtteil</span>
+      <span className="lbl">{t("Dein Stadtteil")}</span>
       <select
         id="district"
         className="field"
@@ -262,20 +256,18 @@ function DistrictField({
         autoFocus={autoFocus}
       >
         <option value="" disabled>
-          Bitte wählen
-        </option>
-        {STADTTEILE_BY_NAME.map((s) => (
+          {t("Bitte wählen")}</option>
+        {t(STADTTEILE_BY_NAME.map((s) => (
           <option key={s.id} value={s.id}>
             {s.name}
           </option>
-        ))}
+        )))}
       </select>
-      {located && (
+      {t(located && (
         <span className="xs mut row" style={{ gap: 5 }}>
           <Icon name="pin" size={14} />
-          Anhand deines Standorts vorausgewählt — änderbar.
-        </span>
-      )}
+          {t("Anhand deines Standorts vorausgewählt — änderbar.")}</span>
+      ))}
     </label>
   )
 }

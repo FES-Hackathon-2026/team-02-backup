@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 
 /** Native modal provides focus containment, Escape and focus restoration. */
@@ -15,9 +16,9 @@ export default function DecisionSheet({ title, children, onClose, busy = false }
   return <dialog ref={ref} className="pickup-dialog" aria-labelledby={titleId}
     onCancel={e => { e.preventDefault(); if (!busy) onClose() }}>
     <div className="grab" />
-    <div className="between"><h2 className="h2" id={titleId}>{title}</h2>
-      <button className="btn sm" onClick={onClose} disabled={busy} aria-label="Dialog schließen">Schließen</button>
+    <div className="between"><h2 className="h2" id={titleId}>{t(title)}</h2>
+      <button className="btn sm" onClick={onClose} disabled={busy} aria-label={t("Dialog schließen")}>{t("Schließen")}</button>
     </div>
-    <div className="col" style={{ gap: 14, marginTop: 16 }}>{children}</div>
+    <div className="col" style={{ gap: 14, marginTop: 16 }}>{t(children)}</div>
   </dialog>
 }

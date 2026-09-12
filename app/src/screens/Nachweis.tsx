@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -24,10 +25,10 @@ export default function Nachweis() {
 
   if (loading) {
     return (
-      <Screen back title="Nachweis">
+      <Screen back title={t("Nachweis")}>
         <div className="empty">
           <span className="spinner" />
-          <p className="sm mut">{de.state.loading}</p>
+          <p className="sm mut">{t(de.state.loading)}</p>
         </div>
       </Screen>
     )
@@ -35,10 +36,10 @@ export default function Nachweis() {
 
   if (error || !data) {
     return (
-      <Screen back title="Nachweis">
+      <Screen back title={t("Nachweis")}>
         <div className="empty">
           <Icon name="info" size={26} />
-          <p className="sm mut">{error?.message ?? de.state.error}</p><button className="btn" onClick={reload}>Erneut laden</button>
+          <p className="sm mut">{t(error?.message ?? de.state.error)}</p><button className="btn" onClick={reload}>{t("Erneut laden")}</button>
         </div>
       </Screen>
     )
@@ -50,8 +51,8 @@ export default function Nachweis() {
   return (
     <Screen
       back
-      title="Nachweis"
-      sub={`${action.kindLabel} vom ${action.whenLabel}`}
+      title={t("Nachweis")}
+      sub={t(`${action.kindLabel} vom ${action.whenLabel}`)}
       gap={12}
     >
       <Block
@@ -75,7 +76,7 @@ export default function Nachweis() {
             className="xs mut"
             style={{ margin: 0, lineHeight: 1.55, fontVariantNumeric: 'tabular-nums' }}
           >
-            {data.formula}
+            {t(data.formula)}
           </p>
         </div>
       </Block>
@@ -84,49 +85,44 @@ export default function Nachweis() {
       <div className="card" style={{ borderColor: 'var(--gold)', background: 'var(--gold-soft)' }}>
         <div className="between" style={{ marginBottom: 11 }}>
           <b className="h3" style={{ color: 'var(--gold-ink)' }}>
-            Gutschrift
-          </b>
+            {t("Gutschrift")}</b>
           <span className="num" style={{ fontSize: 20, color: 'var(--gold-ink)' }}>
-            {credit.xp > 0 ? '+' : ''}
-            {credit.xp} {de.reward.xp} · {credit.coins} {de.reward.coins}
+            {t(credit.xp > 0 ? '+' : '')}
+            {t(credit.xp)} {t(de.reward.xp)} {t(" · ")}{t(credit.coins)} {t(de.reward.coins)}
           </span>
         </div>
 
         <div className="col" style={{ gap: 7 }}>
-          {steps.map((step, i) => (
+          {t(steps.map((step, i) => (
             <div key={i} className="between xs" style={{ color: 'var(--gold-ink)' }}>
-              <span>{step.label}</span>
-              <span style={{ fontWeight: 600 }}>{step.value}</span>
+              <span>{t(step.label)}</span>
+              <span style={{ fontWeight: 600 }}>{t(step.value)}</span>
             </div>
-          ))}
+          )))}
         </div>
 
-        {credit.hint && (
+        {t(credit.hint && (
           <p
             className="xs"
             style={{ margin: '11px 0 0', lineHeight: 1.55, color: 'var(--gold-ink)' }}
           >
-            {credit.hint}
+            {t(credit.hint)}
           </p>
-        )}
+        ))}
 
-        {data.reproducible && (
+        {t(data.reproducible && (
           <p
             className="xs row"
             style={{ margin: '11px 0 0', gap: 6, color: 'var(--gold-ink)', opacity: 0.85 }}
           >
             <Icon name="check" size={12} stroke={2.4} />
-            Nachgerechnet — dieselben Regeln ergeben wieder dieselbe Zahl.
-          </p>
-        )}
+            {t("Nachgerechnet — dieselben Regeln ergeben wieder dieselbe Zahl.")}</p>
+        ))}
       </div>
 
       <div className="card dashed tight">
         <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-          Belohnt wird <b style={{ color: 'var(--ink)' }}>hilfreiche Regelmäßigkeit</b>, nicht
-          Menge: höchstens drei bewertete Aktionen am Tag, keine Rangliste gegen andere, Münzen
-          nicht kaufbar.
-        </p>
+          {t("Belohnt wird ")}<b style={{ color: 'var(--ink)' }}>{t("hilfreiche Regelmäßigkeit")}</b>{t(", nicht Menge: höchstens drei bewertete Aktionen am Tag, keine Rangliste gegen andere, Münzen nicht kaufbar.")}</p>
       </div>
 
       <button
@@ -135,13 +131,13 @@ export default function Nachweis() {
         onClick={() => setShowRules((open) => !open)}
         aria-expanded={showRules}
       >
-        {showRules ? 'Annahmen zuklappen' : 'Alle Spielregeln und Annahmen'}
+        {t(showRules ? 'Annahmen zuklappen' : 'Alle Spielregeln und Annahmen')}
         <Icon name={showRules ? 'up' : 'down'} size={17} />
       </button>
 
-      {showRules && (
+      {t(showRules && (
         <Rules all={data.assumptions.all} used={data.assumptions.used} note={data.note} />
-      )}
+      ))}
     </Screen>
   )
 }
@@ -169,26 +165,26 @@ function Block({
     <div className="card tight">
       <div className="row" style={{ gap: 7, marginBottom: 11 }}>
         <Tag von={von} icon />
-        <span className="xs mut">{hint}</span>
+        <span className="xs mut">{t(hint)}</span>
       </div>
 
       <div className="col" style={{ gap: 9 }}>
-        {lines.map((l, i) => (
+        {t(lines.map((l, i) => (
           <div key={i}>
             <div className="between xs">
-              <span className="mut">{l.label}</span>
-              <span style={{ fontWeight: 600, textAlign: 'right' }}>{l.value}</span>
+              <span className="mut">{t(l.label)}</span>
+              <span style={{ fontWeight: 600, textAlign: 'right' }}>{t(l.value)}</span>
             </div>
-            {l.source && l.source !== quiet && (
+            {t(l.source && l.source !== quiet && (
               <p className="xs mut" style={{ margin: '2px 0 0', opacity: 0.75, lineHeight: 1.4 }}>
-                {l.source}
+                {t(l.source)}
               </p>
-            )}
+            ))}
           </div>
-        ))}
+        )))}
       </div>
 
-      {children}
+      {t(children)}
     </div>
   )
 }
@@ -204,43 +200,41 @@ function Rules({ all, used, note }: { all: Assumption[]; used: Assumption[]; not
   return (
     <div className="card tight">
       <p className="lbl" style={{ marginBottom: 11 }}>
-        Annahmen und Regeln
-      </p>
+        {t("Annahmen und Regeln")}</p>
 
       <div className="col" style={{ gap: 13 }}>
-        {all.map((a) => (
+        {t(all.map((a) => (
           <div key={a.id}>
             <div className="between" style={{ alignItems: 'baseline', gap: 8 }}>
-              <b className="xs">{a.label}</b>
+              <b className="xs">{t(a.label)}</b>
               <span className="xs num" style={{ whiteSpace: 'nowrap' }}>
-                {String(a.value).replace('.', ',')} {a.unit}
+                {t(String(a.value).replace('.', ','))} {t(a.unit)}
               </span>
             </div>
             <p className="xs mut" style={{ margin: '3px 0 0', lineHeight: 1.45 }}>
-              {a.note}
+              {t(a.note)}
             </p>
             {/* Plain labels, not provenance tags: this says where the number
                 was decided, not what tier a value on this receipt has. */}
             <div className="row" style={{ gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
               <Label>
-                {a.origin === 'own' ? 'eigene Festlegung' : 'veröffentlichte Größenordnung'}
+                {t(a.origin === 'own' ? 'eigene Festlegung' : 'veröffentlichte Größenordnung')}
               </Label>
-              {usedIds.has(a.id) && (
+              {t(usedIds.has(a.id) && (
                 <span className="xs row" style={{ gap: 4, fontWeight: 600 }}>
                   <Icon name="check" size={11} stroke={2.4} />
-                  hier benutzt
-                </span>
-              )}
+                  {t("hier benutzt")}</span>
+              ))}
               <span className="xs mut">
-                {a.source} · Stand {a.taken.split('-').reverse().join('.')}
+                {t(a.source)} {t(" · Stand ")}{t(a.taken.split('-').reverse().join('.'))}
               </span>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       <p className="xs mut" style={{ margin: '13px 0 0', lineHeight: 1.5 }}>
-        {note}
+        {t(note)}
       </p>
     </div>
   )

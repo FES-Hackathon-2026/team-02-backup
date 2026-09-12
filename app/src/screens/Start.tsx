@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import { WeeklyGoal } from '../components/ReferenceActions'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -30,48 +31,48 @@ export default function Start() {
   const nextReturn = activeContainers.reduce<number | null>((value, item) => item.hoursLeft === null ? value : value === null ? item.hoursLeft : Math.min(value, item.hoursLeft), null)
   const city = season.data?.city
   const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
-  return <Screen title={`Hallo ${me.name}`} tabs action={
-    <span className="row"><button className="icobtn" aria-label="Einstellungen" onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`}>
-      <Icon name="bell" size={21} />{!!notices.data?.unread && <span className="notification-dot" />}
+  return <Screen title={t(`Hallo ${me.name}`)} sub={t("Was möchtest du heute erledigen?")} tabs action={
+    <span className="row"><button className="icobtn" aria-label={t("Einstellungen")} onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={t(`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`)}>
+      <Icon name="bell" size={21} />{t(!!notices.data?.unread && <span className="notification-dot" />)}
     </button></span>
   }>
     <div className="card row home-progress">
-      <button className="level-water" onClick={() => navigate('/wirkung')} aria-label={`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`}>
+      <button className="level-water" onClick={() => navigate('/wirkung')} aria-label={t(`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`)}>
         <span className="level-water-tank" aria-hidden="true">
           <span className="level-water-fill" style={{ height: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}>
             <svg className="level-wave level-wave-back" viewBox="0 0 120 16" preserveAspectRatio="none"><path d="M0 8 Q15 -3 30 8 T60 8 T90 8 T120 8 V16 H0 Z" /></svg>
             <svg className="level-wave level-wave-front" viewBox="0 0 120 16" preserveAspectRatio="none"><path d="M0 8 Q15 -3 30 8 T60 8 T90 8 T120 8 V16 H0 Z" /></svg>
           </span>
         </span>
-        <span className="level-water-badge">{me.level}</span>
+        <span className="level-water-badge">{t(me.level)}</span>
       </button>
-      <div className="grow"><b>{me.xp.toLocaleString('de-DE')} XP</b><span className="xs mut row" style={{ gap: 5, marginTop: 4 }}><Icon name="clock" size={13} />{impact.data ? `${impact.data.streak.weeks} ${impact.data.streak.weeks === 1 ? 'Woche' : 'Wochen'}` : `${me.actions} ${me.actions === 1 ? 'Aktion' : 'Aktionen'}`}</span></div>
-      <button className="reward-link" onClick={() => navigate('/belohnungen')} aria-label={`${me.coins} Münzen einlösen`}><Coin star>{me.coins}</Coin></button>
+      <div className="grow"><b>{t(me.xp.toLocaleString(getLocale()))} {t(" XP")}</b><span className="xs mut row" style={{ gap: 5, marginTop: 4 }}><Icon name="clock" size={13} />{t(impact.data ? `${impact.data.streak.weeks} ${impact.data.streak.weeks === 1 ? 'Woche' : 'Wochen'}` : `${me.actions} ${me.actions === 1 ? 'Aktion' : 'Aktionen'}`)}</span></div>
+      <button className="reward-link" onClick={() => navigate('/belohnungen')} aria-label={t(`${me.coins} Münzen einlösen`)}><Coin star>{t(me.coins)}</Coin></button>
     </div>
     <button className="card row scan-hero" onClick={() => navigate('/scan')}>
       <span className="hero-camera"><Icon name="camera" size={25} /></span>
-      <span className="grow"><b className="h2">Gegenstand scannen</b><span className="row hero-modes"><Icon name="truck" size={16} /><Icon name="pin" size={16} /><Icon name="info" size={16} /><span className="xs">Erkennen und richtig weitergeben</span></span></span><Icon name="chevron" size={20} />
+      <span className="grow"><b className="h2">{t("Gegenstand scannen")}</b><span className="row hero-modes"><Icon name="truck" size={16} /><Icon name="pin" size={16} /><Icon name="info" size={16} /><span className="xs">{t("Erkennen und richtig weitergeben")}</span></span></span><Icon name="chevron" size={20} />
     </button>
     <WeeklyGoal />
-    <button className="card tight row" onClick={() => navigate('/essen')}><Thumb icon="leaf" /><span className="grow"><b className="sm">Essen retten</b><span className="xs mut" style={{ display: 'block' }}>{food.error ? 'foodsharing antwortet gerade nicht — erneut versuchen' : foodTop ? `${foodTop.title}${foodTop.hoursLeft == null ? '' : ` · noch ${Math.max(1, Math.round(foodTop.hoursLeft))} h`}` : 'Offene Angebote und Fairteiler entdecken'}</span></span><Icon name="chevron" size={17} /></button>
-    {reusableStatus.data?.configured && <button className="card tight row" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><span className="grow"><b className="sm">{activeContainers.length ? `${activeContainers.length} Mehrweg-Behälter offen` : 'Mehrweg statt Einweg'}</b><span className="xs mut" style={{ display: 'block', color: overdue ? 'var(--alert)' : undefined }}>{reusable.error ? 'Vytal-Konto prüfen — Details öffnen' : overdue ? 'Rückgabe überfällig' : nextReturn !== null ? `Rückgabe in ${Math.max(1, Math.round(nextReturn))} Stunden` : `Ausgabe und Rücknahme an der ${reusable.data?.station ?? 'ReMain-Station'}`}</span></span><Icon name="chevron" size={17} /></button>}
-    {next && <button className="card tight row" onClick={() => navigate('/kalender')}><Thumb icon="calendar" /><span className="grow"><b className="sm">{next.titel}</b><span className="xs mut" style={{ display: 'block' }}>{next.label} · {next.window}</span></span><Tag von="simulated" /><Icon name="chevron" size={17} /></button>}
-    <section><div className="between" style={{ marginBottom: 9 }}><p className="lbl">In deiner Nähe</p><button className="text-link" onClick={() => navigate('/quests')}>Karte</button></div>
+    <button className="card tight row" onClick={() => navigate('/essen')}><Thumb icon="leaf" /><span className="grow"><b className="sm">{t("Essen retten")}</b><span className="xs mut" style={{ display: 'block' }}>{t(food.error ? 'foodsharing antwortet gerade nicht — erneut versuchen' : foodTop ? `${foodTop.title}${foodTop.hoursLeft == null ? '' : ` · noch ${Math.max(1, Math.round(foodTop.hoursLeft))} h`}` : 'Offene Angebote und Fairteiler entdecken')}</span></span><Icon name="chevron" size={17} /></button>
+    {t(reusableStatus.data?.configured && <button className="card tight row" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><span className="grow"><b className="sm">{t(activeContainers.length ? `${activeContainers.length} Mehrweg-Behälter offen` : 'Mehrweg statt Einweg')}</b><span className="xs mut" style={{ display: 'block', color: overdue ? 'var(--alert)' : undefined }}>{t(reusable.error ? 'Vytal-Konto prüfen — Details öffnen' : overdue ? 'Rückgabe überfällig' : nextReturn !== null ? `Rückgabe in ${Math.max(1, Math.round(nextReturn))} Stunden` : `Ausgabe und Rücknahme an der ${reusable.data?.station ?? 'ReMain-Station'}`)}</span></span><Icon name="chevron" size={17} /></button>)}
+    {t(next && <button className="card tight row" onClick={() => navigate('/kalender')}><Thumb icon="calendar" /><span className="grow"><b className="sm">{t(next.titel)}</b><span className="xs mut" style={{ display: 'block' }}>{t(next.label)} {t(" · ")}{t(next.window)}</span></span><Tag von="simulated" /><Icon name="chevron" size={17} /></button>)}
+    <section><div className="between" style={{ marginBottom: 9 }}><p className="lbl">{t("In deiner Nähe")}</p><button className="text-link" onClick={() => navigate('/quests')}>{t("Karte")}</button></div>
       <div className="nearby-grid">
-        <button className="card tight" onClick={() => navigate('/quests')}><Thumb icon="quest" /><b>{quest?.title ?? 'Quests entdecken'}</b><span className="xs mut">{quest ? `${quest.district ?? 'Frankfurt'} · +${quest.xp} XP` : 'Gemeinsam aufräumen'}</span></button>
-        <button className="card tight" onClick={() => navigate(item ? `/markt/${item.id}` : '/markt')}><Thumb icon="wrench" /><b>{item?.title ?? 'Reparatur-Markt'}</b><span className="xs mut">{item?.district ?? 'Dinge weitergeben'}</span></button>
-        <button className="card tight" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><b>Mehrweg</b><span className="xs mut">Rückgaben & Orte</span></button>
+        <button className="card tight" onClick={() => navigate('/quests')}><Thumb icon="quest" /><b>{quest?.title ?? t('Quests entdecken')}</b><span className="xs mut">{t(quest ? `${quest.district ?? 'Frankfurt'} · +${quest.xp} XP` : 'Gemeinsam aufräumen')}</span></button>
+        <button className="card tight" onClick={() => navigate(item ? `/markt/${item.id}` : '/markt')}><Thumb icon="wrench" /><b>{item?.title ?? t('Reparatur-Markt')}</b><span className="xs mut">{t(item?.district ?? 'Dinge weitergeben')}</span></button>
+        <button className="card tight" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><b>{t("Mehrweg")}</b><span className="xs mut">{t("Rückgaben & Orte")}</span></button>
       </div>
     </section>
-    {(quests.error || market.error || kalender.error || impact.error || season.error || notices.error) && <div className="card tight" role="alert"><p className="sm">Einige Daten konnten nicht geladen werden.</p><button className="btn sm" onClick={() => { quests.reload(); market.reload(); kalender.reload(); impact.reload(); season.reload(); notices.reload() }}>Erneut laden</button></div>}
-    {city && <button className="card sky" onClick={() => navigate('/stadtteile')}><div className="between"><p className="lbl">Frankfurt diese Woche</p><Tag von="api" /></div><p className="sm"><b className="num" style={{ fontSize: 24 }}>{city.weekXp.toLocaleString('de-DE')}</b> / {city.goalXp.toLocaleString('de-DE')} XP</p><Bar value={city.weekXp} max={city.goalXp} /></button>}
-    <details className="card home-more"><summary>Weitere Angebote</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
-      <button className="btn" onClick={() => navigate('/essen')}><Icon name="leaf" size={18} />Essen retten</button>
-      <button className="btn" onClick={() => navigate('/wissen')}><Icon name="info" size={18} />Was mache ich damit?</button>
-      {me.role === 'driver' && <button className="btn" onClick={() => navigate('/touren')}>Meine Sammeltouren</button>}
-      <button className="btn" onClick={() => navigate('/integrationen')}>Verbindungen und Datenquellen</button>
-      <button className="btn" onClick={() => { void signOut().catch(() => setError('Abmelden fehlgeschlagen. Bitte erneut versuchen.')) }}>Abmelden</button>
-      {error && <p role="alert">{error}</p>}
+    {t((quests.error || market.error || kalender.error || impact.error || season.error || notices.error) && <div className="card tight" role="alert"><p className="sm">{t("Einige Daten konnten nicht geladen werden.")}</p><button className="btn sm" onClick={() => { quests.reload(); market.reload(); kalender.reload(); impact.reload(); season.reload(); notices.reload() }}>{t("Erneut laden")}</button></div>)}
+    {t(city && <button className="card sky" onClick={() => navigate('/stadtteile')}><div className="between"><p className="lbl">{t("Frankfurt diese Woche")}</p><Tag von="api" /></div><p className="sm"><b className="num" style={{ fontSize: 24 }}>{t(city.weekXp.toLocaleString(getLocale()))}</b> {t(" / ")}{t(city.goalXp.toLocaleString(getLocale()))} {t(" XP")}</p><Bar value={city.weekXp} max={city.goalXp} /></button>)}
+    <details className="card home-more"><summary>{t("Weitere Angebote")}</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
+      <button className="btn" onClick={() => navigate('/essen')}><Icon name="leaf" size={18} />{t("Essen retten")}</button>
+      <button className="btn" onClick={() => navigate('/wissen')}><Icon name="info" size={18} />{t("Was mache ich damit?")}</button>
+      {t(me.role === 'driver' && <button className="btn" onClick={() => navigate('/touren')}>{t("Meine Sammeltouren")}</button>)}
+      <button className="btn" onClick={() => navigate('/integrationen')}>{t("Verbindungen und Datenquellen")}</button>
+      <button className="btn" onClick={() => { void signOut().catch(() => setError('Abmelden fehlgeschlagen. Bitte erneut versuchen.')) }}>{t("Abmelden")}</button>
+      {t(error && <p role="alert">{t(error)}</p>)}
     </div></details>
   </Screen>
 }

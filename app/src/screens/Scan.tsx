@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -381,10 +382,10 @@ export default function Scan() {
 
       {/* The frame that was just sent, held on screen while the agent looks
           at it — the person keeps seeing what they are waiting on. */}
-      {vorschau && phase !== 'live' && (
+      {t(vorschau && phase !== 'live' && (
         <img
           src={vorschau}
-          alt=""
+          alt={t("")}
           style={{
             position: 'absolute',
             inset: 0,
@@ -394,7 +395,7 @@ export default function Scan() {
             filter: phase === 'busy' ? 'brightness(.55)' : 'brightness(.4)',
           }}
         />
-      )}
+      ))}
 
       <header
         className="nav"
@@ -403,7 +404,7 @@ export default function Scan() {
         <button
           className="icobtn"
           onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/')}
-          aria-label={de.action.close}
+          aria-label={t(de.action.close)}
           style={glas}
         >
           <Icon name="cross" size={21} />
@@ -411,7 +412,7 @@ export default function Scan() {
         <div className="grow" />
         <button
           className="icobtn"
-          aria-label="Hinweise"
+          aria-label={t("Hinweise")}
           aria-pressed={hinweis}
           onClick={() => setHinweis((h) => !h)}
           style={glas}
@@ -420,7 +421,7 @@ export default function Scan() {
         </button>
       </header>
 
-      {hinweis && (
+      {t(hinweis && (
         <div
           style={{
             position: 'relative',
@@ -435,12 +436,8 @@ export default function Scan() {
             color: '#dce9f2',
           }}
         >
-          <b>Was mit dem Foto passiert.</b> Es wird auf dem Gerät verkleinert — dabei fallen die
-          Kameradaten weg — und zur Erkennung an den ReMain-Server geschickt. Der Standort geht nur
-          mit, wenn du ihn freigegeben hast. Die Einschätzung ist eine Schätzung, keine Zusage: du
-          entscheidest danach, was daraus wird.
-        </div>
-      )}
+          <b>{t("Was mit dem Foto passiert.")}</b> {t(" Es wird auf dem Gerät verkleinert — dabei fallen die Kameradaten weg — und zur Erkennung an den ReMain-Server geschickt. Der Standort geht nur mit, wenn du ihn freigegeben hast. Die Einschätzung ist eine Schätzung, keine Zusage: du entscheidest danach, was daraus wird.")}</div>
+      ))}
 
       {/* framing corners */}
       <div style={{ position: 'absolute', left: 40, right: 40, top: 132, height: 316, zIndex: 2 }}>
@@ -475,23 +472,21 @@ export default function Scan() {
             textAlign: 'center',
           }}
         >
-          {phase === 'busy' ? (
+          {t(phase === 'busy' ? (
             <>
               <span className="spinner" style={{ borderColor: 'rgba(255,255,255,.25)', borderTopColor: '#fff' }} />
-              Der Agent schaut sich das an … {dauer.toFixed(1)} s
-            </>
+              {t("Der Agent schaut sich das an … ")}{t(dauer.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }))} {t(" s")}</>
           ) : phase === 'error' ? (
-            <span style={{ color: '#ffd9d2' }}>{fehler}</span>
+            <span style={{ color: '#ffd9d2' }}>{t(fehler)}</span>
           ) : (
             <>
               <Icon name="spark" size={16} stroke={1.9} />
-              Ganzes Objekt ins Bild — den Rest übernimmt ReMain
-            </>
-          )}
+              {t("Ganzes Objekt ins Bild — den Rest übernimmt ReMain")}</>
+          ))}
         </div>
 
         <div className="chips" style={{ justifyContent: 'center' }}>
-          {MODI.map((m) => (
+          {t(MODI.map((m) => (
             <button
               key={m.id}
               className="chip"
@@ -508,16 +503,16 @@ export default function Scan() {
                     }
               }
             >
-              {m.label}
+              {t(m.label)}
             </button>
-          ))}
+          )))}
         </div>
 
         <div className="between" style={{ padding: '0 18px' }}>
           <button
             onClick={() => galerieRef.current?.click()}
             disabled={phase === 'busy'}
-            aria-label="Foto aus der Galerie"
+            aria-label={t("Foto aus der Galerie")}
             style={{
               width: 46,
               height: 46,
@@ -535,7 +530,7 @@ export default function Scan() {
           </button>
 
           <button
-            aria-label={phase === 'error' ? de.action.retry : 'Auslöser'}
+            aria-label={t(phase === 'error' ? de.action.retry : 'Auslöser')}
             onClick={() => void ausloesen()}
             disabled={phase === 'busy'}
             style={{
@@ -564,11 +559,11 @@ export default function Scan() {
 
           {/* Torch where the device has one, camera flip where it does not —
               one slot, so the shutter stays centred either way. */}
-          {hatLampe && !front ? (
+          {t(hatLampe && !front ? (
             <button
               onClick={() => setLampe((l) => !l)}
               disabled={phase === 'busy'}
-              aria-label="Licht"
+              aria-label={t("Licht")}
               aria-pressed={lampe}
               style={{
                 width: 46,
@@ -589,7 +584,7 @@ export default function Scan() {
             <button
               onClick={() => setFront((f) => !f)}
               disabled={phase === 'busy' || kamera !== 'an'}
-              aria-label="Kamera wechseln"
+              aria-label={t("Kamera wechseln")}
               style={{
                 width: 46,
                 height: 46,
@@ -606,14 +601,14 @@ export default function Scan() {
             >
               <Icon name="scan" size={21} />
             </button>
-          )}
+          ))}
         </div>
 
         {/* The camera's own state, said plainly. Each reason needs a different
             thing from the person, so each one gets its own sentence — and the
             two that a retry can actually fix get a button. */}
         <div className="xs" style={{ textAlign: 'center', color: '#8499a8' }}>
-          {lage === 'an' ? (
+          {t(lage === 'an' ? (
             ortDa
               ? 'Foto und Standort gehen zur Erkennung an den Server.'
               : 'Das Foto geht zur Erkennung an den Server — ohne Standort.'
@@ -621,8 +616,8 @@ export default function Scan() {
             'Kamera startet …'
           ) : (
             <>
-              {KAMERA_TEXT[lage]}
-              {(lage === 'belegt' || lage === 'verweigert') && (
+              {t(KAMERA_TEXT[lage])}
+              {t((lage === 'belegt' || lage === 'verweigert') && (
                 <button
                   onClick={() => setVersuch((v) => v + 1)}
                   style={{
@@ -636,11 +631,10 @@ export default function Scan() {
                     textDecoration: 'underline',
                   }}
                 >
-                  Nochmal
-                </button>
-              )}
+                  {t("Nochmal")}</button>
+              ))}
             </>
-          )}
+          ))}
         </div>
       </div>
 

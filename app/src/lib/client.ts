@@ -1,3 +1,4 @@
+import { getLanguage } from './i18n'
 import { useCallback, useEffect, useState } from 'react'
 
 /**
@@ -32,6 +33,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       Accept: 'application/json',
+      'Accept-Language': getLanguage(),
       ...(init?.body && !(init.body instanceof FormData)
         ? { 'Content-Type': 'application/json' }
         : {}),

@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import { useSession } from '../lib/session'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -55,7 +56,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 ]
 
 const km = (value: number | null) =>
-  value === null ? null : value < 1 ? `${Math.round(value * 1000)} m` : `${value.toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`
+  value === null ? null : value < 1 ? `${Math.round(value * 1000)} m` : `${value.toLocaleString(getLocale(), { maximumFractionDigits: 1 })} km`
 
 function expiry(hoursLeft: number | null) {
   if (hoursLeft === null) return null
@@ -66,7 +67,7 @@ function expiry(hoursLeft: number | null) {
 }
 
 const uhr = (iso: string) =>
-  new Date(iso).toLocaleString('de-DE', {
+  new Date(iso).toLocaleString(getLocale(), {
     day: '2-digit',
     month: '2-digit',
     hour: '2-digit',
@@ -141,19 +142,19 @@ export default function Fairteiler() {
   return (
     <Screen
       back
-      title="Essen retten"
-      sub={state.error?.code === 'no_key' ? 'foodsharing ist gerade nicht verfügbar' : 'Lebensmittel in deiner Nähe abholen'}
+      title={t("Essen retten")}
+      sub={t(state.error?.code === 'no_key' ? 'foodsharing ist gerade nicht verfügbar' : 'Lebensmittel in deiner Nähe abholen')}
     >
       {/* Who is acting. The team key carries two test users in deliberately
           different verification states — that is what makes the locked
           Geschäftsrettung below the real thing rather than a mock-up. */}
-      <details className="card tight"><summary>foodsharing-Konto und Freigaben</summary>
+      <details className="card tight"><summary>{t("foodsharing-Konto und Freigaben")}</summary>
         <div className="between" style={{ marginBottom: 9 }}>
-          <span className="lbl">Dein foodsharing-Konto</span>
+          <span className="lbl">{t("Dein foodsharing-Konto")}</span>
           <Tag von="api" icon />
         </div>
         <div className="chips">
-          {(state.data?.users ?? []).map((u) => (
+          {t((state.data?.users ?? []).map((u) => (
             <button
               key={u.id}
               className="chip"
@@ -165,88 +166,84 @@ export default function Fairteiler() {
                 setProblem(null)
               }}
             >
-              {u.name ?? `Nutzer ${u.id}`}
-              {u.isVerified ? (
+              {t(u.name ?? `Nutzer ${u.id}`)}
+              {t(u.isVerified ? (
                 <Icon name="shield" size={13} stroke={2.2} />
               ) : (
                 <Icon name="clock" size={13} stroke={2.2} />
-              )}
+              ))}
             </button>
-          ))}
-          {state.loading && <span className="spinner" />}
+          )))}
+          {t(state.loading && <span className="spinner" />)}
         </div>
         <p className="xs mut" style={{ margin: '9px 0 0' }}>
-          Der Schlüssel liegt auf dem Server. Verifiziert heißt: Geschäftsrettungen sind
-          freigeschaltet.
-        </p>
+          {t("Der Schlüssel liegt auf dem Server. Verifiziert heißt: Geschäftsrettungen sind freigeschaltet.")}</p>
       </details>
 
       {/* What just happened. */}
-      {result && <Erfolg result={result} onClose={() => setResult(null)} />}
+      {t(result && <Erfolg result={result} onClose={() => setResult(null)} />)}
 
-      {note && (
+      {t(note && (
         <div className="card tight sky row" style={{ gap: 9 }}>
           <Icon name="check" size={18} />
-          <span className="sm grow">{note}</span>
+          <span className="sm grow">{t(note)}</span>
         </div>
-      )}
+      ))}
 
-      {problem && <Fehler error={problem} onClose={() => setProblem(null)} />}
+      {t(problem && <Fehler error={problem} onClose={() => setProblem(null)} />)}
 
       {/* Why a whole category is closed — with the way out, not a dead end. */}
-      {lock && (
+      {t(lock && (
         <div className="card tight" style={{ borderColor: 'var(--stone)' }}>
           <div className="row" style={{ gap: 9, marginBottom: 7 }}>
             <Icon name="shield" size={18} className="ico" />
-            <b className="sm grow">{lock.title}</b>
-            <Label tone="warn">gesperrt</Label>
+            <b className="sm grow">{t(lock.title)}</b>
+            <Label tone="warn">{t("gesperrt")}</Label>
           </div>
           <p className="sm mut" style={{ margin: 0 }}>
-            {lock.why} {lock.what}
+            {t(lock.why)} {t(lock.what)}
           </p>
-          {lock.nextStep && (
+          {t(lock.nextStep && (
             <p className="xs mut" style={{ margin: '7px 0 0' }}>
-              foodsharing nennt als nächsten Schritt: <code>{lock.nextStep}</code>
+              {t("foodsharing nennt als nächsten Schritt: ")}<code>{t(lock.nextStep)}</code>
             </p>
-          )}
+          ))}
         </div>
-      )}
+      ))}
 
       <div className="chips scroll">
-        {FILTERS.map((f) => (
+        {t(FILTERS.map((f) => (
           <button
             key={f.id}
             className="chip"
             aria-pressed={filter === f.id}
             onClick={() => setFilter(f.id)}
           >
-            {f.label}
+            {t(f.label)}
           </button>
-        ))}
+        )))}
       </div>
 
-      {nearby.loading && (
+      {t(nearby.loading && (
         <div className="empty">
           <span className="spinner" />
-          Fragt foodsharing …
-        </div>
-      )}
+          {t("Fragt foodsharing …")}</div>
+      ))}
 
-      {nearby.error && (
+      {t(nearby.error && (
         <div className="card tight">
-          <b className="sm">foodsharing antwortet nicht</b>
-          <p className="sm mut" style={{ margin: '5px 0 10px' }}>{nearby.error.code === 'no_key' ? 'foodsharing ist noch nicht verbunden. Nach Einrichtung des Zugangs erscheinen hier verfügbare Rettungen.' : nearby.error.message}</p><Link className="btn sm" to="/integrationen">Verbindung ansehen</Link>
+          <b className="sm">{t("foodsharing antwortet nicht")}</b>
+          <p className="sm mut" style={{ margin: '5px 0 10px' }}>{t(nearby.error.code === 'no_key' ? 'foodsharing ist noch nicht verbunden. Nach Einrichtung des Zugangs erscheinen hier verfügbare Rettungen.' : nearby.error.message)}</p><Link className="btn sm" to="/integrationen">{t("Verbindung ansehen")}</Link>
           <button className="btn sm" onClick={() => nearby.reload()}>
-            Nochmal versuchen
-          </button>
+            {t("Nochmal versuchen")}</button>
         </div>
-      )}
+      ))}
 
       {/* The point of ranking is that the first entry means something. It gets
           the room and the argument; the rest stay a list you can scan. */}
-      {items.length > 0 && (
+      {t(items.length > 0 && (
         <div>
-          <p className="lbl" style={{ marginBottom: 9 }}>Lohnt sich jetzt am meisten</p>
+          <p className="lbl" style={{ marginBottom: 9 }}>{t("Lohnt sich jetzt am meisten")}</p>
           <Eintrag
             item={items[0]}
             busy={busy}
@@ -255,16 +252,16 @@ export default function Fairteiler() {
             onRequest={() => void anfragen(items[0])}
           />
         </div>
-      )}
+      ))}
 
-      {items.length > 1 && (
+      {t(items.length > 1 && (
         <div>
           <div className="between" style={{ marginBottom: 9 }}>
-            <p className="lbl">Danach</p>
-            <span className="xs mut">{items.length - 1} weitere</span>
+            <p className="lbl">{t("Danach")}</p>
+            <span className="xs mut">{t(items.length - 1)} {t(" weitere")}</span>
           </div>
           <div className="col" style={{ gap: 9 }}>
-            {items.slice(1, alle ? undefined : 9).map((item) => (
+            {t(items.slice(1, alle ? undefined : 9).map((item) => (
               <Eintrag
                 key={item.key}
                 item={item}
@@ -272,48 +269,40 @@ export default function Fairteiler() {
                 onPickup={() => void abholen(item)}
                 onRequest={() => void anfragen(item)}
               />
-            ))}
+            )))}
           </div>
-          {!alle && items.length > 9 && (
+          {t(!alle && items.length > 9 && (
             <button className="btn sm" style={{ width: '100%', marginTop: 10 }} onClick={() => setAlle(true)}>
-              Alle {items.length} zeigen
-            </button>
-          )}
+              {t("Alle ")}{t(items.length)} {t(" zeigen")}</button>
+          ))}
         </div>
-      )}
+      ))}
 
-      {!nearby.loading && !nearby.error && items.length === 0 && (
+      {t(!nearby.loading && !nearby.error && items.length === 0 && (
         <div className="empty">
           <Icon name="leaf" size={26} />
-          In diesem Umkreis ist gerade nichts zu retten.
-        </div>
-      )}
+          {t("In diesem Umkreis ist gerade nichts zu retten.")}</div>
+      ))}
 
       {/* The order is a computed claim, so the arithmetic behind it is
           readable rather than asserted. */}
-      {nearby.data && (
+      {t(nearby.data && (
         <details className="card tight flat">
           <summary className="sm" style={{ fontWeight: 700, cursor: 'pointer' }}>
-            Wie diese Reihenfolge zustande kommt
-          </summary>
+            {t("Wie diese Reihenfolge zustande kommt")}</summary>
           <p className="sm mut" style={{ margin: '9px 0 7px' }}>
-            Sortiert nach <b>Netto-Wirkung je Aufwandsminute</b>, nicht nach Entfernung.
-            Die Wirkung ist eine Schätzung aus diesen Annahmen — die Schnittstelle nennt
-            keine Mengen:
-          </p>
+            {t("Sortiert nach ")}<b>{t("Netto-Wirkung je Aufwandsminute")}</b>{t(", nicht nach Entfernung. Die Wirkung ist eine Schätzung aus diesen Annahmen — die Schnittstelle nennt keine Mengen:")}</p>
           <ul className="xs mut" style={{ margin: 0, paddingLeft: 17 }}>
-            {nearby.data.assumptions.map((a) => (
+            {t(nearby.data.assumptions.map((a) => (
               <li key={a} style={{ marginBottom: 4 }}>
-                {a}
+                {t(a)}
               </li>
-            ))}
+            )))}
           </ul>
           <p className="xs mut" style={{ margin: '9px 0 0' }}>
-            Weg gerechnet ab {nearby.data.at.lat.toFixed(3)}, {nearby.data.at.lon.toFixed(3)} —
-            dem Mittelpunkt deines Stadtteils, solange du keinen Standort freigibst.
-          </p>
+            {t("Weg gerechnet ab ")}{t(nearby.data.at.lat.toLocaleString(getLocale(), { minimumFractionDigits: 3, maximumFractionDigits: 3 }))}{t(", ")}{t(nearby.data.at.lon.toLocaleString(getLocale(), { minimumFractionDigits: 3, maximumFractionDigits: 3 }))} {t(" — dem Mittelpunkt deines Stadtteils, solange du keinen Standort freigibst.")}</p>
         </details>
-      )}
+      ))}
 
       {/* The proof after the fact: the partner's own history, next to ours. */}
       <button
@@ -324,51 +313,45 @@ export default function Fairteiler() {
       >
         <Icon name="clock" size={19} className="ico" />
         <span className="grow sm" style={{ fontWeight: 700 }}>
-          Deine foodsharing-Historie
-        </span>
+          {t("Deine foodsharing-Historie")}</span>
         <Icon name={showHistory ? 'up' : 'down'} size={18} className="ico" />
       </button>
 
-      {showHistory && (
+      {t(showHistory && (
         <div className="col" style={{ gap: 9 }}>
-          {history.loading && (
+          {t(history.loading && (
             <div className="empty">
               <span className="spinner" />
             </div>
-          )}
-          {history.data?.pickups.length === 0 && (
+          ))}
+          {t(history.data?.pickups.length === 0 && (
             <p className="sm mut" style={{ margin: 0 }}>
-              Noch keine Abholung auf diesem Zugang.
-            </p>
-          )}
-          {(history.data?.pickups ?? []).slice(0, 12).map((p) => (
+              {t("Noch keine Abholung auf diesem Zugang.")}</p>
+          ))}
+          {t((history.data?.pickups ?? []).slice(0, 12).map((p) => (
             <div key={p.id} className="card tight row" style={{ gap: 10 }}>
               <Thumb icon="leaf" size={38} />
               <span className="grow">
                 <span className="sm" style={{ display: 'block', fontWeight: 600 }}>
-                  {p.name ?? `Abholung #${p.id}`}
+                  {t(p.name ?? `Abholung #${p.id}`)}
                 </span>
                 <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                  #{p.id} · {uhr(p.pickedUpAt)}
-                  {p.wasTrial && ' · Einführungsabholung'}
+                  {t("#")}{t(p.id)} {t(" · ")}{t(uhr(p.pickedUpAt))}
+                  {t(p.wasTrial && ' · Einführungsabholung')}
                 </span>
               </span>
-              {p.actionId ? (
+              {t(p.actionId ? (
                 <Link className="xs" to={`/nachweis/${p.actionId}`} style={{ fontWeight: 700 }}>
-                  Nachweis
-                </Link>
+                  {t("Nachweis")}</Link>
               ) : (
-                <Label>{p.creditedElsewhere ? 'anderer Person' : 'ohne ReMain'}</Label>
-              )}
+                <Label>{t(p.creditedElsewhere ? 'anderer Person' : 'ohne ReMain')}</Label>
+              ))}
             </div>
-          ))}
+          )))}
           <p className="xs mut" style={{ margin: 0 }}>
-            Diese Liste kommt aus <b>GET /users/me/pickups</b> der foodsharing-API. Ein
-            Eintrag mit Nachweis wurde hier gutgeschrieben; einer ohne ist außerhalb von
-            ReMain entstanden.
-          </p>
+            {t("Diese Liste kommt aus ")}<b>{t("GET /users/me/pickups")}</b> {t(" der foodsharing-API. Ein Eintrag mit Nachweis wurde hier gutgeschrieben; einer ohne ist außerhalb von ReMain entstanden.")}</p>
         </div>
-      )}
+      ))}
     </Screen>
   )
 }
@@ -396,8 +379,7 @@ function Eintrag({
 
   const co2 = (
     <Tag von="estimate" icon>
-      ≈ {item.co2eNet.toLocaleString('de-DE', { maximumFractionDigits: 1 })} kg CO₂e
-    </Tag>
+      {t("≈ ")}{t(item.co2eNet.toLocaleString(getLocale(), { maximumFractionDigits: 1 }))} {t(" kg CO₂e")}</Tag>
   )
 
   /* The rest of the list: one line of what, one line of how far. */
@@ -411,24 +393,24 @@ function Eintrag({
         <div className="grow">
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             <b className="sm">{item.title}</b>
-            {item.urgencyFactor > 1 && <Label tone="warn">{ablauf}</Label>}
+            {t(item.urgencyFactor > 1 && <Label tone="warn">{t(ablauf)}</Label>)}
           </div>
           <div className="row xs mut" style={{ gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-            <span>{SOURCE_LABEL[item.source]}</span>
-            {entfernung && <span>· {entfernung}</span>}
-            <span>· {item.minutes} Min</span>
-            {co2}
+            <span>{t(SOURCE_LABEL[item.source])}</span>
+            {t(entfernung && <span>{t("· ")}{t(entfernung)}</span>)}
+            <span>{t("· ")}{t(item.minutes)} {t(" Min")}</span>
+            {t(co2)}
           </div>
-          {gesperrt && (
+          {t(gesperrt && (
             <p className="xs mut" style={{ margin: '5px 0 0' }}>
-              {item.ownBasket
+              {t(item.ownBasket
                 ? 'Dein eigener Korb — foodsharing antwortet darauf mit 400.'
-                : (item.lock?.why ?? 'Gesperrt.')}
+                : (item.lock?.why ?? 'Gesperrt.'))}
             </p>
-          )}
+          ))}
         </div>
         <button className="btn sm" disabled={gesperrt || busy !== null} onClick={onPickup}>
-          {arbeitet ? <span className="spinner" /> : 'Abholen'}
+          {t(arbeitet ? <span className="spinner" /> : 'Abholen')}
         </button>
       </div>
     )
@@ -442,41 +424,38 @@ function Eintrag({
         <div className="grow">
           <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
             <b className="sm">{item.title}</b>
-            <Label>{SOURCE_LABEL[item.source]}</Label>
-            {item.urgencyFactor > 1 && <Label tone="warn">{ablauf}</Label>}
+            <Label>{t(SOURCE_LABEL[item.source])}</Label>
+            {t(item.urgencyFactor > 1 && <Label tone="warn">{t(ablauf)}</Label>)}
           </div>
 
           {/* The estimate is carried by the tag, so the sentence next to it
               says what it cost rather than repeating what it saved. */}
           <div className="row" style={{ gap: 7, marginTop: 8, flexWrap: 'wrap' }}>
-            {co2}
-            <span className="sm">für {item.minutes} Min Aufwand</span>
+            {t(co2)}
+            <span className="sm">{t("für ")}{t(item.minutes)} {t(" Min Aufwand")}</span>
           </div>
 
           <div className="row xs mut" style={{ gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
-            {entfernung && <span>{entfernung}</span>}
-            {item.co2eTravel > 0 && (
+            {t(entfernung && <span>{t(entfernung)}</span>)}
+            {t(item.co2eTravel > 0 && (
               <span>
-                · abzüglich{' '}
-                {item.co2eTravel.toLocaleString('de-DE', { maximumFractionDigits: 2 })} kg Anfahrt
-              </span>
-            )}
-            {item.openingHours && <span>· {item.openingHours}</span>}
+                {t("· abzüglich")}{t(' ')}
+                {t(item.co2eTravel.toLocaleString(getLocale(), { maximumFractionDigits: 2 }))} {t(" kg Anfahrt")}</span>
+            ))}
+            {t(item.openingHours && <span>{t("· ")}{t(item.openingHours)}</span>)}
           </div>
 
-          {item.foodTypes && item.foodTypes.length > 0 && (
-            <div className="xs mut" style={{ marginTop: 5 }}>{item.foodTypes.join(' · ')}</div>
-          )}
+          {t(item.foodTypes && item.foodTypes.length > 0 && (
+            <div className="xs mut" style={{ marginTop: 5 }}>{t(item.foodTypes.join(' · '))}</div>
+          ))}
 
-          {item.ownBasket && (
+          {t(item.ownBasket && (
             <p className="xs mut" style={{ margin: '7px 0 0' }}>
-              Dein eigener Korb — foodsharing antwortet darauf mit 400. Wechsle oben den
-              handelnden Nutzer, dann geht er.
-            </p>
-          )}
-          {item.locked && item.lock && (
-            <p className="xs mut" style={{ margin: '7px 0 0' }}>{item.lock.why}</p>
-          )}
+              {t("Dein eigener Korb — foodsharing antwortet darauf mit 400. Wechsle oben den handelnden Nutzer, dann geht er.")}</p>
+          ))}
+          {t(item.locked && item.lock && (
+            <p className="xs mut" style={{ margin: '7px 0 0' }}>{t(item.lock.why)}</p>
+          ))}
         </div>
       </div>
 
@@ -486,13 +465,13 @@ function Eintrag({
           disabled={gesperrt || busy !== null}
           onClick={onPickup}
         >
-          {arbeitet ? <span className="spinner" /> : 'Abholung abschließen'}
+          {t(arbeitet ? <span className="spinner" /> : 'Abholung abschließen')}
         </button>
-        {item.source === 'basket' && !gesperrt && (
+        {t(item.source === 'basket' && !gesperrt && (
           <button className="btn sm" disabled={busy !== null} onClick={onRequest}>
-            {busy === `req:${item.key}` ? <span className="spinner" /> : 'Erst anfragen'}
+            {t(busy === `req:${item.key}` ? <span className="spinner" /> : 'Erst anfragen')}
           </button>
-        )}
+        ))}
       </div>
     </div>
   )
@@ -508,33 +487,32 @@ function Erfolg({ result, onClose }: { result: FoodPickupResult; onClose: () => 
   return (
     <div className="card sky">
       <div className="between" style={{ marginBottom: 9 }}>
-        <span className="h3">Abholung bestätigt</span>
-        <button className="icobtn bare" onClick={onClose} aria-label="Schließen">
+        <span className="h3">{t("Abholung bestätigt")}</span>
+        <button className="icobtn bare" onClick={onClose} aria-label={t("Schließen")}>
           <Icon name="cross" size={18} />
         </button>
       </div>
 
       <div className="col" style={{ gap: 7 }}>
         <div className="between">
-          <span className="sm mut">foodsharing-Abholung</span>
+          <span className="sm mut">{t("foodsharing-Abholung")}</span>
           <span className="row" style={{ gap: 6 }}>
-            <b className="sm">#{result.pickup.id}</b>
+            <b className="sm">{t("#")}{t(result.pickup.id)}</b>
             <Tag von="api" icon />
           </span>
         </div>
         <div className="between">
-          <span className="sm mut">Zeitstempel der Schnittstelle</span>
+          <span className="sm mut">{t("Zeitstempel der Schnittstelle")}</span>
           <span className="row" style={{ gap: 6 }}>
-            <b className="sm">{uhr(result.pickup.pickedUpAt)}</b>
+            <b className="sm">{t(uhr(result.pickup.pickedUpAt))}</b>
             <Tag von="api" />
           </span>
         </div>
         <div className="between">
-          <span className="sm mut">Gerettet, geschätzt</span>
+          <span className="sm mut">{t("Gerettet, geschätzt")}</span>
           <span className="row" style={{ gap: 6 }}>
             <b className="sm">
-              ≈ {result.estimate.co2eKg.toLocaleString('de-DE', { maximumFractionDigits: 1 })} kg CO₂e
-            </b>
+              {t("≈ ")}{t(result.estimate.co2eKg.toLocaleString(getLocale(), { maximumFractionDigits: 1 }))} {t(" kg CO₂e")}</b>
             <Tag von="estimate" />
           </span>
         </div>
@@ -542,30 +520,27 @@ function Erfolg({ result, onClose }: { result: FoodPickupResult; onClose: () => 
 
       <div className="sep" style={{ margin: '11px 0' }} />
 
-      {result.award && !result.blocked ? (
+      {t(result.award && !result.blocked ? (
         <div className="between">
           <Coin star>
-            +{result.award.xp} XP · {result.award.coins} Münzen
-          </Coin>
+            {t("+")}{t(result.award.xp)} {t(" XP · ")}{t(result.award.coins)} {t(" Münzen")}</Coin>
           <Link className="sm" to={`/nachweis/${result.award.actionId}`} style={{ fontWeight: 700 }}>
-            Nachweis öffnen
-          </Link>
+            {t("Nachweis öffnen")}</Link>
         </div>
       ) : (
         <div>
           <b className="sm">
-            {result.credited ? 'Gezählt, aber nicht bepunktet' : 'Schon gutgeschrieben'}
+            {t(result.credited ? 'Gezählt, aber nicht bepunktet' : 'Schon gutgeschrieben')}
           </b>
           <p className="sm mut" style={{ margin: '4px 0 0' }}>
-            {result.credited ? (result.hint ?? result.message) : result.message}
+            {t(result.credited ? (result.hint ?? result.message) : result.message)}
           </p>
-          {result.award && (
+          {t(result.award && (
             <Link className="sm" to={`/nachweis/${result.award.actionId}`} style={{ fontWeight: 700 }}>
-              Nachweis öffnen
-            </Link>
-          )}
+              {t("Nachweis öffnen")}</Link>
+          ))}
         </div>
-      )}
+      ))}
     </div>
   )
 }
@@ -592,17 +567,17 @@ function Fehler({ error, onClose }: { error: ApiError; onClose: () => void }) {
       <div className="row" style={{ gap: 9 }}>
         <Icon name="info" size={18} className="ico" />
         <div className="grow">
-          <b className="sm">{error.message}</b>
-          {advice && (
+          <b className="sm">{t(error.message)}</b>
+          {t(advice && (
             <p className="sm mut" style={{ margin: '4px 0 0' }}>
-              {advice}
+              {t(advice)}
             </p>
-          )}
+          ))}
           <p className="xs mut" style={{ margin: '6px 0 0' }}>
-            foodsharing antwortet: {error.status} {error.code}
+            {t("foodsharing antwortet: ")}{t(error.status)} {t(error.code)}
           </p>
         </div>
-        <button className="icobtn bare" onClick={onClose} aria-label="Schließen">
+        <button className="icobtn bare" onClick={onClose} aria-label={t("Schließen")}>
           <Icon name="cross" size={18} />
         </button>
       </div>

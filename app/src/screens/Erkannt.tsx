@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
@@ -25,7 +26,7 @@ const ROUTE_ICON: Record<ScanRouteId, Parameters<typeof Icon>[0]['name']> = {
 }
 
 const prozent = (n: number) => `${Math.round(n * 100)} %`
-const sekunden = (ms: number) => `${(ms / 1000).toFixed(1).replace('.', ',')} s`
+const sekunden = (ms: number) => `${(ms / 1000).toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s`
 
 /**
  * What the agent made of the photo — and, just as importantly, why.
@@ -107,7 +108,7 @@ export default function Erkannt() {
 
   if (laden) {
     return (
-      <Screen back title="Dein Scan" sub={de.state.loading}>
+      <Screen back title={t("Dein Scan")} sub={t(de.state.loading)}>
         <div className="empty">
           <span className="spinner" />
         </div>
@@ -117,15 +118,14 @@ export default function Erkannt() {
 
   if (!scan) {
     return (
-      <Screen back title="Dein Scan" sub="Der Gegenstand wurde nicht erkannt">
+      <Screen back title={t("Dein Scan")} sub={t("Der Gegenstand wurde nicht erkannt")}>
         <div className="empty">
           <Icon name="camera" size={28} />
-          {fehler ?? 'Zu diesem Foto liegt keine Erkennung vor.'}
+          {t(fehler ?? 'Zu diesem Foto liegt keine Erkennung vor.')}
         </div>
         <button className="btn primary" onClick={() => navigate('/scan')}>
           <Icon name="camera" size={19} />
-          Noch einmal scannen
-        </button>
+          {t("Noch einmal scannen")}</button>
       </Screen>
     )
   }
@@ -138,40 +138,39 @@ export default function Erkannt() {
       <div className="between">
         <span className="row" style={{ gap: 7 }}>
           <Icon name="spark" size={17} className="ico" stroke={1.9} />
-          <span className="h3">{mock ? 'Offline erkannt' : 'Modell befragt'}</span>
+          <span className="h3">{t(mock ? 'Offline erkannt' : 'Modell befragt')}</span>
         </span>
-        {mock ? <Tag von="simulated" icon /> : <Tag von="estimate" icon />}
+        {t(mock ? <Tag von="simulated" icon /> : <Tag von="estimate" icon />)}
       </div>
       <p className="xs mut" style={{ margin: '7px 0 0' }}>
-        {mock
+        {t(mock
           ? (agent.note ??
             'Erkannt aus dem Offline-Fundus von ReMain — es wurde kein Modell im Netz befragt.')
-          : `${agent.model} über Groq.`}{' '}
-        {sekunden(agent.latencyMs)}
+          : `${agent.model} über Groq.`)}{t(' ')}
+        {t(sekunden(agent.latencyMs))}
       </p>
-      {agent.fallback && (
+      {t(agent.fallback && (
         <p className="xs" style={{ margin: '7px 0 0' }}>
-          <Label tone="warn">ausgewichen</Label>{' '}
-          <span className="mut">{agent.fallbackReason}</span>
+          <Label tone="warn">{t("ausgewichen")}</Label>{t(' ')}
+          <span className="mut">{t(agent.fallbackReason)}</span>
         </p>
-      )}
+      ))}
     </div>
   )
 
   const warum = (
     <div className="card">
       <p className="lbl" style={{ marginBottom: 9 }}>
-        Warum
-      </p>
+        {t("Warum")}</p>
       <div className="col" style={{ gap: 9 }}>
-        {scan.reasoning.map((satz, i) => (
+        {t(scan.reasoning.map((satz, i) => (
           <div key={i} className="row" style={{ alignItems: 'flex-start', gap: 9 }}>
             <span style={{ marginTop: 2 }}>
               <Icon name="check" size={15} className="ico" stroke={2.4} />
             </span>
-            <span className="sm">{satz}</span>
+            <span className="sm">{t(satz)}</span>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   )
@@ -192,18 +191,16 @@ export default function Erkannt() {
         }}
       >
         <span className="sm" style={{ fontWeight: 600 }}>
-          Falsch erkannt? Kategorie korrigieren
-        </span>
+          {t("Falsch erkannt? Kategorie korrigieren")}</span>
         <Icon name="chevron" size={18} className="ico" />
       </button>
 
-      {korrigieren && (
+      {t(korrigieren && (
         <>
           <p className="xs mut" style={{ margin: '10px 0 9px' }}>
-            Deine Korrektur wird protokolliert und entscheidet den Weg neu.
-          </p>
+            {t("Deine Korrektur wird protokolliert und entscheidet den Weg neu.")}</p>
           <div className="chips">
-            {scan.categories.map((c) => (
+            {t(scan.categories.map((c) => (
               <button
                 key={c.id}
                 className="chip"
@@ -211,12 +208,12 @@ export default function Erkannt() {
                 disabled={speichert}
                 onClick={() => void korrektur(c.id)}
               >
-                {c.label}
+                {t(c.label)}
               </button>
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
     </div>
   )
 
@@ -238,54 +235,53 @@ export default function Erkannt() {
   return (
     <Screen
       back
-      title="Dein Scan"
-      sub={scan.modeLabel}
+      title={t("Dein Scan")}
+      sub={t(scan.modeLabel)}
       action={
-        <button className="icobtn" onClick={() => navigate('/scan')} aria-label="Neu scannen">
+        <button className="icobtn" onClick={() => navigate('/scan')} aria-label={t("Neu scannen")}>
           <Icon name="camera" size={21} />
         </button>
       }
     >
       <div className="card recognition-hero">
-        <img src={`/api/photos/${encodeURIComponent(scan.photoId)}`} alt="Das aufgenommene Foto" />
-        <div className="recognition-copy"><div className="between"><Tag von={scan.corrected ? 'input' : 'estimate'}>{scan.categoryLabel}</Tag><b className="sm">{prozent(scan.confidence)}</b></div>
-          <h1 className="h1">{scan.subtype || scan.categoryLabel}</h1>
-          <p className="sm mut">{scan.estimatedVolumeLabel} · {scan.modeLabel}</p>
-          {scan.corrected && <Label>von dir korrigiert</Label>}
+        <img src={`/api/photos/${encodeURIComponent(scan.photoId)}`} alt={t("Das aufgenommene Foto")} />
+        <div className="recognition-copy"><div className="between"><Tag von={scan.corrected ? 'input' : 'estimate'}>{t(scan.categoryLabel)}</Tag><b className="sm">{t(prozent(scan.confidence))}</b></div>
+          <h1 className="h1">{t(scan.subtype || scan.categoryLabel)}</h1>
+          <p className="sm mut">{t(scan.estimatedVolumeLabel)} {t(" · ")}{t(scan.modeLabel)}</p>
+          {t(scan.corrected && <Label>{t("von dir korrigiert")}</Label>)}
         </div>
       </div>
 
-      {scan.mode === 'sperrmuell' && <ScanTransport scan={scan} />}
-      <details className="card tight"><summary>Warum diese Einordnung?</summary><div className="col" style={{ gap: 10, marginTop: 12 }}>{herkunft}{warum}</div></details>
+      {t(scan.mode === 'sperrmuell' && <ScanTransport scan={scan} />)}
+      <details className="card tight"><summary>{t("Warum diese Einordnung?")}</summary><div className="col" style={{ gap: 10, marginTop: 12 }}>{t(herkunft)}{t(warum)}</div></details>
 
       {/* the two numbers behind the routing decision */}
       <div className="card">
         <div className="between">
-          <span className="sm mut">Geschätztes Volumen</span>
+          <span className="sm mut">{t("Geschätztes Volumen")}</span>
           <span className="row" style={{ gap: 6 }}>
-            <b className="num">{scan.estimatedVolumeLabel}</b>
+            <b className="num">{t(scan.estimatedVolumeLabel)}</b>
             <Tag von="estimate" />
           </span>
         </div>
         <div className="sep" style={{ margin: '11px 0' }} />
         <div className="between">
-          <span className="sm mut">Noch nutzbar</span>
+          <span className="sm mut">{t("Noch nutzbar")}</span>
           <span className="row" style={{ gap: 6 }}>
-            <b className="num">{prozent(scan.reusableProbability)}</b>
+            <b className="num">{t(prozent(scan.reusableProbability))}</b>
             <Tag von="estimate" />
           </span>
         </div>
         <p className="xs mut" style={{ margin: '11px 0 0' }}>
-          {scan.bin}
+          {t(scan.bin)}
         </p>
       </div>
 
       {/* the three ways forward */}
       <p className="lbl" style={{ marginTop: 4 }}>
-        Was jetzt
-      </p>
+        {t("Was jetzt")}</p>
 
-      {scan.routes.map((route) => (
+      {t(scan.routes.map((route) => (
         <button
           key={route.id}
           className={route.primary ? 'card sky' : 'card'}
@@ -295,39 +291,37 @@ export default function Erkannt() {
             <Thumb icon={ROUTE_ICON[route.id]} size={42} />
             <div className="grow">
               <div className="between">
-                <span className="h3">{route.label}</span>
-                {route.xpPreview > 0 ? (
-                  <Coin star>bis {route.xpPreview} XP</Coin>
+                <span className="h3">{t(route.label)}</span>
+                {t(route.xpPreview > 0 ? (
+                  <Coin star>{t("bis ")}{t(route.xpPreview)} {t(" XP")}</Coin>
                 ) : (
-                  <Label>ohne Punkte</Label>
-                )}
+                  <Label>{t("ohne Punkte")}</Label>
+                ))}
               </div>
               <div className="sm mut" style={{ marginTop: 2 }}>
-                {route.hint}
+                {t(route.hint)}
               </div>
-              {route.primary && (
+              {t(route.primary && (
                 <div style={{ marginTop: 6 }}>
-                  <Label>Vorschlag</Label>
+                  <Label>{t("Vorschlag")}</Label>
                 </div>
-              )}
+              ))}
             </div>
             <Icon name="chevron" size={19} className="ico" />
           </div>
         </button>
-      ))}
+      )))}
 
       <p className="xs mut" style={{ margin: 0 }}>
-        Die Punkte sind eine Vorschau. Gutgeschrieben wird erst die bestätigte Aktion — mit Formel
-        im Nachweis.
-      </p>
+        {t("Die Punkte sind eine Vorschau. Gutgeschrieben wird erst die bestätigte Aktion — mit Formel im Nachweis.")}</p>
 
-      {korrekturBlock}
+      {t(korrekturBlock)}
 
-      {fehler && (
+      {t(fehler && (
         <p className="xs" style={{ margin: 0, color: 'var(--alert)' }}>
-          {fehler}
+          {t(fehler)}
         </p>
-      )}
+      ))}
     </Screen>
   )
 }
@@ -374,10 +368,10 @@ function Gefahrstoff({
   return (
     <Screen
       back
-      title="Gefahrstoff"
-      sub={scan.modeLabel}
+      title={t("Gefahrstoff")}
+      sub={t(scan.modeLabel)}
       action={
-        <button className="icobtn" onClick={() => navigate('/scan')} aria-label="Neu scannen">
+        <button className="icobtn" onClick={() => navigate('/scan')} aria-label={t("Neu scannen")}>
           <Icon name="camera" size={21} />
         </button>
       }
@@ -388,54 +382,54 @@ function Gefahrstoff({
           <img
             className="thumb"
             src={`/api/photos/${scan.photoId}`}
-            alt="Das aufgenommene Foto"
+            alt={t("Das aufgenommene Foto")}
             style={{ width: 68, height: 68, objectFit: 'cover' }}
           />
           <div className="grow">
             <div className="row" style={{ gap: 7, color: 'var(--alert)' }}>
               <Icon name="shield" size={19} stroke={2.2} />
               <h1 className="h1" style={{ fontSize: 20, color: 'var(--alert)' }}>
-                {gefahr.headline}
+                {t(gefahr.headline)}
               </h1>
             </div>
             <div className="sm" style={{ marginTop: 3, fontWeight: 600 }}>
-              {scan.subtype}
+              {t(scan.subtype)}
             </div>
             <div className="row" style={{ gap: 6, marginTop: 8 }}>
-              {scan.corrected ? <Tag von="input" /> : <Tag von="estimate" icon />}
-              <span className="xs mut">{prozent(scan.confidence)} sicher</span>
+              {t(scan.corrected ? <Tag von="input" /> : <Tag von="estimate" icon />)}
+              <span className="xs mut">{t(prozent(scan.confidence))} {t(" sicher")}</span>
             </div>
           </div>
         </div>
 
         <p className="sm" style={{ margin: '13px 0 0', fontWeight: 600 }}>
-          {gefahr.lead}
+          {t(gefahr.lead)}
         </p>
 
-        {gefahr.signals.length > 0 && (
+        {t(gefahr.signals.length > 0 && (
           <div className="chips" style={{ marginTop: 11 }}>
-            {gefahr.signals.map((s) => (
+            {t(gefahr.signals.map((s) => (
               <span key={s} className="tag warn">
-                {s}
+                {t(s)}
               </span>
-            ))}
+            )))}
           </div>
-        )}
+        ))}
 
         <div className="col" style={{ gap: 7, marginTop: 13 }}>
-          {gefahr.safety.map((satz) => (
+          {t(gefahr.safety.map((satz) => (
             <div key={satz} className="row" style={{ alignItems: 'flex-start', gap: 8 }}>
               <span style={{ marginTop: 2, color: 'var(--alert)' }}>
                 <Icon name="cross" size={14} stroke={2.6} />
               </span>
-              <span className="sm">{satz}</span>
+              <span className="sm">{t(satz)}</span>
             </div>
-          ))}
+          )))}
         </div>
       </div>
 
       {/* 112 — only for the cases that actually warrant it */}
-      {akut ? (
+      {t(akut ? (
         <a
           className="btn"
           href={`tel:${gefahr.emergency.number}`}
@@ -447,8 +441,7 @@ function Gefahrstoff({
           }}
         >
           <Icon name="bell" size={19} stroke={2.2} />
-          {gefahr.emergency.number} anrufen — akute Gefahr
-        </a>
+          {t(gefahr.emergency.number)} {t(" anrufen — akute Gefahr")}</a>
       ) : (
         <button
           className="card dashed"
@@ -460,23 +453,21 @@ function Gefahrstoff({
               <Icon name="bell" size={18} stroke={2.2} />
             </span>
             <span className="grow sm">
-              Läuft es aus, dampft oder brennt es, ist jemand verletzt?
-            </span>
+              {t("Läuft es aus, dampft oder brennt es, ist jemand verletzt?")}</span>
             <Icon name="chevron" size={18} className="ico" />
           </div>
         </button>
-      )}
+      ))}
       <p className="xs mut" style={{ margin: '-4px 0 0' }}>
-        {gefahr.emergency.when}
+        {t(gefahr.emergency.when)}
       </p>
 
-      {herkunft}
-      {warum}
+      {t(herkunft)}
+      {t(warum)}
 
       {/* the three safe ways forward */}
       <p className="lbl" style={{ marginTop: 4 }}>
-        Sichere Wege
-      </p>
+        {t("Sichere Wege")}</p>
 
       {/* 1 — where it may be handed in, with a real address */}
       <button className="card" onClick={() => navigate('/wissen', { state: { scan } })}>
@@ -484,30 +475,29 @@ function Gefahrstoff({
           <Thumb icon="pin" size={42} />
           <div className="grow">
             <div className="between">
-              <span className="h3">Offizielle Abgabestelle finden</span>
-              <Label>ohne Punkte</Label>
+              <span className="h3">{t("Offizielle Abgabestelle finden")}</span>
+              <Label>{t("ohne Punkte")}</Label>
             </div>
-            {gefahr.dropoff ? (
+            {t(gefahr.dropoff ? (
               <>
                 <div className="sm mut" style={{ marginTop: 2 }}>
-                  {gefahr.dropoff.name}
-                  {gefahr.dropoff.addr ? `, ${gefahr.dropoff.addr}` : ''}
-                  {gefahr.dropoff.distanceKm !== null
-                    ? ` · ${gefahr.dropoff.distanceKm.toLocaleString('de-DE')} km`
-                    : ''}
+                  {t(gefahr.dropoff.name)}
+                  {t(gefahr.dropoff.addr ? `, ${gefahr.dropoff.addr}` : '')}
+                  {t(gefahr.dropoff.distanceKm !== null
+                    ? ` · ${gefahr.dropoff.distanceKm.toLocaleString(getLocale())} km`
+                    : '')}
                 </div>
                 <div className="row" style={{ gap: 6, marginTop: 6 }}>
-                  <Tag von="api">OpenStreetMap</Tag>
-                  {gefahr.dropoff.openingHours && (
-                    <span className="xs mut">{gefahr.dropoff.openingHours}</span>
-                  )}
+                  <Tag von="api">{t("OpenStreetMap")}</Tag>
+                  {t(gefahr.dropoff.openingHours && (
+                    <span className="xs mut">{t(gefahr.dropoff.openingHours)}</span>
+                  ))}
                 </div>
               </>
             ) : (
               <div className="sm mut" style={{ marginTop: 2 }}>
-                Schadstoffmobil oder Wertstoffhof — persönlich beim Personal abgeben.
-              </div>
-            )}
+                {t("Schadstoffmobil oder Wertstoffhof — persönlich beim Personal abgeben.")}</div>
+            ))}
           </div>
           <Icon name="chevron" size={19} className="ico" />
         </div>
@@ -525,40 +515,38 @@ function Gefahrstoff({
           <Thumb icon="shield" size={42} />
           <div className="grow">
             <div className="between">
-              <span className="h3">Fund melden</span>
-              <Label>ohne Punkte</Label>
+              <span className="h3">{t("Fund melden")}</span>
+              <Label>{t("ohne Punkte")}</Label>
             </div>
             <div className="sm mut" style={{ marginTop: 2 }}>
-              {gefahr.source.name} — der offizielle Weg bei FES.
-            </div>
+              {t(gefahr.source.name)} {t(" — der offizielle Weg bei FES.")}</div>
           </div>
           <Icon name="chevron" size={19} className="ico" />
         </div>
       </a>
 
       {/* 3 — the only rewarded act: documenting it */}
-      {gefahr.reported ? (
+      {t(gefahr.reported ? (
         <div className="card sky">
           <div className="row">
             <Thumb icon="check" size={42} />
             <div className="grow">
               <div className="between">
-                <span className="h3">Meldung gespeichert</span>
-                <Coin star>+{gefahr.reportXp} XP</Coin>
+                <span className="h3">{t("Meldung gespeichert")}</span>
+                <Coin star>{t("+")}{t(gefahr.reportXp)} {t(" XP")}</Coin>
               </div>
               <div className="sm mut" style={{ marginTop: 2 }}>
-                {meldung ?? 'Foto und Standort sind dokumentiert.'}
+                {t(meldung ?? 'Foto und Standort sind dokumentiert.')}
               </div>
               <div className="row" style={{ gap: 6, marginTop: 7 }}>
                 <Tag von={gefahr.located === false ? 'input' : 'simulated'} icon />
-                {gefahr.receiptActionId != null && (
+                {t(gefahr.receiptActionId != null && (
                   <button
                     className="chip"
                     onClick={() => navigate(`/nachweis/${gefahr.receiptActionId}`)}
                   >
-                    Nachweis ansehen
-                  </button>
-                )}
+                    {t("Nachweis ansehen")}</button>
+                ))}
               </div>
             </div>
           </div>
@@ -569,34 +557,31 @@ function Gefahrstoff({
             <Thumb icon="check" size={42} />
             <div className="grow">
               <div className="between">
-                <span className="h3">Als sichere Meldung speichern</span>
-                <Coin star>+{gefahr.reportXp} XP</Coin>
+                <span className="h3">{t("Als sichere Meldung speichern")}</span>
+                <Coin star>{t("+")}{t(gefahr.reportXp)} {t(" XP")}</Coin>
               </div>
               <div className="sm mut" style={{ marginTop: 2 }}>
-                Foto und Standort dokumentieren, ohne etwas anzufassen.
-              </div>
+                {t("Foto und Standort dokumentieren, ohne etwas anzufassen.")}</div>
             </div>
-            {speichert ? <span className="spinner" /> : <Icon name="chevron" size={19} className="ico" />}
+            {t(speichert ? <span className="spinner" /> : <Icon name="chevron" size={19} className="ico" />)}
           </div>
         </button>
-      )}
+      ))}
 
       <p className="xs mut" style={{ margin: 0 }}>
-        Es gibt hier bewusst keine Punkte fürs Aufräumen. Gefahrstoffe gehören in die Hände von
-        Fachleuten — belohnt wird die Meldung, nicht das Anfassen. Quelle:{' '}
+        {t("Es gibt hier bewusst keine Punkte fürs Aufräumen. Gefahrstoffe gehören in die Hände von Fachleuten — belohnt wird die Meldung, nicht das Anfassen. Quelle:")}{t(' ')}
         <a href={gefahr.source.url} target="_blank" rel="noreferrer noopener">
-          {gefahr.source.name}
+          {t(gefahr.source.name)}
         </a>
-        .
-      </p>
+        {t(".")}</p>
 
-      {korrektur}
+      {t(korrektur)}
 
-      {fehler && (
+      {t(fehler && (
         <p className="xs" style={{ margin: 0, color: 'var(--alert)' }}>
-          {fehler}
+          {t(fehler)}
         </p>
-      )}
+      ))}
     </Screen>
   )
 }

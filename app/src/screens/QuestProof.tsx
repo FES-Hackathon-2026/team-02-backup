@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import PhotoCompare from '../components/PhotoCompare'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
@@ -227,7 +228,7 @@ export default function QuestProof() {
 
   if (loading) {
     return (
-      <Screen back title="Nachweis" sub="wird geladen …">
+      <Screen back title={t("Nachweis")} sub={t("wird geladen …")}>
         <div className="empty">
           <span className="spinner" />
         </div>
@@ -237,10 +238,10 @@ export default function QuestProof() {
 
   if (!detail) {
     return (
-      <Screen back title="Nachweis">
+      <Screen back title={t("Nachweis")}>
         <div className="empty">
           <Icon name="cross" size={24} />
-          {error ?? 'Diese Quest gibt es nicht.'}
+          {t(error ?? 'Diese Quest gibt es nicht.')}
         </div>
       </Screen>
     )
@@ -256,47 +257,47 @@ export default function QuestProof() {
     <Screen
       back
       title={quest.title}
-      sub="Zeig, was du aufgeräumt hast"
+      sub={t("Zeig, was du aufgeräumt hast")}
       footer={
         canSubmit ? (
           <button className="btn primary" disabled={busy} onClick={() => fileRef.current?.click()}>
-            {busy ? 'wird geprüft …' : 'Nachher-Foto aufnehmen'}
+            {t(busy ? 'wird geprüft …' : 'Nachher-Foto aufnehmen')}
           </button>
         ) : undefined
       }
     >
       <Kette chain={detail.chain} />
 
-      {message && (
+      {t(message && (
         <div className="card sky tight">
-          <span className="sm">{message}</span>
+          <span className="sm">{t(message)}</span>
         </div>
-      )}
-      {error && (
+      ))}
+      {t(error && (
         <div className="card tight" style={{ borderColor: 'var(--alert)' }}>
-          <span className="sm">{error}</span>
+          <span className="sm">{t(error)}</span>
         </div>
-      )}
+      ))}
 
       {/* ------- the two photos ------- */}
-      {quest.photoId && submission?.photoId ? <PhotoCompare before={quest.photoId} after={submission.photoId} /> : <div className="row" style={{ gap: 10 }}>
-        <Foto id={quest.photoId} label="Vorher" by={quest.createdBy} />
+      {t(quest.photoId && submission?.photoId ? <PhotoCompare before={quest.photoId} after={submission.photoId} /> : <div className="row" style={{ gap: 10 }}>
+        <Foto id={quest.photoId} label={t("Vorher")} by={quest.createdBy} />
         <Foto
           id={submission?.photoId ?? null}
-          label="Nachher"
+          label={t("Nachher")}
           by={submission?.userName ?? null}
           empty={canSubmit ? 'Noch kein Foto' : 'Steht noch aus'}
         />
-      </div>}
+      </div>)}
 
-      {quest.note && (
+      {t(quest.note && (
         <p className="sm mut" style={{ margin: 0 }}>
           {quest.note}
         </p>
-      )}
+      ))}
 
       {/* ------- taking it on ------- */}
-      {detail.canClaim && (
+      {t(detail.canClaim && (
         <button
           className="btn primary"
           disabled={busy}
@@ -311,153 +312,141 @@ export default function QuestProof() {
             }
           }}
         >
-          Übernehmen · 2 Stunden für dich
-        </button>
-      )}
-      {!detail.canClaim && detail.claimBlockedWhy && !submission && (
+          {t("Übernehmen · 2 Stunden für dich")}</button>
+      ))}
+      {t(!detail.canClaim && detail.claimBlockedWhy && !submission && (
         <p className="xs mut" style={{ margin: 0 }}>
-          {detail.claimBlockedWhy}
+          {t(detail.claimBlockedWhy)}
         </p>
-      )}
+      ))}
 
-      {canSubmit && quest.claimSecondsLeft !== null && (
+      {t(canSubmit && quest.claimSecondsLeft !== null && (
         <div className="card sky tight">
           <span className="row between">
             <span className="row" style={{ gap: 7 }}>
               <Icon name="clock" size={17} />
-              <b className="sm">Noch {Math.round(quest.claimSecondsLeft / 60)} Min. für dich</b>
+              <b className="sm">{t("Noch ")}{t(Math.round(quest.claimSecondsLeft / 60))} {t(" Min. für dich")}</b>
             </span>
             <button className="btn sm" disabled={busy} onClick={() => void zurueckgeben()}>
-              Zurückgeben
-            </button>
+              {t("Zurückgeben")}</button>
           </span>
           <p className="xs mut" style={{ margin: '6px 0 0' }}>
-            Fotografiere dieselbe Stelle aus derselben Richtung. Der Bildvergleich sucht Bordstein,
-            Wand und Pflaster — nicht den Müll.
-          </p>
+            {t("Fotografiere dieselbe Stelle aus derselben Richtung. Der Bildvergleich sucht Bordstein, Wand und Pflaster — nicht den Müll.")}</p>
         </div>
-      )}
+      ))}
 
       {/* ------- the verdict ------- */}
-      {submission && verdict && (
+      {t(submission && verdict && (
         <div className="card" style={{ gap: 12 }}>
           <span className="row between">
             <span className="row" style={{ gap: 8 }}>
               <Icon name={submission.verdict === 'plausible' ? 'check' : 'shield'} size={19} />
-              <b>{verdict.title}</b>
+              <b>{t(verdict.title)}</b>
             </span>
-            <Label tone={verdict.tone}>{submission.verdictLabel}</Label>
+            <Label tone={verdict.tone}>{t(submission.verdictLabel)}</Label>
           </span>
 
-          {submission.blind ? (
+          {t(submission.blind ? (
             <p className="sm mut" style={{ margin: 0 }}>
-              Du kannst diesen Nachweis gegenprüfen — deshalb bleiben die vier Signale bis nach
-              deiner Antwort verdeckt. Wer das Urteil der Regeln schon gelesen hat, ist keine
-              zweite Meinung mehr.
-            </p>
+              {t("Du kannst diesen Nachweis gegenprüfen — deshalb bleiben die vier Signale bis nach deiner Antwort verdeckt. Wer das Urteil der Regeln schon gelesen hat, ist keine zweite Meinung mehr.")}</p>
           ) : (
             <>
-              {submission.score !== null && submission.maxScore !== null && (
+              {t(submission.score !== null && submission.maxScore !== null && (
                 <span className="row" style={{ gap: 8 }}>
                   <b className="num">
-                    {submission.score} / {submission.maxScore}
+                    {t(submission.score)} {t(" / ")}{t(submission.maxScore)}
                   </b>
-                  <span className="xs mut">Prüfpunkte</span>
+                  <span className="xs mut">{t("Prüfpunkte")}</span>
                 </span>
-              )}
+              ))}
 
               <div className="col" style={{ gap: 10 }}>
-                {(submission.signals ?? []).map((signal) => (
+                {t((submission.signals ?? []).map((signal) => (
                   <Signal key={signal.id} signal={signal} />
-                ))}
+                )))}
               </div>
 
-              {submission.rule && (
+              {t(submission.rule && (
                 <p className="xs mut" style={{ margin: 0 }}>
-                  <b>Die Regeln entscheiden, das Modell berät.</b> {submission.rule}
+                  <b>{t("Die Regeln entscheiden, das Modell berät.")}</b> {t(submission.rule)}
                 </p>
-              )}
+              ))}
 
-              {submission.steps && submission.steps.length > 0 && (
+              {t(submission.steps && submission.steps.length > 0 && (
                 <details>
                   <summary className="xs mut" style={{ cursor: 'pointer' }}>
-                    Rechenweg
-                  </summary>
+                    {t("Rechenweg")}</summary>
                   <ul className="xs mut" style={{ margin: '7px 0 0', paddingLeft: 17 }}>
-                    {submission.steps.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
+                    {t(submission.steps.map((step, i) => (
+                      <li key={i}>{t(step)}</li>
+                    )))}
                   </ul>
                 </details>
-              )}
+              ))}
             </>
-          )}
+          ))}
         </div>
-      )}
+      ))}
 
       {/* ------- peer review ------- */}
-      {review && submission && (
+      {t(review && submission && (
         <div className="card" style={{ gap: 10 }}>
           <span className="row between">
             <span className="row" style={{ gap: 8 }}>
               <Icon name="users" size={18} />
-              <b>Gegenprüfung</b>
+              <b>{t("Gegenprüfung")}</b>
             </span>
             <span className="xs mut">
-              {review.counts.clean} ja · {review.counts.not_clean} nein ·{' '}
-              {review.counts.cannot_see} unklar
-            </span>
+              {t(review.counts.clean)} {t(" ja · ")}{t(review.counts.not_clean)} {t(" nein ·")}{t(' ')}
+              {t(review.counts.cannot_see)} {t(" unklar")}</span>
           </span>
 
           <p className="sm mut" style={{ margin: 0 }}>
-            {review.outcome === 'released'
+            {t(review.outcome === 'released'
               ? `${review.quorum} übereinstimmende Antworten haben die Gutschrift freigegeben.`
               : review.outcome === 'rejected'
                 ? `${review.quorum} Antworten sagen, dass es nicht sauber ist. Die Quest steht wieder auf der Karte.`
                 : review.open
                   ? `Noch ${review.quorum - Math.max(review.counts.clean, review.counts.not_clean)} übereinstimmende Antwort, dann ist entschieden.`
-                  : 'Entschieden.'}
+                  : 'Entschieden.')}
           </p>
 
-          {review.canReview && (
+          {t(review.canReview && (
             <button
               className="btn primary"
               onClick={() => navigate(`/review/${submission.id}`)}
             >
-              Jetzt gegenprüfen · +15 XP
-            </button>
-          )}
-          {!review.canReview && review.why && (
+              {t("Jetzt gegenprüfen · +15 XP")}</button>
+          ))}
+          {t(!review.canReview && review.why && (
             <p className="xs mut" style={{ margin: 0 }}>
-              {review.why}
+              {t(review.why)}
             </p>
-          )}
+          ))}
           <p className="xs mut" style={{ margin: 0 }}>
-            {review.note}
+            {t(review.note)}
           </p>
         </div>
-      )}
+      ))}
 
       {/* ------- the credit ------- */}
-      {credit && (
+      {t(credit && (
         <div className="card" style={{ gap: 10 }}>
           <span className="row between">
             <span className="row" style={{ gap: 8 }}>
-              <Coin star>+{credit.xp} XP</Coin>
-              <Coin>+{credit.coins} Mz.</Coin>
+              <Coin star>{t("+")}{t(credit.xp)} {t(" XP")}</Coin>
+              <Coin>{t("+")}{t(credit.coins)} {t(" Mz.")}</Coin>
             </span>
-            <Tag von="api">plausibel</Tag>
+            <Tag von="api">{t("plausibel")}</Tag>
           </span>
           <p className="xs mut" style={{ margin: 0 }}>
-            Gutgeschrieben an {submission?.userName ?? 'die Person, die es weggeräumt hat'}.
-          </p>
-          {isSubmitter && (
+            {t("Gutgeschrieben an ")}{t(submission?.userName ?? 'die Person, die es weggeräumt hat')}{t(".")}</p>
+          {t(isSubmitter && (
             <button className="btn" onClick={() => navigate(`/nachweis/${credit.actionId}`)}>
-              Beleg mit Formel ansehen
-            </button>
-          )}
+              {t("Beleg mit Formel ansehen")}</button>
+          ))}
         </div>
-      )}
+      ))}
 
       {/* ------- where ------- */}
       <Map
@@ -477,7 +466,7 @@ export default function QuestProof() {
         still
       />
       <p className="xs mut" style={{ margin: '-4px 2px 0' }}>
-        {detail.attribution}
+        {t(detail.attribution)}
       </p>
 
       <input
@@ -501,7 +490,7 @@ export default function QuestProof() {
 function Kette({ chain }: { chain: QuestStep[] }) {
   return (
     <div className="row" style={{ gap: 0, alignItems: 'stretch' }}>
-      {chain.map((step, i) => (
+      {t(chain.map((step, i) => (
         <span
           key={step.id}
           className="col"
@@ -539,10 +528,10 @@ function Kette({ chain }: { chain: QuestStep[] }) {
             />
           </span>
           <span className="xs" style={{ color: step.done ? 'var(--ink)' : 'var(--ink3)' }}>
-            {step.label}
+            {t(step.label)}
           </span>
         </span>
-      ))}
+      )))}
     </div>
   )
 }
@@ -560,10 +549,10 @@ function Foto({
 }) {
   return (
     <span className="col grow" style={{ gap: 5 }}>
-      {id ? (
+      {t(id ? (
         <img
           src={`/api/photos/${id}`}
-          alt={label}
+          alt={t(label)}
           style={{
             width: '100%',
             aspectRatio: '4 / 3',
@@ -584,12 +573,12 @@ function Foto({
           }}
         >
           <Icon name="camera" size={20} />
-          {empty ?? 'Kein Foto'}
+          {t(empty ?? 'Kein Foto')}
         </span>
-      )}
+      ))}
       <span className="xs mut">
-        <b>{label}</b>
-        {by && ` · ${by}`}
+        <b>{t(label)}</b>
+        {t(by && ` · ${by}`)}
       </span>
     </span>
   )
@@ -617,21 +606,21 @@ function Signal({ signal }: { signal: QuestSignal }) {
 
       <span className="grow">
         <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-          <b className="sm">{signal.label}</b>
+          <b className="sm">{t(signal.label)}</b>
           <Tag von={HERKUNFT[signal.tier]} />
-          {signal.veto && <Label tone="warn">allein entscheidend</Label>}
+          {t(signal.veto && <Label tone="warn">{t("allein entscheidend")}</Label>)}
         </span>
         <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-          {signal.value} · {signal.detail}
+          {t(signal.value)} {t(" · ")}{t(signal.detail)}
         </span>
         <span className="xs" style={{ display: 'block', marginTop: 2, color: 'var(--ink3)' }}>
-          {signal.source}
+          {t(signal.source)}
         </span>
       </span>
 
       <b className="sm num" style={{ flexShrink: 0 }}>
-        {mark.sign}
-        {Math.abs(signal.points)}
+        {t(mark.sign)}
+        {t(Math.abs(signal.points))}
       </b>
     </div>
   )

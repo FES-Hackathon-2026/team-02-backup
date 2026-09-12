@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useApi } from '../lib/client'
 import type { Progression } from './ReferenceActions'
 import { useEffect, useRef, useState } from 'react'
@@ -18,10 +19,10 @@ export default function LevelUp() {
   }, [me?.id, me?.level])
   const progress = useApi<Progression>(level === null ? null : `/api/progression?level=${level}`)
   if (level === null) return null
-  return <DecisionSheet title="Level erreicht" onClose={() => setLevel(null)}>
-    <div className="level-celebration"><Icon name="spark" size={48} /><span className="num">Level {level}</span><p>Dein Einsatz für Frankfurt zählt.</p><p className="xs mut">Deine bestätigten XP haben das nächste Level freigeschaltet.</p></div>
-    {climateUnlocked && <p className="sm">Frankfurt Klimaheld freigeschaltet</p>}
-    {progress.data?.latestLevelBonus && <p className="level-bonus">+{progress.data.latestLevelBonus.xp} Bonus-XP gutgeschrieben</p>}
-    <button className="btn primary" onClick={() => setLevel(null)}>Weiter</button>
+  return <DecisionSheet title={t("Level erreicht")} onClose={() => setLevel(null)}>
+    <div className="level-celebration"><Icon name="spark" size={48} /><span className="num">{t("Level ")}{t(level)}</span><p>{t("Dein Einsatz für Frankfurt zählt.")}</p><p className="xs mut">{t("Deine bestätigten XP haben das nächste Level freigeschaltet.")}</p></div>
+    {t(climateUnlocked && <p className="sm">{t("Frankfurt Klimaheld freigeschaltet")}</p>)}
+    {t(progress.data?.latestLevelBonus && <p className="level-bonus">{t("+")}{t(progress.data.latestLevelBonus.xp)} {t(" Bonus-XP gutgeschrieben")}</p>)}
+    <button className="btn primary" onClick={() => setLevel(null)}>{t("Weiter")}</button>
   </DecisionSheet>
 }

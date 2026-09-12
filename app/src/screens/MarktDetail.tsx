@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import MarketPhoto from '../components/MarketPhoto'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -55,7 +56,7 @@ export default function MarktDetail() {
 
   if (load.loading && !d) {
     return (
-      <Screen back title="Angebot" sub="Reparatur-Markt">
+      <Screen back title={t("Angebot")} sub={t("Reparatur-Markt")}>
         <div className="empty">
           <span className="spinner" />
         </div>
@@ -65,10 +66,10 @@ export default function MarktDetail() {
 
   if (!d) {
     return (
-      <Screen back title="Angebot" sub="Reparatur-Markt">
+      <Screen back title={t("Angebot")} sub={t("Reparatur-Markt")}>
         <div className="empty">
           <Icon name="market" size={26} />
-          {load.error?.message ?? 'Dieses Angebot gibt es nicht.'}
+          {t(load.error?.message ?? 'Dieses Angebot gibt es nicht.')}
         </div>
       </Screen>
     )
@@ -84,7 +85,7 @@ export default function MarktDetail() {
     <Screen
       back
       title={item.title}
-      sub={`${item.district ?? 'Frankfurt'} · kostenlos abzugeben`}
+      sub={t(`${item.district ?? 'Frankfurt'} · kostenlos abzugeben`)}
       footer={
         item.status === 'reserved' && role !== 'visitor' ? (
           <button
@@ -92,16 +93,15 @@ export default function MarktDetail() {
             disabled={busy !== null || !ichBinDran}
             onClick={() => void schreiben('handover')}
           >
-            {busy === 'handover' ? (
+            {t(busy === 'handover' ? (
               <span className="spinner" />
             ) : ichBinDran ? (
               <>
                 <Icon name="check" size={18} stroke={2.4} />
-                Übergabe bestätigen
-              </>
+                {t("Übergabe bestätigen")}</>
             ) : (
               `Bestätigt — es fehlt noch ${gegenueber}`
-            )}
+            ))}
           </button>
         ) : item.status === 'open' && role === 'visitor' ? (
           <button
@@ -109,7 +109,7 @@ export default function MarktDetail() {
             disabled={busy !== null}
             onClick={() => void schreiben('claim', fenster ? { window: fenster } : undefined)}
           >
-            {busy === 'claim' ? <span className="spinner" /> : 'Reservieren'}
+            {t(busy === 'claim' ? <span className="spinner" /> : 'Reservieren')}
           </button>
         ) : undefined
       }
@@ -122,12 +122,12 @@ export default function MarktDetail() {
           <div className="grow col" style={{ gap: 7, alignItems: 'flex-start' }}>
             <b style={{ fontSize: 15.5, lineHeight: 1.3 }}>{item.title}</b>
             <div className="row" style={{ gap: 5, flexWrap: 'wrap' }}>
-              <Label tone="warn">{item.defect}</Label>
-              {item.condition && <Tag von="input">{item.condition}</Tag>}
+              <Label tone="warn">{t(item.defect)}</Label>
+              {t(item.condition && <Tag von="input">{t(item.condition)}</Tag>)}
             </div>
             <span className="xs mut">
-              Von {item.ownerName ?? 'jemandem'}
-              {item.distanceKm !== undefined && ` · ${item.distanceKm.toFixed(1)} km`}
+              {t("Von ")}{t(item.ownerName ?? 'jemandem')}
+              {t(item.distanceKm !== undefined && ` · ${item.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`)}
             </span>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function MarktDetail() {
       {/* --- where it stands --- */}
       <div className="card tight flat">
         <div className="between">
-          {KETTE.map((k, i) => (
+          {t(KETTE.map((k, i) => (
             <div key={k.id} className="row" style={{ gap: 7, flex: 1, minWidth: 0 }}>
               <span
                 style={{
@@ -151,60 +151,58 @@ export default function MarktDetail() {
                   color: i <= stand ? 'var(--on-blue)' : 'var(--blue-ink)',
                 }}
               >
-                {i <= stand ? <Icon name="check" size={12} stroke={2.6} /> : null}
+                {t(i <= stand ? <Icon name="check" size={12} stroke={2.6} /> : null)}
               </span>
               <span
                 className="xs"
                 style={{ color: i <= stand ? 'var(--ink)' : 'var(--ink3)', fontWeight: 600 }}
               >
-                {k.label}
+                {t(k.label)}
               </span>
             </div>
-          ))}
+          )))}
         </div>
       </div>
 
-      {fehler && (
+      {t(fehler && (
         <p className="xs" style={{ color: 'var(--alert)', margin: 0 }}>
-          {fehler}
+          {t(fehler)}
         </p>
-      )}
+      ))}
 
       {/* --- reserving: agree a window --- */}
-      {item.status === 'open' && role === 'visitor' && (
+      {t(item.status === 'open' && role === 'visitor' && (
         <div className="card tight col" style={{ gap: 10 }}>
           <div>
-            <b className="sm">Wann würdest du es abholen?</b>
+            <b className="sm">{t("Wann würdest du es abholen?")}</b>
             <p className="xs mut" style={{ margin: '3px 0 0', lineHeight: 1.5 }}>
-              {item.ownerName ?? 'Die andere Seite'} sieht das Fenster sofort. Optional — ihr
-              könnt es auch offen lassen.
-            </p>
+              {t(item.ownerName ?? 'Die andere Seite')} {t(" sieht das Fenster sofort. Optional — ihr könnt es auch offen lassen.")}</p>
           </div>
           <div className="chips">
-            {d.windowOptions.map((w) => (
+            {t(d.windowOptions.map((w) => (
               <button
                 key={w.id}
                 className="chip"
                 aria-pressed={w.id === fenster}
                 onClick={() => setFenster(w.id === fenster ? '' : w.id)}
               >
-                {w.label}
+                {t(w.label)}
               </button>
-            ))}
+            )))}
           </div>
         </div>
-      )}
+      ))}
 
       {/* --- reserved: the two confirmations --- */}
-      {item.status !== 'open' && (
+      {t(item.status !== 'open' && (
         <div className="card tight col" style={{ gap: 11 }}>
           <div className="between">
-            <b className="sm">Übergabe</b>
-            {d.window && (
+            <b className="sm">{t("Übergabe")}</b>
+            {t(d.window && (
               <Label tone={handover.complete ? 'plain' : 'warn'}>
-                <Icon name="clock" size={13} /> {d.window.label}
+                <Icon name="clock" size={13} /> {t(d.window.label)}
               </Label>
-            )}
+            ))}
           </div>
 
           <Bestaetigung
@@ -221,67 +219,64 @@ export default function MarktDetail() {
           />
 
           <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-            {handover.complete
+            {t(handover.complete
               ? 'Beide haben bestätigt. Gutgeschrieben wurde auf beiden Seiten.'
               : role === 'visitor'
                 ? `Reserviert${d.window ? ` für ${d.window.label}` : ''}.`
                 : andereOffen && !ichBinDran
                   ? `Deine Bestätigung steht. Sobald ${gegenueber} bestätigt, wird gutgeschrieben.`
-                  : 'Erst wenn beide bestätigt haben, entsteht eine Gutschrift. Deshalb kann niemand sich selbst Punkte geben.'}
+                  : 'Erst wenn beide bestätigt haben, entsteht eine Gutschrift. Deshalb kann niemand sich selbst Punkte geben.')}
           </p>
 
-          {role !== 'visitor' && !handover.complete && (
+          {t(role !== 'visitor' && !handover.complete && (
             <button
               className="btn sm"
               disabled={busy !== null}
               onClick={() => void schreiben('release')}
               style={{ width: '100%' }}
             >
-              {busy === 'release' ? (
+              {t(busy === 'release' ? (
                 <span className="spinner" />
               ) : role === 'owner' ? (
                 'Reservierung auflösen'
               ) : (
                 'Reservierung zurückgeben'
-              )}
+              ))}
             </button>
-          )}
+          ))}
         </div>
-      )}
+      ))}
 
       {/* --- the credit --- */}
-      {d.award && (
+      {t(d.award && (
         <div className="card tight col" style={{ gap: 8 }}>
           <div className="between">
-            <b className="sm">{d.award.blocked ? 'Gezählt, nicht bepunktet' : 'Gutgeschrieben'}</b>
+            <b className="sm">{t(d.award.blocked ? 'Gezählt, nicht bepunktet' : 'Gutgeschrieben')}</b>
             <Coin star>
-              {d.award.xp} XP · {d.award.coins} Mz.
-            </Coin>
+              {t(d.award.xp)} {t(" XP · ")}{t(d.award.coins)} {t(" Mz.")}</Coin>
           </div>
           <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-            {d.award.hint ?? d.message}
+            {t(d.award.hint ?? d.message)}
           </p>
         </div>
-      )}
+      ))}
 
-      {d.receiptActionId !== null && (
+      {t(d.receiptActionId !== null && (
         <Link className="btn" to={`/nachweis/${d.receiptActionId}`}>
           <Icon name="shield" size={18} />
-          Nachweis ansehen
-        </Link>
-      )}
+          {t("Nachweis ansehen")}</Link>
+      ))}
 
       {/* --- who could actually fix this --- */}
-      {d.repairShops.length > 0 && (
+      {t(d.repairShops.length > 0 && (
         <>
           <h2 className="h3" style={{ marginBottom: -4 }}>
-            Wer das reparieren kann
-          </h2>
+            {t("Wer das reparieren kann")}</h2>
           <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-            Betriebe in der Nähe des Angebots. <Tag von="api">{d.attribution}</Tag>
+            {t("Betriebe in der Nähe des Angebots. ")}<Tag von="api">{t(d.attribution)}</Tag>
           </p>
           <div className="col" style={{ gap: 9 }}>
-            {d.repairShops.map((shop) => (
+            {t(d.repairShops.map((shop) => (
               <div key={shop.id} className="card tight">
                 <div className="row" style={{ gap: 11 }}>
                   <span className="thumb" style={{ width: 38, height: 38, flex: 'none' }}>
@@ -289,23 +284,20 @@ export default function MarktDetail() {
                   </span>
                   <span className="grow">
                     <b className="sm" style={{ display: 'block' }}>
-                      {shop.name}
+                      {t(shop.name)}
                     </b>
                     <span className="xs mut">
-                      {shop.addr ?? 'Adresse nicht hinterlegt'} · {shop.distanceKm.toFixed(1)} km
-                    </span>
+                      {t(shop.addr ?? 'Adresse nicht hinterlegt')} {t(" · ")}{t(shop.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }))} {t(" km")}</span>
                   </span>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
 
       <p className="xs mut" style={{ lineHeight: 1.5 }}>
-        Kostenlos abzugeben. ReMain kennt keine Preise und keinen Weiterverkauf — was hier steht,
-        soll benutzt werden, nicht gehandelt.
-      </p>
+        {t("Kostenlos abzugeben. ReMain kennt keine Preise und keinen Weiterverkauf — was hier steht, soll benutzt werden, nicht gehandelt.")}</p>
     </Screen>
   )
 }
@@ -340,11 +332,11 @@ function Bestaetigung({
       </span>
       <span className="grow">
         <b className="sm" style={{ display: 'block' }}>
-          {wer}
-          {selbst && <span className="mut" style={{ fontWeight: 500 }}> — du</span>}
+          {t(wer)}
+          {t(selbst && <span className="mut" style={{ fontWeight: 500 }}> {t(" — du")}</span>)}
         </b>
         <span className="xs mut">
-          {rolle} · {fertig ? 'bestätigt' : 'noch offen'}
+          {t(rolle)} {t(" · ")}{t(fertig ? 'bestätigt' : 'noch offen')}
         </span>
       </span>
     </div>

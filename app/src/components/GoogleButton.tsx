@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 /**
  * "Mit Google anmelden".
  *
@@ -29,8 +30,8 @@ export default function GoogleButton({
 }: Props) {
   return (
     <button type="button" className="btn google" onClick={onClick} disabled={disabled || busy}>
-      {busy ? <span className="spinner sm" aria-hidden="true" /> : <GoogleMark />}
-      <span>{busy ? 'Weiter bei Google …' : label}</span>
+      {t(busy ? <span className="spinner sm" aria-hidden="true" /> : <GoogleMark />)}
+      <span>{t(busy ? 'Weiter bei Google …' : label)}</span>
     </button>
   )
 }

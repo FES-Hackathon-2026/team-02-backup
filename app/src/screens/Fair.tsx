@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useEffect, useState } from 'react'
 
 import { getLog, subscribeToLog, type LogEntry } from '../lib/api'
@@ -71,9 +72,9 @@ export default function Fair({ user }: Props) {
 
   return (
     <div className="screen" id="panel-fair" role="tabpanel">
-      <h2>Why you cannot farm this</h2>
+      <h2>{t("Why you cannot farm this")}</h2>
       <div className="card">
-        {RULES.map((r) => (
+        {t(RULES.map((r) => (
           <div
             key={r.title}
             style={{
@@ -98,48 +99,47 @@ export default function Fair({ user }: Props) {
                 color: r.ok ? 'var(--accent)' : 'var(--bad)',
               }}
             >
-              {r.ok ? '✓' : '✕'}
+              {t(r.ok ? '✓' : '✕')}
             </div>
             <div>
-              <b style={{ fontSize: 14 }}>{r.title}</b>
+              <b style={{ fontSize: 14 }}>{t(r.title)}</b>
               <div className="tiny muted" style={{ marginTop: 2 }}>
-                {r.detail}
+                {t(r.detail)}
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       <h2>
-        Verification level <span className="pv pv-api">API</span>
+        {t("Verification level ")}<span className="pv pv-api">{t("API")}</span>
       </h2>
       <div className="card">
-        {v ? (
+        {t(v ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <b style={{ flex: 1 }}>{v.status}</b>
+              <b style={{ flex: 1 }}>{t(v.status)}</b>
               <span className={`pv ${v.is_verified ? 'pv-api' : 'pv-input'}`}>
-                {v.is_verified ? 'verified' : 'open'}
+                {t(v.is_verified ? 'verified' : 'open')}
               </span>
             </div>
             <div className="tiny muted">
-              Quiz: {v.quiz_passed ? 'passed' : 'open'} · Trial pickups:{' '}
-              {v.trial_pickups_completed}/{v.trial_pickups_required} · Approval:{' '}
-              {v.mentor_approved ? 'granted' : 'open'}
-              {v.next_step && (
+              {t("Quiz: ")}{t(v.quiz_passed ? 'passed' : 'open')} {t(" · Trial pickups:")}{t(' ')}
+              {t(v.trial_pickups_completed)}{t("/")}{t(v.trial_pickups_required)} {t(" · Approval:")}{t(' ')}
+              {t(v.mentor_approved ? 'granted' : 'open')}
+              {t(v.next_step && (
                 <>
                   <br />
-                  {v.next_step}
+                  {t(v.next_step)}
                 </>
-              )}
+              ))}
             </div>
             <div className="tiny muted" style={{ marginTop: 8 }}>
-              Reward is weighted by verification level: without it ×{A.unverifiedWeight}, with it ×1.0.
-            </div>
+              {t("Reward is weighted by verification level: without it ×")}{t(A.unverifiedWeight)}{t(", with it ×1.0.")}</div>
           </>
         ) : (
-          <div className="small muted">No user loaded.</div>
-        )}
+          <div className="small muted">{t("No user loaded.")}</div>
+        ))}
       </div>
 
       {/* TODO(#5): the "try to cheat" buttons — pick up your own basket (400),
@@ -147,39 +147,26 @@ export default function Fair({ user }: Props) {
           the most convincing part of the demo: the refusal comes from the
           server, not from our code. */}
 
-      <h2>Documented assumptions</h2>
+      <h2>{t("Documented assumptions")}</h2>
       <div className="card tiny" style={{ lineHeight: 1.8 }}>
-        <b>Not from any interface — our own values, disclosed here:</b>
-        <br />• {A.foodCo2PerKg} kg CO₂e per kg of rescued food (mixed basket)
-        <br />• Car {A.carCo2PerKg} kg CO₂e/km · transit {A.transitCo2PerKm} kg CO₂e/km · bike and
-        walking 0
-        <br />• Route = straight line × {A.detourFactor} (detour factor) × {A.roundTrip} (there and
-        back)
-        <br />• On a known route only the detour is charged, because the trip happens anyway
-        <br />• {A.pointsPerKgCo2} points per kg CO₂e · daily limit {A.scoredActionsPerDay} ·
-        offering {A.pointsForOffering} points
-        <br />
-        <b>From the API:</b> locations, basket data, expires_at, pickup id and time, verification
-        status.
-        <br />
-        <b>From the user:</b> amount in kg and travel mode — neither is verifiable, so neither is
-        ever shown as a measurement.
-      </div>
+        <b>{t("Not from any interface — our own values, disclosed here:")}</b>
+        <br />{t("• ")}{t(A.foodCo2PerKg)} {t(" kg CO₂e per kg of rescued food (mixed basket)")}<br />{t("• Car ")}{t(A.carCo2PerKg)} {t(" kg CO₂e/km · transit ")}{t(A.transitCo2PerKm)} {t(" kg CO₂e/km · bike and walking 0")}<br />{t("• Route = straight line × ")}{t(A.detourFactor)} {t(" (detour factor) × ")}{t(A.roundTrip)} {t(" (there and back)")}<br />{t("• On a known route only the detour is charged, because the trip happens anyway")}<br />{t("• ")}{t(A.pointsPerKgCo2)} {t(" points per kg CO₂e · daily limit ")}{t(A.scoredActionsPerDay)} {t(" · offering ")}{t(A.pointsForOffering)} {t(" points")}<br />
+        <b>{t("From the API:")}</b> {t(" locations, basket data, expires_at, pickup id and time, verification status.")}<br />
+        <b>{t("From the user:")}</b> {t(" amount in kg and travel mode — neither is verifiable, so neither is ever shown as a measurement.")}</div>
 
-      <h2>Proof log — every HTTP call</h2>
+      <h2>{t("Proof log — every HTTP call")}</h2>
       <div className="card">
         <div className="log">
-          {log.length === 0
+          {t(log.length === 0
             ? '—'
             : log.slice(0, 20).map((e, i) => (
                 <div key={i}>
                   <span className={e.status >= 200 && e.status < 300 ? 'ok' : 'err'}>
-                    {e.status || 'ERR'}
-                  </span>{' '}
-                  {e.method} {e.path}
-                  {e.userId !== null && ` [X-User-ID: ${e.userId}]`} {e.ms}ms
-                </div>
-              ))}
+                    {t(e.status || 'ERR')}
+                  </span>{t(' ')}
+                  {t(e.method)} {t(e.path)}
+                  {t(e.userId !== null && ` [X-User-ID: ${e.userId}]`)} {t(e.ms)}{t("ms")}</div>
+              )))}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 /**
  * Impact receipts — the record of confirmed actions.
  *
@@ -7,28 +8,22 @@
 export default function Receipts() {
   return (
     <div className="screen" id="panel-receipts" role="tabpanel">
-      <h2>Impact receipts</h2>
+      <h2>{t("Impact receipts")}</h2>
       <p className="small muted" style={{ marginTop: -4 }}>
-        Every number carries its origin. Nothing that is an estimate is ever shown as a
-        measurement.
-      </p>
+        {t("Every number carries its origin. Nothing that is an estimate is ever shown as a measurement.")}</p>
 
       <div className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         <span className="tiny muted">
-          <span className="pv pv-api">API</span> confirmed by the server
-        </span>
+          <span className="pv pv-api">{t("API")}</span> {t(" confirmed by the server")}</span>
         <span className="tiny muted">
-          <span className="pv pv-input">input</span> stated by the user
-        </span>
+          <span className="pv pv-input">{t("input")}</span> {t(" stated by the user")}</span>
         <span className="tiny muted">
-          <span className="pv pv-est">estimate</span> from a documented assumption
-        </span>
+          <span className="pv pv-est">{t("estimate")}</span> {t(" from a documented assumption")}</span>
       </div>
 
       <div className="empty">
-        No receipts yet.
-        <br />
-        <span className="tiny">Confirm a pickup in Discover and it will appear here.</span>
+        {t("No receipts yet.")}<br />
+        <span className="tiny">{t("Confirm a pickup in Discover and it will appear here.")}</span>
       </div>
 
       {/* TODO(#3): receipt list + detail.
