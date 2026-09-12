@@ -1,16 +1,19 @@
 {
-  "name": "Save2Share — rescue minus travel",
-  "short_name": "Save2Share",
-  "description": "Find food rescues that are already on your way, and see the honest net impact.",
-  "lang": "en",
+  "name": "ReMain — Frankfurt bleibt brauchbar",
+  "short_name": "ReMain",
+  "description": "Sperrmüll gemeinsam sammeln, Dinge weitergeben und Frankfurt sauber halten.",
+  "lang": "de",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f7f5",
-  "theme_color": "#0f7a5a",
-  "categories": ["food", "lifestyle", "utilities"],
+  "background_color": "#f1f5f8",
+  "theme_color": "#1f5c82",
+  "categories": [
+    "lifestyle",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "icon-192.png",

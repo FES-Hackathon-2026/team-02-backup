@@ -16,11 +16,17 @@ const REF_TABLES = new Set([
   'market_items',
   'pickups',
   'photos',
+  'reward_events',
 ])
 
 export function loadRef(refTable, refId) {
   if (!refTable || !refId || !REF_TABLES.has(refTable)) return null
-  return one(`SELECT * FROM ${refTable} WHERE id = ?`, refId) ?? null
+  const ref = one(`SELECT * FROM ${refTable} WHERE id = ?`, refId) ?? null
+  if (refTable === 'pickups' && ref) {
+    const original = one('SELECT category, volume_m3, slot_date, reference FROM pickup_registration_snapshots WHERE pickup_id=?', refId)
+    return original ? { ...ref, ...original } : ref
+  }
+  return ref
 }
 
 /**
@@ -75,6 +81,7 @@ export function subjectOf({ kind, refTable, refId, user, facts = {} }) {
         ? ref
         : null
 
+  const journey = kind === 'quest' && quest && user ? one('SELECT mode FROM quest_journeys WHERE quest_id=? AND user_id=?', quest.id, user.id) : null
   const place = quest ?? ref ?? null
   const home = homeOf(user)
 
@@ -103,7 +110,7 @@ export function subjectOf({ kind, refTable, refId, user, facts = {} }) {
       kg: facts.kg ?? null,
       uses: facts.uses ?? null,
       volumeM3: facts.volumeM3 ?? ref?.volume_m3 ?? null,
-      mode: facts.mode ?? null,
+      mode: facts.mode ?? journey?.mode ?? null,
     },
   }
 }
@@ -132,7 +139,7 @@ export function dayBefore(userId, at, placeKey) {
     at,
   ).filter((r) => berlinDay(r.created_at) === day)
 
-  const scored = rows.filter((r) => r.xp > 0)
+  const scored = rows.filter((r) => r.xp > 0 && r.kind !== 'bonus')
   const samePlace = placeKey
     ? rows.filter((r) => placeKeyOf(r.kind, r.ref_table, r.ref_id) === placeKey)
     : []

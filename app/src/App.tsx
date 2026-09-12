@@ -1,7 +1,14 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useLanguage } from './lib/i18n'
+import { useEffect, useState } from 'react'
+import { SplashScreen } from './components/BrandMark'
+import Onboarding from './screens/Onboarding'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
 import Abholung from './screens/Abholung'
+import AbholungDetail from './screens/AbholungDetail'
+import Mitteilungen from './screens/Mitteilungen'
+import Touren from './screens/Touren'
 import Anmelden from './screens/Anmelden'
 import Belohnungen from './screens/Belohnungen'
 import Einstellungen from './screens/Einstellungen'
@@ -19,6 +26,7 @@ import RouteScreen from './screens/Route'
 import Scan from './screens/Scan'
 import Stadtteile from './screens/Stadtteile'
 import Start from './screens/Start'
+import LevelUp from './components/LevelUp'
 import Wirkung from './screens/Wirkung'
 import Wissen from './screens/Wissen'
 import Vytal from './screens/Vytal'
@@ -31,10 +39,12 @@ import Vytal from './screens/Vytal'
  * the domain root everywhere else — without a second config.
  */
 export default function App() {
+  useLanguage()
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <SessionProvider>
         <Gate />
+        <LevelUp />
       </SessionProvider>
     </BrowserRouter>
   )
@@ -42,22 +52,24 @@ export default function App() {
 
 function Gate() {
   const { me, loading } = useSession()
+  const { pathname } = useLocation()
+  const [splash, setSplash] = useState(true)
+  // Preview onboarding on every launch, even with an existing session.
+  const [introduced, setIntroduced] = useState(false)
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const timer = window.setTimeout(() => setSplash(false), reduced ? 0 : 1400)
+    return () => window.clearTimeout(timer)
+  }, [])
 
-  // One request long. Anything more elaborate here flashes on every load.
-  if (loading) {
-    return (
-      <div className="app">
-        <div className="empty" style={{ minHeight: '100dvh', justifyContent: 'center' }}>
-          <span className="spinner" />
-        </div>
-      </div>
-    )
-  }
+  if (splash || loading) return <SplashScreen />
+
+  if (!introduced) return <Onboarding onComplete={() => setIntroduced(true)} />
 
   if (!me) return <Anmelden />
 
   return (
-    <Routes>
+    <Routes key={pathname}>
       <Route path="/" element={<Start />} />
       <Route path="/quests" element={<Quests />} />
       <Route path="/scan" element={<Scan />} />
@@ -73,6 +85,9 @@ function Gate() {
       <Route path="/nachweis/:actionId" element={<Nachweis />} />
       <Route path="/erkannt/:photoId" element={<Erkannt />} />
       <Route path="/abholung" element={<Abholung />} />
+      <Route path="/abholung/:pickupId" element={<AbholungDetail />} />
+      <Route path="/mitteilungen" element={<Mitteilungen />} />
+      <Route path="/touren" element={<Touren />} />
       <Route path="/wissen" element={<Wissen />} />
       <Route path="/markt/:id" element={<MarktDetail />} />
       <Route path="/quests/:id/nachweis" element={<QuestProof />} />

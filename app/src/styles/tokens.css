@@ -27,7 +27,7 @@
   --card: #ffffff;
   --ink: #10202c;
   --ink2: #526575;
-  --ink3: #8c9ca8;
+  --ink3: #607381;
   --line: #dbe5ec;
   --line2: #eaf1f6;
 
@@ -72,7 +72,7 @@
 
   --sh: 0 1px 1px rgba(16, 32, 44, 0.04), 0 6px 18px rgba(16, 32, 44, 0.06);
   --r: 18px;
-  --tabbar-h: 78px;
+  --tabbar-h: 88px;
 
   color-scheme: light;
 }
@@ -84,7 +84,7 @@
   --card: #141f28;
   --ink: #e4edf3;
   --ink2: #9aaebb;
-  --ink3: #748693;
+  --ink3: #a1b2be;
   --line: #22303b;
   --line2: #1a252e;
 

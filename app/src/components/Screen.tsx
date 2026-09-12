@@ -1,5 +1,6 @@
+import { t } from './../lib/i18n'
 import type { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 import Icon from './Icon'
 import TabBar from './TabBar'
@@ -38,28 +39,29 @@ export default function Screen({
   children,
 }: Props) {
   const navigate = useNavigate()
+  const location = useLocation()
 
   return (
-    <div className={tabs ? 'app has-tabs' : 'app'}>
+    <div className={tabs ? 'app has-tabs' : 'app'} data-screen={location.pathname.split('/')[1] || 'start'}>
       <header className={back ? 'nav solid' : 'nav'}>
-        {back && (
-          <button className="icobtn bare" onClick={() => navigate(-1)} aria-label={de.action.back}>
+        {t(back && (
+          <button className="icobtn bare" onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate('/')} aria-label={t(de.action.back)}>
             <Icon name="back" size={22} />
           </button>
-        )}
+        ))}
         <div className="nav-t">
           {title}
-          {sub !== undefined && <small>{sub}</small>}
+          {t(sub !== undefined && <small>{sub}</small>)}
         </div>
-        {action}
+        {t(action)}
       </header>
 
       <div className="body" style={gap === undefined ? undefined : { gap }}>
-        {children}
+        {t(children)}
       </div>
 
-      {footer !== undefined && <div className="footer">{footer}</div>}
-      {tabs && <TabBar />}
+      {t(footer !== undefined && <div className="footer">{t(footer)}</div>)}
+      {t(tabs && <TabBar />)}
     </div>
   )
 }

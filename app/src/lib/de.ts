@@ -5,9 +5,8 @@
  * the provenance vocabulary, common actions. Screen prose stays in its
  * screen, where it is easier to write well and easier to review.
  *
- * The product is German-only on purpose, so this is a plain object rather
- * than an i18n library. If a second language is ever needed, this is the
- * file that grows a sibling.
+ * These are canonical German source strings. Render them through t() from
+ * i18n.ts; the English catalog supplies the selected presentation language.
  */
 export const de = {
   app: {

@@ -1,3 +1,5 @@
+import { t } from './../lib/i18n'
+import { useSession } from '../lib/session'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -57,6 +59,7 @@ const OPTIONS: { id: QuestAnswer; label: string; hint: string; icon: 'check' | '
 export default function Review() {
   const { submissionId } = useParams()
   const navigate = useNavigate()
+  const { refresh } = useSession()
 
   const [detail, setDetail] = useState<QuestDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -81,6 +84,7 @@ export default function Review() {
     setError(null)
     try {
       const answered = await api.post<QuestDetail>(`/api/reviews/${submissionId}`, { answer })
+      void refresh()
       setResult(answered)
       setDetail(answered)
     } catch (err) {
@@ -92,7 +96,7 @@ export default function Review() {
 
   if (loading) {
     return (
-      <Screen back title="Kurz gegenprüfen" sub="dauert 20 Sekunden">
+      <Screen back title={t("Foto prüfen")}>
         <div className="empty">
           <span className="spinner" />
         </div>
@@ -102,10 +106,10 @@ export default function Review() {
 
   if (!detail?.submission) {
     return (
-      <Screen back title="Kurz gegenprüfen">
+      <Screen back title={t("Foto prüfen")}>
         <div className="empty">
           <Icon name="cross" size={24} />
-          {error ?? 'Zu diesem Nachweis gibt es nichts zu prüfen.'}
+          {t(error ?? 'Zu diesem Nachweis gibt es nichts zu prüfen.')}
         </div>
       </Screen>
     )
@@ -117,41 +121,41 @@ export default function Review() {
   return (
     <Screen
       back
-      title="Kurz gegenprüfen"
-      sub={answered ? 'danke' : 'eine Frage, zwanzig Sekunden'}
+      title={t("Foto prüfen")}
+      sub={t(answered ? 'Danke für deine Rückmeldung' : 'Wurde der Ort aufgeräumt?')}
     >
       {/* ------- the two photos, as large as they go ------- */}
-      <div className="col" style={{ gap: 9 }}>
-        <Bild id={quest.photoId} label="Vorher" sub={quest.createdBy ?? 'gemeldet'} />
+      <div className="review-photos">
+        <Bild id={quest.photoId} label={t("Vorher")} sub={t(quest.createdBy ?? 'gemeldet')} />
         <Bild
           id={submission.photoId}
-          label="Nachher"
-          sub={submission.userName ?? 'eingereicht'}
+          label={t("Nachher")}
+          sub={t(submission.userName ?? 'eingereicht')}
         />
       </div>
 
       <div className="card tight" style={{ gap: 4 }}>
         <b className="sm">{quest.title}</b>
         <span className="xs mut">
-          {quest.district ?? 'Frankfurt'}
-          {quest.note ? ` · ${quest.note}` : ''}
+          {t(quest.district ?? 'Frankfurt')}
+          {t(quest.note ? ` · ${quest.note}` : '')}
         </span>
       </div>
 
-      {error && (
+      {t(error && (
         <div className="card tight" style={{ borderColor: 'var(--alert)' }}>
-          <span className="sm">{error}</span>
+          <span className="sm">{t(error)}</span>
         </div>
-      )}
+      ))}
 
       {/* ------- the question ------- */}
-      {!answered && review?.canReview && (
+      {t(!answered && review?.canReview && (
         <>
           <h2 className="h2" style={{ margin: '2px 0 0' }}>
-            {review.question}
+            {t(review.question)}
           </h2>
           <div className="col" style={{ gap: 9 }}>
-            {OPTIONS.map((option) => (
+            {t(OPTIONS.map((option) => (
               <button
                 key={option.id}
                 className="card tight row"
@@ -175,89 +179,84 @@ export default function Review() {
                   <Icon name={option.icon} size={17} stroke={2.2} />
                 </span>
                 <span className="grow">
-                  <b className="sm">{option.label}</b>
+                  <b className="sm">{t(option.label)}</b>
                   <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                    {option.hint}
+                    {t(option.hint)}
                   </span>
                 </span>
-                {busy === option.id && <span className="spinner" />}
+                {t(busy === option.id && <span className="spinner" />)}
               </button>
-            ))}
+            )))}
           </div>
           <p className="xs mut" style={{ margin: 0 }}>
-            {review.note} Zwei übereinstimmende Antworten entscheiden. Für deine Antwort bekommst
-            du 15 XP — egal wie sie ausfällt.
-          </p>
+            {t(review.note)} {t(" Zwei übereinstimmende Antworten entscheiden. Für deine Antwort bekommst du 15 XP — egal wie sie ausfällt.")}</p>
         </>
-      )}
+      ))}
 
-      {!answered && review && !review.canReview && (
+      {t(!answered && review && !review.canReview && (
         <div className="card tight">
           <span className="row" style={{ gap: 8 }}>
             <Icon name="info" size={17} />
-            <span className="sm">{review.why ?? 'Diesen Nachweis prüfst du nicht.'}</span>
+            <span className="sm">{t(review.why ?? 'Diesen Nachweis prüfst du nicht.')}</span>
           </span>
         </div>
-      )}
+      ))}
 
       {/* ------- after the answer ------- */}
-      {answered && (
+      {t(answered && (
         <div className="card" style={{ gap: 11 }}>
           <span className="row between">
             <span className="row" style={{ gap: 8 }}>
               <Icon name="check" size={19} />
-              <b>Antwort gespeichert</b>
+              <b>{t("Antwort gespeichert")}</b>
             </span>
-            {result?.award && <Coin star>+{result.award.xp} XP</Coin>}
+            {t(result?.award && <Coin star>{t("+")}{t(result.award.xp)} {t(" XP")}</Coin>)}
           </span>
 
           <p className="sm mut" style={{ margin: 0 }}>
-            {result?.message ??
-              `Deine Antwort zählt. ${review?.counts.clean ?? 0} ja, ${review?.counts.not_clean ?? 0} nein.`}
+            {t(result?.message ??
+              `Deine Antwort zählt. ${review?.counts.clean ?? 0} ja, ${review?.counts.not_clean ?? 0} nein.`)}
           </p>
 
-          {result?.award?.blocked && result.award.hint && (
+          {t(result?.award?.blocked && result.award.hint && (
             <p className="xs mut" style={{ margin: 0 }}>
-              {result.award.hint}
+              {t(result.award.hint)}
             </p>
-          )}
+          ))}
 
-          {result?.outcome === 'released' && result.released && (
+          {t(result?.outcome === 'released' && result.released && (
             <span className="row" style={{ gap: 7 }}>
-              <Label tone="plain">freigegeben</Label>
+              <Label tone="plain">{t("freigegeben")}</Label>
               <span className="xs mut">
-                {submission.userName ?? 'Die Person'} bekommt {result.released.xp} XP.
-              </span>
+                {t(submission.userName ?? 'Die Person')} {t(" bekommt ")}{t(result.released.xp)} {t(" XP.")}</span>
             </span>
-          )}
+          ))}
 
-          {result?.award && (
+          {t(result?.award && (
             <button
               className="btn"
               onClick={() => navigate(`/nachweis/${result.award?.actionId}`)}
             >
-              Dein Beleg
-            </button>
-          )}
+              {t("Dein Beleg")}</button>
+          ))}
         </div>
-      )}
+      ))}
 
       {/* ------- what the rules had found, revealed afterwards ------- */}
-      {answered && submission.signals && (
+      {t(answered && submission.signals && (
         <div className="card" style={{ gap: 11 }}>
           <span className="row between">
-            <b className="sm">Was die Regeln gefunden hatten</b>
+            <b className="sm">{t("Was die Regeln gefunden hatten")}</b>
             <Label tone={submission.verdict === 'plausible' ? 'plain' : 'warn'}>
-              {submission.verdictLabel}
+              {t(submission.verdictLabel)}
             </Label>
           </span>
           <p className="xs mut" style={{ margin: 0 }}>
-            Erst jetzt sichtbar — vorher hätte es deine Antwort vorgeprägt.
-            {submission.score !== null && ` ${submission.score} von ${submission.maxScore} Prüfpunkten.`}
+            {t("Erst jetzt sichtbar — vorher hätte es deine Antwort vorgeprägt.")}{t(submission.score !== null && ` ${submission.score} von ${submission.maxScore} Prüfpunkten.`)}
           </p>
 
           <div className="col" style={{ gap: 9 }}>
-            {submission.signals.map((signal) => (
+            {t(submission.signals.map((signal) => (
               <div key={signal.id} className="row" style={{ gap: 9, alignItems: 'flex-start' }}>
                 <span
                   style={{
@@ -280,28 +279,27 @@ export default function Review() {
                 </span>
                 <span className="grow">
                   <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                    <b className="xs">{signal.label}</b>
+                    <b className="xs">{t(signal.label)}</b>
                     <Tag von={HERKUNFT[signal.tier]} />
                   </span>
                   <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                    {signal.value} · {signal.detail}
+                    {t(signal.value)} {t(" · ")}{t(signal.detail)}
                   </span>
                 </span>
               </div>
-            ))}
+            )))}
           </div>
 
-          {submission.rule && (
+          {t(submission.rule && (
             <p className="xs mut" style={{ margin: 0 }}>
-              <b>Die Regeln entscheiden, das Modell berät.</b> {submission.rule}
+              <b>{t("Die Regeln entscheiden, das Modell berät.")}</b> {t(submission.rule)}
             </p>
-          )}
+          ))}
 
           <button className="btn" onClick={() => navigate(`/quests/${quest.id}/nachweis`)}>
-            Ganzen Nachweis ansehen
-          </button>
+            {t("Ganzen Nachweis ansehen")}</button>
         </div>
-      )}
+      ))}
     </Screen>
   )
 }
@@ -309,10 +307,10 @@ export default function Review() {
 function Bild({ id, label, sub }: { id: string | null; label: string; sub: string }) {
   return (
     <span className="col" style={{ gap: 5, position: 'relative' }}>
-      {id ? (
+      {t(id ? (
         <img
           src={`/api/photos/${id}`}
-          alt={label}
+          alt={t(label)}
           style={{
             width: '100%',
             aspectRatio: '4 / 3',
@@ -327,11 +325,10 @@ function Bild({ id, label, sub }: { id: string | null; label: string; sub: strin
           style={{ aspectRatio: '4 / 3', borderRadius: 'var(--r)', margin: 0 }}
         >
           <Icon name="camera" size={20} />
-          Kein Foto
-        </span>
-      )}
+          {t("Kein Foto")}</span>
+      ))}
       <span className="xs mut">
-        <b>{label}</b> · {sub}
+        <b>{t(label)}</b> {t(" · ")}{t(sub)}
       </span>
     </span>
   )

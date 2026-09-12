@@ -146,7 +146,7 @@ export default async function contentRoutes(app) {
 
   /** Things with a small defect, looking for someone who can fix them. */
   app.get('/api/market', async (request) => {
-    const { category, lat, lon, r } = request.query ?? {}
+    const { category, lat, lon, r, q, sort } = request.query ?? {}
 
     const rows = category
       ? all(
@@ -175,14 +175,16 @@ export default async function contentRoutes(app) {
       createdAt: m.created_at,
     }))
 
-    return {
-      items: byDistance(
-        shaped,
-        lat === undefined ? undefined : num(lat, undefined),
-        lon === undefined ? undefined : num(lon, undefined),
-        num(r, 25),
-        60,
-      ),
-    }
+    // Search and sort before limiting, so matches beyond the first page remain discoverable.
+    const terms = String(q ?? '').trim().toLocaleLowerCase('de-DE').split(/\s+/).filter(Boolean)
+    const matching = shaped.filter(item => {
+      const text = [item.title, item.defect, item.condition, item.district].join(' ').toLocaleLowerCase('de-DE')
+      return terms.every(term => text.includes(term))
+    })
+    const nearby = byDistance(matching,
+      lat === undefined ? undefined : num(lat, undefined),
+      lon === undefined ? undefined : num(lon, undefined), num(r, 25), Infinity)
+    if (sort === 'newest') nearby.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id))
+    return { items: nearby.slice(0, 60), total: nearby.length }
   })
 }

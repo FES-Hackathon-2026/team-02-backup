@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Label, Tag } from '../components/ui'
@@ -55,35 +56,35 @@ export default function Integrationen() {
   const data = register.data
 
   return (
-    <Screen back title="Integrationen" sub="was echt ist und was nachgebaut" gap={13}>
-      {register.error && (
+    <Screen back title={t("Verbundene Dienste")} sub={t("Datenquellen und Verbindungen")} gap={13}>
+      {t(register.error && (
         <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
           <span className="sm grow">
-            {register.error.status === 0 ? de.state.offline : register.error.message}
+            {t(register.error.status === 0 ? de.state.offline : register.error.message)}
           </span>
           <button className="btn sm" onClick={() => register.reload()}>
-            {de.action.retry}
+            {t(de.action.retry)}
           </button>
         </div>
-      )}
+      ))}
 
-      {register.loading && !data && (
+      {t(register.loading && !data && (
         <div className="empty">
           <span className="spinner" />
-          <p className="sm mut">{de.state.loading}</p>
+          <p className="sm mut">{t(de.state.loading)}</p>
         </div>
-      )}
+      ))}
 
-      {data && (
+      {t(data && (
         <>
           <div className="card tight">
             <p className="sm" style={{ margin: 0, lineHeight: 1.55 }}>
-              {data.note}
+              {t(data.note)}
             </p>
           </div>
 
-          {REIHENFOLGE.map((status) => {
+          {t(REIHENFOLGE.map((status) => {
             const gruppe = data.integrations.filter((i) => i.status === status)
             if (gruppe.length === 0) return null
             const meta = STATUS[status]
@@ -101,32 +102,31 @@ export default function Integrationen() {
                     }}
                   />
                   <p className="lbl" style={{ margin: 0 }}>
-                    {meta.titel} · {gruppe.length}
+                    {t(meta.titel)} {t(" · ")}{t(gruppe.length)}
                   </p>
                 </div>
                 <p className="xs mut" style={{ margin: '0 0 10px', lineHeight: 1.55 }}>
-                  {meta.erklaerung}
+                  {t(meta.erklaerung)}
                 </p>
 
                 <div className="col" style={{ gap: 9 }}>
-                  {gruppe.map((i) => (
+                  {t(gruppe.map((i) => (
                     <div key={i.id} className="card tight">
                       <div className="between" style={{ gap: 9, marginBottom: 7 }}>
                         <b className="sm" style={{ minWidth: 0 }}>
-                          {i.name}
+                          {t(i.name)}
                         </b>
-                        {status === 'live' ? (
+                        {t(status === 'live' ? (
                           <Tag von="api" icon>
-                            echt
-                          </Tag>
+                            {t("echt")}</Tag>
                         ) : status === 'pending' ? (
-                          <Label tone="warn">Zugang fehlt</Label>
+                          <Label tone="warn">{t("Zugang fehlt")}</Label>
                         ) : (
                           <Tag von="simulated" icon />
-                        )}
+                        ))}
                       </div>
                       <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-                        {i.what}
+                        {t(i.what)}
                       </p>
                       <p
                         className="xs"
@@ -137,24 +137,21 @@ export default function Integrationen() {
                           wordBreak: 'break-word',
                         }}
                       >
-                        <b style={{ color: 'var(--ink2)' }}>Nahtstelle:</b> {i.seam}
+                        <b style={{ color: 'var(--ink2)' }}>{t("Nahtstelle:")}</b> {t(i.seam)}
                       </p>
                     </div>
-                  ))}
+                  )))}
                 </div>
               </div>
             )
-          })}
+          }))}
 
           <div className="card dashed tight">
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-              Diese Tabelle kommt aus <b>GET /api/integrations</b> und wird nicht gepflegt,
-              sondern gelesen. Wenn ein Dienst live geht, ändert sich hier die Zeile, weil sich
-              der Server geändert hat — nicht, weil jemand daran gedacht hat.
-            </p>
+              {t("Diese Tabelle kommt aus ")}<b>{t("GET /api/integrations")}</b> {t(" und wird nicht gepflegt, sondern gelesen. Wenn ein Dienst live geht, ändert sich hier die Zeile, weil sich der Server geändert hat — nicht, weil jemand daran gedacht hat.")}</p>
           </div>
         </>
-      )}
+      ))}
     </Screen>
   )
 }

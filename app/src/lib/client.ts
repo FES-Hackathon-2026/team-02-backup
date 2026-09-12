@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { getLanguage } from './i18n'
+import { useCallback, useEffect, useState } from 'react'
 
 /**
  * Client for the ReMain API.
@@ -32,6 +33,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       Accept: 'application/json',
+      'Accept-Language': getLanguage(),
       ...(init?.body && !(init.body instanceof FormData)
         ? { 'Content-Type': 'application/json' }
         : {}),
@@ -178,7 +180,7 @@ export interface Load<T> {
 }
 
 export function useApi<T>(path: string | null): Load<T> {
-  const [data, setData] = useState<T | null>(null)
+  const [result, setResult] = useState<{ path: string; data: T } | null>(null)
   const [error, setError] = useState<ApiError | null>(null)
   const [loading, setLoading] = useState(path !== null)
   const [nonce, setNonce] = useState(0)
@@ -195,7 +197,7 @@ export function useApi<T>(path: string | null): Load<T> {
     api
       .get<T>(path)
       .then((result) => {
-        if (!cancelled) setData(result)
+        if (!cancelled) setResult({ path, data: result })
       })
       .catch((err: unknown) => {
         if (cancelled) return
@@ -214,7 +216,8 @@ export function useApi<T>(path: string | null): Load<T> {
     }
   }, [path, nonce])
 
-  return { data, error, loading, reload: () => setNonce((n) => n + 1) }
+  const reload = useCallback(() => setNonce(n => n + 1), [])
+  return { data: result?.path === path ? result.data : null, error, loading, reload }
 }
 
 /* ------------------------------------------------------------------
@@ -450,6 +453,10 @@ export interface FesCategories {
 }
 
 export interface FesSlot {
+  periodStart?: string
+  periodEnd?: string
+  periodLabel?: string
+  closesLocal?: string
   date: string
   label: string
   weekday: string
@@ -471,6 +478,7 @@ export interface FesSlots {
 }
 
 export interface FesPickup {
+  window?: string
   id: string
   address: string
   districtId: string
@@ -1394,4 +1402,27 @@ export interface QuestHazardRefusal {
   hazard: HazardInfo
   routes: ScanRoute[]
   next: string
+}
+
+export interface PickupResolution {
+  state: 'needs_address' | 'already_booked' | 'existing_booking' | 'available_slots' | 'no_availability'
+  pickup?: FesPickup
+  candidates?: FesPickup[]
+  slots?: FesSlot[]
+  source: string
+}
+export interface PickupDetail {
+  pickup: FesPickup
+  items: { id: string; category: string; categoryName: string; volumeM3: number; photoId: string | null }[]
+  window: string
+  instructions: string[]
+  reminders: boolean
+  actionId: number | null
+  tour?: { id: string; status: string; periodStart: string; periodEnd: string; periodLabel: string; closesLocal: string; area: string; centre: { lat: number; lon: number }; stops: number; utilization: number; eta: string | null; note: string }
+  contact?: { fullName: string; email: string; phone: string; postcode: string; placement: string } | null
+  note: string
+}
+export interface PickupNotices {
+  notifications: { id: string; pickupId: string; kind: string; message: string; read: boolean; at: string }[]
+  unread: number
 }

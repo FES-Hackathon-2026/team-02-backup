@@ -1,3 +1,4 @@
+import { t, useLanguage } from './../lib/i18n'
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -31,6 +32,7 @@ export interface MapMarker {
 }
 
 interface Props {
+  ariaLabel?: string
   centre: { lat: number; lon: number }
   markers: MapMarker[]
   /** the device's own position, drawn as a dot rather than a pin */
@@ -39,6 +41,7 @@ interface Props {
   radiusKm?: number
   selectedId?: string | null
   onSelect?: (id: string) => void
+  fitMarkers?: boolean
   height?: number
   /** a still map for a detail screen: no dragging, no zooming */
   still?: boolean
@@ -93,13 +96,17 @@ export default function Map({
   radiusKm,
   selectedId = null,
   onSelect,
+  fitMarkers = false,
   height = 240,
   still = false,
   zoom = 13,
+  ariaLabel = 'Karte mit den offenen Quests',
 }: Props) {
+  const language = useLanguage()
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
+  const zoomControl = useRef<L.Control.Zoom | null>(null)
   const meLayer = useRef<L.LayerGroup | null>(null)
   const pick = useRef(onSelect)
   pick.current = onSelect
@@ -112,7 +119,7 @@ export default function Map({
     const instance = L.map(box.current, {
       center: [centre.lat, centre.lon],
       zoom,
-      zoomControl: !still,
+      zoomControl: false,
       dragging: !still,
       scrollWheelZoom: false,
       doubleClickZoom: !still,
@@ -124,7 +131,6 @@ export default function Map({
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       // The licence condition, not a footer decoration.
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
     }).addTo(instance)
 
     layer.current = L.layerGroup().addTo(instance)
@@ -142,11 +148,35 @@ export default function Map({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /** Update imperative map controls when the language changes. */
+  useEffect(() => {
+    const control = map.current?.attributionControl
+    if (!control) return
+    const credit = `© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>${language === 'de' ? '-Mitwirkende' : ' contributors'}`
+    control.addAttribution(credit)
+    return () => { control.removeAttribution(credit) }
+  }, [language])
+
+  useEffect(() => {
+    if (!map.current) return
+    zoomControl.current?.remove()
+    if (!still) zoomControl.current = L.control.zoom({ zoomInTitle: t('Vergrößern'), zoomOutTitle: t('Verkleinern') }).addTo(map.current)
+    return () => { zoomControl.current?.remove(); zoomControl.current = null }
+  }, [language, still])
+
   /** Follow the centre while nothing is selected. */
   useEffect(() => {
     if (!map.current || selectedId) return
     map.current.setView([centre.lat, centre.lon], map.current.getZoom(), { animate: false })
   }, [centre.lat, centre.lon, selectedId])
+
+  const boundsKey = markers.map(m => `${m.id}:${m.lat}:${m.lon}`).join('|')
+  useEffect(() => {
+    if (!fitMarkers || !map.current || selectedId || markers.length === 0) return
+    const points: L.LatLngTuple[] = markers.map(m => [m.lat, m.lon])
+    if (me) points.push([me.lat, me.lon])
+    map.current.fitBounds(points, { padding: [30, 30], maxZoom: 14, animate: false })
+  }, [fitMarkers, boundsKey, selectedId, me?.lat, me?.lon])
 
   /** The pins. */
   useEffect(() => {
@@ -193,9 +223,9 @@ export default function Map({
       fillColor: token('--blue-deep', '#1f5c82'),
       fillOpacity: 1,
     })
-      .bindTooltip('Dein Standort', { direction: 'top' })
+      .bindTooltip(t('Dein Standort'), { direction: 'top' })
       .addTo(group)
-  }, [me?.lat, me?.lon, radiusKm])
+  }, [me?.lat, me?.lon, radiusKm, language])
 
   /** Bring a selected pin into view without changing the zoom under the thumb. */
   useEffect(() => {
@@ -208,7 +238,7 @@ export default function Map({
     <div
       ref={box}
       role="application"
-      aria-label="Karte mit den offenen Quests"
+      aria-label={t(ariaLabel)}
       style={{
         height,
         width: '100%',

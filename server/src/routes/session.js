@@ -1,3 +1,4 @@
+import { bindInvitation } from '../engine/progression.js'
 import { all, db, now, one, run } from '../db.js'
 import { TokenError, firebaseEnabled, verifyIdToken } from '../auth/firebase.js'
 import { totals } from '../engine/totals.js'
@@ -69,6 +70,7 @@ export default async function sessionRoutes(app) {
       now(),
     )
     const user = one('SELECT * FROM users WHERE id = ?', Number(result.lastInsertRowid))
+    bindInvitation(user.id, request.body?.inviteCode)
 
     setSession(reply, user.id)
     return reply.code(201).send(publicUser(user))
@@ -182,7 +184,7 @@ export default async function sessionRoutes(app) {
       now(),
     )
     const user = one('SELECT * FROM users WHERE id = ?', Number(result.lastInsertRowid))
-
+    bindInvitation(user.id, request.body?.inviteCode)
     setSession(reply, user.id)
     return reply.code(201).send(publicUser(user))
   })
@@ -278,7 +280,15 @@ export default async function sessionRoutes(app) {
       run('DELETE FROM quest_submissions WHERE user_id = ?', user.id)
       run('DELETE FROM redemptions WHERE user_id = ?', user.id)
       run('DELETE FROM ledger_entries WHERE user_id = ?', user.id)
+      for (const table of ['pickup_items', 'pickup_requests', 'pickup_preferences', 'pickup_notifications', 'pickup_registration_snapshots', 'pickup_tour_stops', 'pickup_contacts']) {
+        run(`DELETE FROM ${table} WHERE pickup_id IN (SELECT id FROM pickups WHERE user_id = ?)`, user.id)
+      }
       run('DELETE FROM pickups WHERE user_id = ?', user.id)
+      run('DELETE FROM quest_journeys WHERE user_id = ?', user.id)
+      run('DELETE FROM referrals WHERE referred_id = ? OR referrer_id = ?', user.id, user.id)
+      run('DELETE FROM reward_events WHERE user_id = ?', user.id)
+      run('DELETE FROM vytal_transactions WHERE user_id = ?', user.id)
+      run('DELETE FROM vytal_users WHERE user_id = ?', user.id)
       run('DELETE FROM actions WHERE user_id = ?', user.id)
 
       // Shared content outlives the account, without a name on it.
@@ -310,6 +320,8 @@ export default async function sessionRoutes(app) {
     const { userId } = request.body ?? {}
     const target = one('SELECT * FROM users WHERE id = ?', userId)
     if (!target) return reply.code(404).send({ error: 'unknown_user' })
+    // Public demo switching must never grant access to private driver manifests.
+    if (target.role === 'driver') return reply.code(403).send({ error: 'restricted_role' })
 
     if (target.is_demo !== 1) {
       return reply.code(403).send({

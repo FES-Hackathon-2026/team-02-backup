@@ -1,3 +1,4 @@
+import { startLanguage } from './lib/i18n'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -8,6 +9,7 @@ import './styles/app.css'
 
 // Before the first paint, so a dark build never flashes light first.
 startTheme()
+startLanguage()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root missing from index.html')

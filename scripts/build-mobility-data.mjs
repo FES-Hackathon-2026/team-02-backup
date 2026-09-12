@@ -161,6 +161,13 @@ function unpack() {
   const archive = join(SOURCE, 'GTFS_gefiltert_Frankfurt+30km.7z')
   const bin = findSevenZip()
   if (!bin) {
+    // macOS ships libarchive tar with 7z support; no extra install is needed.
+    try {
+      execFileSync('tar', ['-tf', archive], { stdio: 'ignore' })
+      mkdirSync(CACHE, { recursive: true })
+      execFileSync('tar', ['-xf', archive, '-C', CACHE], { stdio: 'inherit' })
+      return
+    } catch { /* GNU tar may not support 7z; explain the remaining options. */ }
     throw new Error(
       'No 7-Zip found. Install it (winget install 7zip.7zip / brew install p7zip),\n' +
       'or run `npm i -D 7zip-bin` in server/, or point MOBILITY_7Z at the binary.',

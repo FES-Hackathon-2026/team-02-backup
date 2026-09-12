@@ -40,6 +40,7 @@ export const tierOf = (tier) => TIERS[tier] ?? TIERS.estimated
 
 /** What a kind is called on the receipt. */
 export const KINDS = {
+  bonus: 'Bonus',
   quest: 'Quest',
   pickup: 'Sperrmüll-Termin',
   market: 'Übergabe im Markt',
@@ -65,6 +66,7 @@ export const BASE_XP = {
 }
 
 export const baseXpFor = (kind, subject) =>
+  (kind === 'bonus' ? subject?.ref?.base_xp : null) ??
   (kind === 'quest' ? (subject?.quest?.xp ?? null) : null) ?? BASE_XP[kind] ?? 0
 
 /**
@@ -135,7 +137,7 @@ export function score({ kind, tier, baseXp, impact = null, day }) {
 
   /* 5 — the daily cap, last, so the chain above still shows what it would
      have been worth. Recorded either way: the action is not the reward. */
-  if (!blocked && (day?.scoredBefore ?? 0) >= A.scoredActionsPerDay) {
+  if (kind !== 'bonus' && !blocked && (day?.scoredBefore ?? 0) >= A.scoredActionsPerDay) {
     value = 0
     blocked = true
     hint =

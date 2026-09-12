@@ -1,3 +1,6 @@
+import LanguagePicker from '../components/LanguagePicker'
+import Onboarding from './Onboarding'
+import { t, getLocale } from './../lib/i18n'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -21,6 +24,7 @@ import { DEFAULT_THEME, getTheme, setTheme, type Theme } from '../lib/theme'
  * kind of thing that is funny until a judge presses it mid-demo.
  */
 export default function Einstellungen() {
+  const [showIntroduction, setShowIntroduction] = useState(false)
   const navigate = useNavigate()
   const { me, signOut, updateProfile, deleteAccount } = useSession()
 
@@ -33,6 +37,7 @@ export default function Einstellungen() {
   const [busy, setBusy] = useState<'out' | 'delete' | null>(null)
 
   if (!me) return null
+  if (showIntroduction) return <Onboarding onComplete={() => setShowIntroduction(false)} />
 
   const dirty = name.trim() !== me.name
 
@@ -76,7 +81,7 @@ export default function Einstellungen() {
   }
 
   return (
-    <Screen title="Einstellungen" sub={`Angemeldet als ${me.name}`} back>
+    <Screen title={t("Einstellungen")} sub={t(`Angemeldet als ${me.name}`)} back>
       {/* ---------------------------------------------------------------
           Who this is. The avatar is Google's when there is one, and an
           initial when there is not — never a stock silhouette, which just
@@ -87,44 +92,39 @@ export default function Einstellungen() {
         <div className="grow">
           <div className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
             <b className="h3">{me.name}</b>
-            {me.provider === 'google' ? (
-              <Label>Google-Konto</Label>
+            {t(me.provider === 'google' ? (
+              <Label>{t("Google-Konto")}</Label>
             ) : (
-              <Label tone="warn">ohne Konto</Label>
-            )}
+              <Label tone="warn">{t("ohne Konto")}</Label>
+            ))}
           </div>
           <div className="xs mut" style={{ marginTop: 3 }}>
-            {me.email ?? 'Keine E-Mail hinterlegt'}
+            {t(me.email ?? 'Keine E-Mail hinterlegt')}
           </div>
           <div className="xs mut" style={{ marginTop: 2 }}>
-            Level {me.level} · {me.xp.toLocaleString('de-DE')} XP · {me.coins.toLocaleString('de-DE')}{' '}
-            Münzen
-          </div>
+            {t("Level ")}{t(me.level)} {t(" · ")}{t(me.xp.toLocaleString(getLocale()))} {t(" XP · ")}{t(me.coins.toLocaleString(getLocale()))}{t(' ')}
+            {t("Münzen")}</div>
         </div>
       </div>
 
-      {me.provider === 'guest' && (
+      {t(me.provider === 'guest' && (
         <div className="card sky col" style={{ gap: 9 }}>
           <div className="row" style={{ gap: 8 }}>
             <Icon name="info" size={18} style={{ color: 'var(--blue-deep)', flex: 'none' }} />
-            <b className="sm">Dein Fortschritt hängt an diesem Browser</b>
+            <b className="sm">{t("Dein Fortschritt hängt an diesem Browser")}</b>
           </div>
           <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-            Ohne Konto sind {me.xp.toLocaleString('de-DE')} XP weg, sobald du die Website-Daten
-            löschst oder das Gerät wechselst. Meldest du dich mit Google an, wird dieses Profil
-            übernommen — nichts geht verloren.
-          </p>
+            {t("Ohne Konto sind ")}{t(me.xp.toLocaleString(getLocale()))} {t(" XP weg, sobald du die Website-Daten löschst oder das Gerät wechselst. Meldest du dich mit Google an, wird dieses Profil übernommen — nichts geht verloren.")}</p>
           <button className="btn sm" onClick={() => void out()} disabled={busy !== null}>
-            Abmelden und mit Google anmelden
-          </button>
+            {t("Abmelden und mit Google anmelden")}</button>
         </div>
-      )}
+      ))}
 
       {/* --------------------------------------------------------------- */}
-      <p className="lbl">Profil</p>
+      <p className="lbl">{t("Profil")}</p>
       <div className="card col" style={{ gap: 13 }}>
         <label className="col" style={{ gap: 7 }}>
-          <span className="lbl">Anzeigename</span>
+          <span className="lbl">{t("Anzeigename")}</span>
           <input
             className="field"
             value={name}
@@ -132,56 +132,60 @@ export default function Einstellungen() {
             maxLength={40}
             autoComplete="nickname"
           />
-          <span className="xs mut">Steht auf deinen Quests und im Stadtteil-Ranking.</span>
+          <span className="xs mut">{t("Steht auf deinen Quests und im Stadtteil-Ranking.")}</span>
         </label>
 
-        {dirty && (
+        {t(dirty && (
           <button
             className="btn primary sm"
             onClick={() => void save({ name })}
             disabled={name.trim().length < 2 || saving}
           >
-            {saving ? 'Speichert …' : 'Namen speichern'}
+            {t(saving ? 'Speichert …' : 'Namen speichern')}
           </button>
-        )}
+        ))}
 
         <label className="col" style={{ gap: 7 }}>
-          <span className="lbl">Stadtteil</span>
+          <span className="lbl">{t("Stadtteil")}</span>
           <select
             className="field"
             value={me.district.id}
             onChange={(e) => void save({ districtId: e.target.value })}
             disabled={saving}
           >
-            {STADTTEILE_BY_NAME.map((s) => (
+            {t(STADTTEILE_BY_NAME.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
-            ))}
+            )))}
           </select>
           <span className="xs mut">
-            Hierauf zahlen deine Aktionen ein. Ortsbezirk {me.district.bezirk}.
-          </span>
+            {t("Hierauf zahlen deine Aktionen ein. Ortsbezirk ")}{t(me.district.bezirk)}{t(".")}</span>
         </label>
 
-        {saved && (
+        {t(saved && (
           <span className="xs row" style={{ gap: 5, color: 'var(--blue-deep)' }}>
             <Icon name="check" size={14} stroke={2.4} />
-            Gespeichert
-          </span>
-        )}
-        {error !== null && (
+            {t("Gespeichert")}</span>
+        ))}
+        {t(error !== null && (
           <p className="tag warn" role="alert" style={{ height: 'auto', padding: '8px 10px', lineHeight: 1.4 }}>
-            {error}
+            {t(error)}
           </p>
-        )}
+        ))}
       </div>
 
       {/* --------------------------------------------------------------- */}
-      <p className="lbl">Darstellung</p>
+      <p className="lbl">{t('Sprache')}</p>
+      <div className="card col" style={{ gap: 12 }}>
+        <LanguagePicker />
+        <p className="xs mut" style={{ margin: 0 }}>{t('Deine Auswahl wird auf diesem Gerät gespeichert.')}</p>
+      </div>
+
+      <p className="lbl">{t("Darstellung")}</p>
       <div className="card col" style={{ gap: 10 }}>
         <div className="chips">
-          {(
+          {t((
             [
               ['light', 'Hell', 'sun'],
               ['dark', 'Dunkel', 'moon'],
@@ -190,83 +194,79 @@ export default function Einstellungen() {
           ).map(([value, label, icon]) => (
             <button
               key={value}
-              className="chip"
+              className="chip theme-option"
+              data-theme-option={value}
               aria-pressed={theme === value}
               onClick={() => chooseTheme(value)}
             >
               <Icon name={icon} size={15} />
-              {label}
+              {t(label)}
             </button>
-          ))}
+          )))}
         </div>
         <span className="xs mut">
-          {theme === DEFAULT_THEME
-            ? 'Die Ansicht, die entworfen und geprüft wurde.'
-            : 'Abweichend vom entworfenen Zustand — für die Vorführung ggf. auf „Hell“ zurückstellen.'}
+          {t(theme === DEFAULT_THEME
+            ? 'Helle Darstellung'
+            : 'Du kannst die Darstellung jederzeit ändern.')}
         </span>
       </div>
 
       {/* --------------------------------------------------------------- */}
-      <p className="lbl">App</p>
+      <p className="lbl">{t("App")}</p>
+      <button className="btn" onClick={() => setShowIntroduction(true)}><Icon name="info" size={20} />{t('Einführung ansehen')}</button>
       <div className="card flat col" style={{ gap: 0, padding: 0, overflow: 'hidden' }}>
-        <Row icon="link" label="Integrationen" hint="Was echt ist und was nachgebaut" onClick={() => navigate('/integrationen')} />
-        <Row icon="shield" label="Wirkung & Nachweise" hint="Woher jede Zahl kommt" onClick={() => navigate('/wirkung')} />
-        <Row icon="gift" label="Belohnungen" hint="Münzen einlösen" onClick={() => navigate('/belohnungen')} />
+        <Row icon="link" label={t("Integrationen")} hint="Was echt ist und was nachgebaut" onClick={() => navigate('/integrationen')} />
+        <Row icon="shield" label={t("Wirkung & Nachweise")} hint="Woher jede Zahl kommt" onClick={() => navigate('/wirkung')} />
+        <Row icon="gift" label={t("Belohnungen")} hint="Münzen einlösen" onClick={() => navigate('/belohnungen')} />
       </div>
 
       {/* ---------------------------------------------------------------
           The way out, and the way out for good. Last on the screen and
           visually quiet, because neither is a thing to hit by accident.
           --------------------------------------------------------------- */}
-      <p className="lbl">Konto</p>
+      <p className="lbl">{t("Konto")}</p>
       <div className="card col" style={{ gap: 11 }}>
         <button className="btn ghost row" onClick={() => void out()} disabled={busy !== null}>
           <Icon name="logout" size={18} />
-          {busy === 'out' ? 'Wird abgemeldet …' : 'Abmelden'}
+          {t(busy === 'out' ? 'Wird abgemeldet …' : 'Abmelden')}
         </button>
         <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-          {me.provider === 'google'
+          {t(me.provider === 'google'
             ? 'Meldet dich hier und bei Google auf diesem Gerät ab. Dein Fortschritt bleibt am Konto und ist beim nächsten Anmelden wieder da.'
-            : 'Ohne Konto lässt sich diese Sitzung nicht wiederherstellen — der Fortschritt hängt an diesem Browser.'}
+            : 'Ohne Konto lässt sich diese Sitzung nicht wiederherstellen — der Fortschritt hängt an diesem Browser.')}
         </p>
 
         <div className="sep" />
 
-        {!confirmDelete ? (
+        {t(!confirmDelete ? (
           <button className="btn ghost danger row" onClick={() => setConfirmDelete(true)} disabled={busy !== null}>
             <Icon name="trash" size={18} />
-            Konto löschen
-          </button>
+            {t("Konto löschen")}</button>
         ) : (
           <div className="col" style={{ gap: 9 }}>
-            <b className="sm">Wirklich löschen?</b>
+            <b className="sm">{t("Wirklich löschen?")}</b>
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-              Profil, XP, Münzen, Belege und eingelöste Gutscheine werden gelöscht und lassen sich
-              nicht wiederherstellen. Gemeldete Quests und Markt-Anzeigen bleiben für die
-              Nachbarschaft stehen, aber ohne deinen Namen.
-              {me.provider === 'google' && ' Dein Google-Konto selbst bleibt unberührt.'}
+              {t("Profil, XP, Münzen, Belege und eingelöste Gutscheine werden gelöscht und lassen sich nicht wiederherstellen. Gemeldete Quests und Markt-Anzeigen bleiben für die Nachbarschaft stehen, aber ohne deinen Namen.")}{t(me.provider === 'google' && ' Dein Google-Konto selbst bleibt unberührt.')}
             </p>
             <div className="row" style={{ gap: 9 }}>
               <button className="btn ghost grow" onClick={() => setConfirmDelete(false)} disabled={busy !== null}>
-                Abbrechen
-              </button>
+                {t("Abbrechen")}</button>
               <button className="btn danger grow" onClick={() => void remove()} disabled={busy !== null}>
-                {busy === 'delete' ? 'Löscht …' : 'Endgültig löschen'}
+                {t(busy === 'delete' ? 'Löscht …' : 'Endgültig löschen')}
               </button>
             </div>
           </div>
-        )}
+        ))}
       </div>
 
       <p className="xs mut" style={{ lineHeight: 1.55 }}>
-        ReMain — Frankfurt Impact Challenge 2026, Team 02. Angemeldet seit{' '}
-        {new Date(me.createdAt).toLocaleDateString('de-DE', {
+        {t("ReMain — Frankfurt Impact Challenge 2026, Team 02. Angemeldet seit")}{t(' ')}
+        {t(new Date(me.createdAt).toLocaleDateString(getLocale(), {
           day: '2-digit',
           month: 'long',
           year: 'numeric',
-        })}
-        .
-      </p>
+        }))}
+        {t(".")}</p>
     </Screen>
   )
 }
@@ -278,7 +278,7 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
     return (
       <img
         src={photoUrl}
-        alt=""
+        alt={t("")}
         width={54}
         height={54}
         className="avatar"
@@ -290,7 +290,7 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl: string | null }) {
 
   return (
     <span className="avatar fallback" aria-hidden="true">
-      {name.trim().charAt(0).toUpperCase() || '?'}
+      {t(name.trim().charAt(0).toUpperCase() || '?')}
     </span>
   )
 }
@@ -311,10 +311,10 @@ function Row({
       <Icon name={icon} size={19} className="ico" />
       <span className="grow">
         <span className="sm" style={{ display: 'block', fontWeight: 650 }}>
-          {label}
+          {t(label)}
         </span>
         <span className="xs mut" style={{ display: 'block' }}>
-          {hint}
+          {t(hint)}
         </span>
       </span>
       <Icon name="chevron" size={18} className="ico" />

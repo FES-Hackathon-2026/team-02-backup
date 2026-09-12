@@ -1,404 +1,78 @@
+import { t, getLocale } from './../lib/i18n'
+import { WeeklyGoal } from '../components/ReferenceActions'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-import Icon, { type IconName } from '../components/Icon'
+import Icon from '../components/Icon'
 import Screen from '../components/Screen'
-import { Bar, Coin, Label, Tag, Thumb } from '../components/ui'
-import {
-  useApi,
-  type FesCalendar,
-  type FoodNearby,
-  type MarketItem,
-  type Quest,
-  type Season,
-  type VytalState,
-  type VytalStatus,
-} from '../lib/client'
+import { Bar, Coin, Tag, Thumb } from '../components/ui'
+import { useApi, type FesCalendar, type PickupNotices, type MarketItem, type Quest, type Season, type Impact, type FoodNearby, type VytalState, type VytalStatus } from '../lib/client'
 import { useSession } from '../lib/session'
 
 export default function Start() {
   const navigate = useNavigate()
-  const { me } = useSession()
+  const { me, signOut } = useSession()
+  const [error, setError] = useState('')
   const quests = useApi<{ quests: Quest[] }>('/api/quests')
   const market = useApi<{ items: MarketItem[] }>('/api/market')
   const season = useApi<Season>('/api/season')
+  const impact = useApi<Impact>('/api/impact')
   const kalender = useApi<FesCalendar>('/api/fes/calendar')
-  // The two partner features. Both are secondary to the hero action, so
-  // neither gets a skeleton: a slow or unreachable partner leaves no hole in
-  // the hub, it just contributes no card.
-  const essen = useApi<FoodNearby>('/api/foodsharing/nearby')
-  const mehrweg = useApi<VytalState>('/api/vytal/containers')
-  const vytalStatus = useApi<VytalStatus>('/api/vytal/status')
-
+  const food = useApi<FoodNearby>('/api/foodsharing/nearby')
+  const reusable = useApi<VytalState>('/api/vytal/containers')
+  const reusableStatus = useApi<VytalStatus>('/api/vytal/status')
+  const notices = useApi<PickupNotices>('/api/fes/notifications')
   if (!me) return null
-
   const quest = quests.data?.quests[0]
   const item = market.data?.items[0]
-  // The real collection calendar for this Stadtteil, not a fixture. It is
-  // still a rebuilt service, so the line below says „simuliert" — but the
-  // date, the fraction and the cycle are the ones phase 5 computes.
-  const naechste = kalender.data?.dates[0] ?? null
-
-  const spanne = me.levelEnd - me.levelStart
-  const imLevel = me.xp - me.levelStart
-  const grad = spanne > 0 ? (imLevel / spanne) * 360 : 0
-  // The weekly goal is computed by the server from how many people are
-  // actually active and what the city managed last week — not a round
-  // number picked here. Phase 10 owns both the figure and its formula.
-  const city = season.data?.city ?? null
-
-  // The single most worth-doing thing nearby, as the SERVER ranked it — net
-  // effect per minute of effort, not distance. Re-sorting here would quietly
-  // answer a different question than the Essen screen does.
-  const essenTop = essen.data?.items.find((item) => !item.locked) ?? null
-
-  // Vytal only appears once the station is actually connected. An entry point
-  // to a feature that answers 501 is worse than no entry point.
-  const vytalAn = vytalStatus.data?.configured === true
-  const offen = mehrweg.data?.active ?? []
-  const ueberfaellig = offen.some((c) => c.overdue)
-  // The deadline that matters is the nearest one.
-  const naechsteRueckgabe = offen.reduce<number | null>(
-    (soonest, c) =>
-      c.hoursLeft === null ? soonest : soonest === null ? c.hoursLeft : Math.min(soonest, c.hoursLeft),
-    null,
-  )
-
-  return (
-    <Screen
-      title={`Moin, ${me.name}`}
-      sub={`Level ${me.level} · ${me.district.name}`}
-      tabs
-      action={
-        <button
-          className="icobtn"
-          onClick={() => navigate('/einstellungen')}
-          aria-label="Einstellungen"
-        >
-          <Icon name="settings" size={21} />
-        </button>
-      }
-    >
-      {/* progress — the only place the reward colour appears on this screen */}
-      <div className="card row" style={{ gap: 14 }}>
-        <div
-          style={{
-            width: 62,
-            height: 62,
-            borderRadius: '50%',
-            flex: 'none',
-            background: `conic-gradient(var(--blue-deep) 0 ${grad}deg, var(--sky) ${grad}deg 360deg)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: '50%',
-              background: 'var(--card)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <span className="num" style={{ fontSize: 20, color: 'var(--blue-deep)' }}>
-              {me.level}
-            </span>
-          </div>
-        </div>
-
-        <div className="grow">
-          <div className="between" style={{ marginBottom: 5 }}>
-            <span className="h3">
-              {me.xp.toLocaleString('de-DE')} / {me.levelEnd.toLocaleString('de-DE')} XP
-            </span>
-            <Coin star>{me.coins}</Coin>
-          </div>
-          <div className="sm mut">
-            {me.xp === 0 ? (
-              <>Noch keine Aktion — das Foto unten ist der Anfang.</>
-            ) : (
-              <>
-                Noch {(me.levelEnd - me.xp).toLocaleString('de-DE')} XP bis{' '}
-                <b style={{ color: 'var(--ink)' }}>Level {me.level + 1}</b>
-              </>
-            )}
-          </div>
-          <div className="row xs mut" style={{ gap: 6, marginTop: 6 }}>
-            <span className="dot" style={{ background: 'var(--blue)' }} />
-            {me.actions} bestätigte {me.actions === 1 ? 'Aktion' : 'Aktionen'}
-          </div>
-        </div>
-      </div>
-
-      {/* the one hero action of the whole app */}
-      <button
-        className="card row"
-        onClick={() => navigate('/scan')}
-        style={{
-          gap: 13,
-          border: 'none',
-          background: 'var(--blue-deep)',
-          color: 'var(--on-blue)',
-          padding: '17px 16px',
-        }}
-      >
-        <span
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: 14,
-            background: 'rgba(255,255,255,.16)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 'none',
-          }}
-        >
-          <Icon name="camera" size={23} />
-        </span>
-        <span className="grow">
-          <span className="h2" style={{ display: 'block', color: 'inherit' }}>
-            Foto machen
-          </span>
-          <span className="sm" style={{ display: 'block', color: 'var(--on-blue2)', marginTop: 2 }}>
-            Sperrmüll, Fundstück oder Frage — ReMain ordnet es ein
+  const next = kalender.data?.dates.find(d => !d.own)
+  const foodTop = food.data?.items.find(item => !item.locked)
+  const activeContainers = reusable.data?.active ?? []
+  const overdue = activeContainers.some(item => item.overdue)
+  const nextReturn = activeContainers.reduce<number | null>((value, item) => item.hoursLeft === null ? value : value === null ? item.hoursLeft : Math.min(value, item.hoursLeft), null)
+  const city = season.data?.city
+  const progress = Math.min(100, Math.max(0, 100 * (me.xp - me.levelStart) / Math.max(1, me.levelEnd - me.levelStart)))
+  return <Screen title={t(`Hallo ${me.name}`)} sub={t("Was möchtest du heute erledigen?")} tabs action={
+    <span className="row"><button className="icobtn" aria-label={t("Einstellungen")} onClick={() => navigate('/einstellungen')}><Icon name="settings" size={21} /></button><button className="icobtn notification-button" onClick={() => navigate('/mitteilungen')} aria-label={t(`Mitteilungen${notices.data?.unread ? `, ${notices.data.unread} ungelesen` : ''}`)}>
+      <Icon name="bell" size={21} />{t(!!notices.data?.unread && <span className="notification-dot" />)}
+    </button></span>
+  }>
+    <div className="card row home-progress">
+      <button className="level-water" onClick={() => navigate('/wirkung')} aria-label={t(`Level ${me.level}, ${Math.round(progress)} Prozent zum nächsten Level`)}>
+        <span className="level-water-tank" aria-hidden="true">
+          <span className="level-water-fill" style={{ height: `${progress}%`, opacity: progress > 0 ? 1 : 0 }}>
+            <svg className="level-wave level-wave-back" viewBox="0 0 120 16" preserveAspectRatio="none"><path d="M0 8 Q15 -3 30 8 T60 8 T90 8 T120 8 V16 H0 Z" /></svg>
+            <svg className="level-wave level-wave-front" viewBox="0 0 120 16" preserveAspectRatio="none"><path d="M0 8 Q15 -3 30 8 T60 8 T90 8 T120 8 V16 H0 Z" /></svg>
           </span>
         </span>
-        <Icon name="chevron" size={20} style={{ color: 'var(--on-blue3)' }} />
+        <span className="level-water-badge">{t(me.level)}</span>
       </button>
-
-      {naechste && (
-        <button className="card tight row" onClick={() => navigate('/kalender')} style={{ gap: 12 }}>
-          <Badge icon="calendar" />
-          <span className="grow">
-            <span className="sm" style={{ display: 'block', fontWeight: 700 }}>
-              {naechste.titel} · {naechste.label}
-            </span>
-            <span className="xs mut" style={{ display: 'block' }}>
-              {naechste.window} · Abfuhrtermine für {me.district.name}{' '}
-              <Tag von="simulated" />
-            </span>
-          </span>
-          <Icon name="chevron" size={20} className="ico" />
-        </button>
-      )}
-
-      {vytalAn && !mehrweg.loading && (
-        <button className="card tight row" onClick={() => navigate('/mehrweg')} style={{ gap: 12 }}>
-          <Badge icon="cup" alert={ueberfaellig} />
-          <span className="grow">
-            <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-              <b className="sm">
-                {mehrweg.error
-                  ? 'Mehrweg'
-                  : offen.length > 0
-                    ? `${offen.length} Mehrweg-Behälter offen`
-                    : 'Mehrweg statt Einweg'}
-              </b>
-              {mehrweg.error && <Label tone="warn">gesperrt</Label>}
-            </span>
-            <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-              {mehrweg.error ? (
-                // The station is connected, but the token cannot open a
-                // Vytal account yet. Offering a loan here would promise
-                // something the next tap cannot deliver.
-                'Vytal-Konto noch nicht freigeschaltet — Details antippen'
-              ) : offen.length === 0 ? (
-                <>
-                  Behälter an der {mehrweg.data?.station ?? 'ReMain-Station'} ausleihen ·{' '}
-                  {mehrweg.data?.xpPerReturn ?? 20} XP je Rückgabe
-                </>
-              ) : ueberfaellig ? (
-                <b style={{ color: 'var(--alert)' }}>Rückgabe überfällig</b>
-              ) : naechsteRueckgabe === null ? (
-                <>Rückgabe an der {mehrweg.data?.station ?? 'ReMain-Station'}</>
-              ) : naechsteRueckgabe < 48 ? (
-                <>Rückgabe in {Math.max(1, Math.round(naechsteRueckgabe))} Stunden</>
-              ) : (
-                <>Rückgabe in {Math.floor(naechsteRueckgabe / 24)} Tagen</>
-              )}{' '}
-              {!mehrweg.error && <Tag von="api" />}
-            </span>
-          </span>
-          <Icon name="chevron" size={20} className="ico" />
-        </button>
-      )}
-
-      <div>
-        <div className="between" style={{ marginBottom: 9 }}>
-          <p className="lbl">In deiner Nähe</p>
-          <button
-            className="xs"
-            onClick={() => navigate('/quests')}
-            style={{
-              border: 'none',
-              background: 'none',
-              color: 'var(--blue-deep)',
-              fontWeight: 700,
-              padding: 0,
-            }}
-          >
-            Alle Quests
-          </button>
-        </div>
-
-        <div className="col" style={{ gap: 9 }}>
-          {/* Always present once loaded, with or without an offer to show.
-              A card that only exists when the partner API happens to return
-              something is not an entry point — it is the feature vanishing
-              on stage. Empty and broken both get their own honest sentence. */}
-          {!essen.loading && (
-            <button className="card tight row" onClick={() => navigate('/essen')} style={{ gap: 11 }}>
-              <Thumb
-                icon={
-                  essenTop?.source === 'basket'
-                    ? 'gift'
-                    : essenTop?.source === 'business'
-                      ? 'market'
-                      : 'leaf'
-                }
-              />
-              <span className="grow">
-                <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                  <b className="sm">{essenTop ? essenTop.title : 'Essen retten'}</b>
-                  {essenTop?.hoursLeft != null && essenTop.hoursLeft <= 12 && (
-                    <Label tone="warn">
-                      noch {Math.max(1, Math.round(essenTop.hoursLeft))} h
-                    </Label>
-                  )}
-                </span>
-                <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                  {essen.error ? (
-                    'foodsharing antwortet gerade nicht — später nochmal'
-                  ) : essenTop === null ? (
-                    'Gerade nichts Offenes in deiner Nähe'
-                  ) : (
-                    <>
-                      {essenTop.source === 'basket'
-                        ? 'Korb'
-                        : essenTop.source === 'business'
-                          ? 'Geschäft'
-                          : 'Fairteiler'}
-                      {essenTop.distanceKm !== null &&
-                        ` · ${essenTop.distanceKm.toLocaleString('de-DE')} km`}{' '}
-                      <Tag von="api" />
-                    </>
-                  )}
-                </span>
-              </span>
-              <Icon name="chevron" size={19} className="ico" />
-            </button>
-          )}
-
-          {quests.loading && (
-            <div className="empty">
-              <span className="spinner" />
-            </div>
-          )}
-
-          {quest && (
-            <button className="card tight row" onClick={() => navigate('/quests')} style={{ gap: 11 }}>
-              <Thumb icon="quest" />
-              <span className="grow">
-                <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                  <b className="sm">{quest.title}</b>
-                  {quest.openForDays >= 3 && (
-                    <Label tone="warn">seit {quest.openForDays} Tagen</Label>
-                  )}
-                </span>
-                <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                  {quest.district ?? 'Frankfurt'}
-                  {quest.distanceKm !== undefined && ` · ${quest.distanceKm.toLocaleString('de-DE')} km`}
-                </span>
-              </span>
-              <Coin>+{quest.xp}</Coin>
-            </button>
-          )}
-
-          {item && (
-            <button className="card tight row" onClick={() => navigate('/markt')} style={{ gap: 11 }}>
-              <Thumb icon="wrench" />
-              <span className="grow">
-                <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                  <b className="sm">{item.title}</b>
-                  <Tag von="input">{item.defect}</Tag>
-                </span>
-                <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-                  {item.district} · kostenlos abzugeben
-                </span>
-              </span>
-              <Icon name="chevron" size={19} className="ico" />
-            </button>
-          )}
-
-          {/* A real failure gets a real sentence — the phase marker that used
-              to stand here made a working screen look unfinished. */}
-          {quests.error && (
-            <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
-              <Icon name="info" size={18} className="ico" />
-              <span className="sm grow">
-                {quests.error.status === 0
-                  ? 'Keine Verbindung zum Server. Die Quests erscheinen, sobald du wieder online bist.'
-                  : quests.error.message}
-              </span>
-              <button className="btn sm" onClick={() => quests.reload()}>
-                Nochmal versuchen
-              </button>
-            </div>
-          )}
-        </div>
+      <div className="grow"><b>{t(me.xp.toLocaleString(getLocale()))} {t(" XP")}</b><span className="xs mut row" style={{ gap: 5, marginTop: 4 }}><Icon name="clock" size={13} />{t(impact.data ? `${impact.data.streak.weeks} ${impact.data.streak.weeks === 1 ? 'Woche' : 'Wochen'}` : `${me.actions} ${me.actions === 1 ? 'Aktion' : 'Aktionen'}`)}</span></div>
+      <button className="reward-link" onClick={() => navigate('/belohnungen')} aria-label={t(`${me.coins} Münzen einlösen`)}><Coin star>{t(me.coins)}</Coin></button>
+    </div>
+    <button className="card row scan-hero" onClick={() => navigate('/scan')}>
+      <span className="hero-camera"><Icon name="camera" size={25} /></span>
+      <span className="grow"><b className="h2">{t("Gegenstand scannen")}</b><span className="row hero-modes"><Icon name="truck" size={16} /><Icon name="pin" size={16} /><Icon name="info" size={16} /><span className="xs">{t("Erkennen und richtig weitergeben")}</span></span></span><Icon name="chevron" size={20} />
+    </button>
+    <WeeklyGoal />
+    <button className="card tight row" onClick={() => navigate('/essen')}><Thumb icon="leaf" /><span className="grow"><b className="sm">{t("Essen retten")}</b><span className="xs mut" style={{ display: 'block' }}>{t(food.error ? 'foodsharing antwortet gerade nicht — erneut versuchen' : foodTop ? `${foodTop.title}${foodTop.hoursLeft == null ? '' : ` · noch ${Math.max(1, Math.round(foodTop.hoursLeft))} h`}` : 'Offene Angebote und Fairteiler entdecken')}</span></span><Icon name="chevron" size={17} /></button>
+    {t(reusableStatus.data?.configured && <button className="card tight row" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><span className="grow"><b className="sm">{t(activeContainers.length ? `${activeContainers.length} Mehrweg-Behälter offen` : 'Mehrweg statt Einweg')}</b><span className="xs mut" style={{ display: 'block', color: overdue ? 'var(--alert)' : undefined }}>{t(reusable.error ? 'Vytal-Konto prüfen — Details öffnen' : overdue ? 'Rückgabe überfällig' : nextReturn !== null ? `Rückgabe in ${Math.max(1, Math.round(nextReturn))} Stunden` : `Ausgabe und Rücknahme an der ${reusable.data?.station ?? 'ReMain-Station'}`)}</span></span><Icon name="chevron" size={17} /></button>)}
+    {t(next && <button className="card tight row" onClick={() => navigate('/kalender')}><Thumb icon="calendar" /><span className="grow"><b className="sm">{t(next.titel)}</b><span className="xs mut" style={{ display: 'block' }}>{t(next.label)} {t(" · ")}{t(next.window)}</span></span><Tag von="simulated" /><Icon name="chevron" size={17} /></button>)}
+    <section><div className="between" style={{ marginBottom: 9 }}><p className="lbl">{t("In deiner Nähe")}</p><button className="text-link" onClick={() => navigate('/quests')}>{t("Karte")}</button></div>
+      <div className="nearby-grid">
+        <button className="card tight" onClick={() => navigate('/quests')}><Thumb icon="quest" /><b>{quest?.title ?? t('Quests entdecken')}</b><span className="xs mut">{t(quest ? `${quest.district ?? 'Frankfurt'} · +${quest.xp} XP` : 'Gemeinsam aufräumen')}</span></button>
+        <button className="card tight" onClick={() => navigate(item ? `/markt/${item.id}` : '/markt')}><Thumb icon="wrench" /><b>{item?.title ?? t('Reparatur-Markt')}</b><span className="xs mut">{t(item?.district ?? 'Dinge weitergeben')}</span></button>
+        <button className="card tight" onClick={() => navigate('/mehrweg')}><Thumb icon="cup" /><b>{t("Mehrweg")}</b><span className="xs mut">{t("Rückgaben & Orte")}</span></button>
       </div>
-
-      {city && (
-        <button className="card sky" onClick={() => navigate('/stadtteile')}>
-          <div className="between" style={{ marginBottom: 8 }}>
-            <span className="h3">Frankfurt diese Woche</span>
-            <Tag von="api" icon />
-          </div>
-          <div className="row" style={{ alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
-            <span className="num" style={{ fontSize: 24, color: 'var(--blue-deep)' }}>
-              {city.weekXp.toLocaleString('de-DE')}
-            </span>
-            <span className="sm mut">
-              von {city.goalXp.toLocaleString('de-DE')} XP Wochenziel
-            </span>
-          </div>
-          <Bar value={city.weekXp} max={city.goalXp} />
-          <p className="xs mut" style={{ margin: '8px 0 0', textAlign: 'left' }}>
-            {city.activePeople} {city.activePeople === 1 ? 'Person' : 'Personen'} aktiv · Ziel und
-            Rechenweg auf der Stadtteil-Seite
-          </p>
-        </button>
-      )}
-    </Screen>
-  )
-}
-
-/**
- * The rounded icon tile on a one-line card. Three cards use it, so it lives
- * here rather than as a third copy of the same twelve inline properties.
- * `alert` is for a deadline that has already passed — the only case on this
- * screen where a card raises its voice.
- */
-function Badge({ icon, alert = false }: { icon: IconName; alert?: boolean }) {
-  return (
-    <span
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        background: alert ? 'var(--alert-soft)' : 'var(--sky)',
-        color: alert ? 'var(--alert)' : 'var(--blue-deep)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 'none',
-      }}
-    >
-      <Icon name={icon} size={21} />
-    </span>
-  )
+    </section>
+    {t((quests.error || market.error || kalender.error || impact.error || season.error || notices.error) && <div className="card tight" role="alert"><p className="sm">{t("Einige Daten konnten nicht geladen werden.")}</p><button className="btn sm" onClick={() => { quests.reload(); market.reload(); kalender.reload(); impact.reload(); season.reload(); notices.reload() }}>{t("Erneut laden")}</button></div>)}
+    {t(city && <button className="card sky" onClick={() => navigate('/stadtteile')}><div className="between"><p className="lbl">{t("Frankfurt diese Woche")}</p><Tag von="api" /></div><p className="sm"><b className="num" style={{ fontSize: 24 }}>{t(city.weekXp.toLocaleString(getLocale()))}</b> {t(" / ")}{t(city.goalXp.toLocaleString(getLocale()))} {t(" XP")}</p><Bar value={city.weekXp} max={city.goalXp} /></button>)}
+    <details className="card home-more"><summary>{t("Weitere Angebote")}</summary><div className="col" style={{ gap: 9, marginTop: 12 }}>
+      <button className="btn" onClick={() => navigate('/essen')}><Icon name="leaf" size={18} />{t("Essen retten")}</button>
+      <button className="btn" onClick={() => navigate('/wissen')}><Icon name="info" size={18} />{t("Was mache ich damit?")}</button>
+      {t(me.role === 'driver' && <button className="btn" onClick={() => navigate('/touren')}>{t("Meine Sammeltouren")}</button>)}
+      <button className="btn" onClick={() => navigate('/integrationen')}>{t("Verbindungen und Datenquellen")}</button>
+      <button className="btn" onClick={() => { void signOut().catch(() => setError('Abmelden fehlgeschlagen. Bitte erneut versuchen.')) }}>{t("Abmelden")}</button>
+      {t(error && <p role="alert">{t(error)}</p>)}
+    </div></details>
+  </Screen>
 }

@@ -1,10 +1,11 @@
+import { t, getLocale } from './../lib/i18n'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Coin, Label, Tag } from '../components/ui'
-import { useApi, type RouteComparison, type RouteLeg, type RouteOption } from '../lib/client'
+import { api, useApi, type QuestDetail, type RouteComparison, type RouteLeg, type RouteOption } from '../lib/client'
 import { STADTTEILE } from '../lib/frankfurt'
 import { useSession } from '../lib/session'
 
@@ -27,9 +28,9 @@ const PRECISION = 4
 const round = (v: number) => Math.round(v * 10 ** PRECISION) / 10 ** PRECISION
 
 /** 9.7 -> "9,7". German decimal comma, everywhere a distance is printed. */
-const km = (v: number) => v.toLocaleString('de-DE', { maximumFractionDigits: 1 })
+const km = (v: number) => v.toLocaleString(getLocale(), { maximumFractionDigits: 1 })
 const num = (v: number, digits: number) =>
-  v.toLocaleString('de-DE', { maximumFractionDigits: digits })
+  v.toLocaleString(getLocale(), { maximumFractionDigits: digits })
 
 const MODE_ICON: Record<string, Parameters<typeof Icon>[0]['name']> = {
   walk: 'users',
@@ -47,6 +48,10 @@ interface Origin {
 
 export default function RouteScreen() {
   const { questId } = useParams()
+  const navigate = useNavigate()
+  const [starting, setStarting] = useState(false)
+  const [startError, setStartError] = useState('')
+  const journey = useApi<{ journey: { mode: string; startedAt: string } | null }>(questId ? `/api/quests/${questId}/journey` : null)
   const { me } = useSession()
 
   // ?at=08:15 pins the comparison to a time of day. The schedule is a real one
@@ -121,14 +126,30 @@ export default function RouteScreen() {
 
   const { data, error, loading, reload } = useApi<RouteComparison>(path)
 
+  const selected = data?.options.find(o => o.mode === open) ?? data?.options.find(o => o.mode === data.best)
+  async function startJourney() {
+    if (!questId || !selected || starting) return
+    setStarting(true); setStartError('')
+    try {
+      const proof = await api.get<QuestDetail>(`/api/quests/${questId}/proof`)
+      if (proof.canClaim) await api.post(`/api/quests/${questId}/claim`)
+      else if (proof.role !== 'claimer') throw new Error(proof.claimBlockedWhy || 'Diese Quest steht nicht zum Übernehmen bereit.')
+      await api.post(`/api/quests/${questId}/journey`, { mode: selected.mode })
+      journey.reload()
+    } catch (error) { setStartError(error instanceof Error ? error.message : 'Fahrt konnte nicht gestartet werden.') }
+    finally { setStarting(false) }
+  }
   return (
     <Screen
       back
-      title="Hinweg"
-      sub={data?.target?.title ?? 'Route-Assistent'}
+      title={t("Dein Weg dorthin")}
+      sub={t(data?.target?.title ?? 'Route wird geladen …')}
+      footer={journey.data?.journey ? <button className="btn primary" onClick={() => navigate(`/quests/${questId}/nachweis`)}>{t("Am Ziel · Nachweis aufnehmen")}</button> : <button className="btn primary" disabled={!selected || starting} onClick={() => void startJourney()}>{t(starting ? 'Wird gespeichert …' : `Fahrt starten${selected ? ` · ${selected.label}` : ''}`)}</button>}
     >
+      {t(startError && <p className="card tight" role="alert">{t(startError)}</p>)}
+      {t(journey.data?.journey && <div className="card sky" role="status"><b>{t("Hinweg gestartet")}</b><p className="sm">{t(data?.options.find(o => o.mode === journey.data!.journey!.mode)?.label ?? journey.data.journey.mode)} {t(" · deine Angabe")}</p><p className="xs mut">{t("Verkehrsmittel gespeichert. Keine GPS-Aufzeichnung. Der Nachweis und die geltenden Regeln entscheiden über die Gutschrift.")}</p></div>)}
       {/* --- where the comparison starts, and who decides that --- */}
-      <div className="card tight">
+      <details className="card tight"><summary>{t("Start: ")}{t(origin.label)} {t(" · Ändern")}</summary>
         <div className="row" style={{ gap: 11 }}>
           <span
             style={{
@@ -147,115 +168,107 @@ export default function RouteScreen() {
           </span>
           <span className="grow">
             <span className="sm" style={{ display: 'block', fontWeight: 700 }}>
-              Start: {origin.label}
+              {t("Start: ")}{t(origin.label)}
             </span>
             <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-              {origin.exact
+              {t(origin.exact
                 ? `Auf ${PRECISION} Nachkommastellen gerundet (${origin.lat}, ${origin.lon}) — genauer verlässt nichts dein Gerät.`
-                : 'Ohne Standortfreigabe. Reicht für den Vergleich, trifft aber nicht die Haltestelle vor der Tür.'}
+                : 'Ohne Standortfreigabe. Reicht für den Vergleich, trifft aber nicht die Haltestelle vor der Tür.')}
             </span>
           </span>
         </div>
 
         <div className="row" style={{ gap: 8, marginTop: 11 }}>
-          {origin.exact ? (
+          {t(origin.exact ? (
             <button className="btn sm" onClick={stopLocating}>
               <Icon name="cross" size={15} />
-              Standort beenden
-            </button>
+              {t("Standort beenden")}</button>
           ) : (
             <button className="btn sm primary" onClick={startLocating} disabled={locating}>
-              {locating ? <span className="spinner" /> : <Icon name="pin" size={15} />}
-              {locating ? 'Suche …' : 'Standort verwenden'}
+              {t(locating ? <span className="spinner" /> : <Icon name="pin" size={15} />)}
+              {t(locating ? 'Suche …' : 'Standort verwenden')}
             </button>
-          )}
-          {data !== null && (
+          ))}
+          {t(data !== null && (
             <span className="xs mut" style={{ alignSelf: 'center' }}>
-              Abfahrt ab {data.atTime}
-              {at !== null && ' (gesetzt)'}
+              {t("Abfahrt ab ")}{t(data.atTime)}
+              {t(at !== null && ' (gesetzt)')}
             </span>
-          )}
+          ))}
         </div>
 
-        {locationError !== null && (
+        {t(locationError !== null && (
           <p className="xs" style={{ margin: '9px 0 0', color: 'var(--alert)' }}>
-            {locationError}
+            {t(locationError)}
           </p>
-        )}
-      </div>
+        ))}
+      </details>
 
-      {loading && (
+      {t(loading && (
         <div className="empty">
           <span className="spinner" />
         </div>
-      )}
+      ))}
 
-      {error !== null && (
+      {t(error !== null && (
         <div className="card">
           <p className="sm" style={{ margin: 0 }}>
-            {error.code === 'mobility_data_missing'
+            {t(error.code === 'mobility_data_missing'
               ? 'Die Fahrplandaten sind noch nicht gebaut.'
-              : error.message}
+              : error.message)}
           </p>
           <button className="btn sm" style={{ marginTop: 11 }} onClick={reload}>
-            Nochmal versuchen
-          </button>
+            {t("Nochmal versuchen")}</button>
         </div>
-      )}
+      ))}
 
-      {data !== null && (
+      {t(data !== null && (
         <>
           <div className="between">
             <p className="lbl">
-              {data.options.length} Wege · {km(data.directKm)} km Luftlinie
-            </p>
-            <span className="xs mut">sparsamster zuerst</span>
+              {t(data.options.length)} {t(" Wege · ")}{t(km(data.directKm))} {t(" km Luftlinie")}</p>
+            <span className="xs mut">{t("sparsamster zuerst")}</span>
           </div>
 
           <div className="col" style={{ gap: 9 }}>
-            {data.options.map((o) => (
+            {t(data.options.map((o) => (
               <OptionCard
                 key={o.mode}
                 option={o}
                 open={open === o.mode}
                 onToggle={() => setOpen(open === o.mode ? null : o.mode)}
               />
-            ))}
+            )))}
           </div>
 
           {/* --- provenance, because every number above is one of two kinds --- */}
           <div className="card flat">
             <p className="lbl" style={{ marginTop: 0 }}>
-              Woher die Zahlen kommen
-            </p>
+              {t("Woher die Zahlen kommen")}</p>
 
-            {data.schedule !== null && (
+            {t(data.schedule !== null && (
               <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
                 <Tag von="api" icon>
-                  Fahrplan
-                </Tag>{' '}
-                {data.schedule.note} {data.schedule.limitation}
+                  {t("Fahrplan")}</Tag>{t(' ')}
+                {t(data.schedule.note)} {t(data.schedule.limitation)}
               </p>
-            )}
+            ))}
 
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
               <Tag von="estimate" icon>
-                CO₂e
-              </Tag>{' '}
-              {data.assumptions.note} Auto {num(data.assumptions.carCo2PerKm, 3)} kg/km, ÖPNV{' '}
-              {num(data.assumptions.transitCo2PerKm, 3)} kg/km, Umwegfaktor{' '}
-              {num(data.assumptions.detourFactor, 1)}, {data.assumptions.pointsPerKgCo2} XP je kg.
-              Quelle: {data.assumptions.source}.
-            </p>
+                {t("CO₂e")}</Tag>{t(' ')}
+              {t(data.assumptions.note)} {t(" Auto ")}{t(num(data.assumptions.carCo2PerKm, 3))} {t(" kg/km, ÖPNV")}{t(' ')}
+              {t(num(data.assumptions.transitCo2PerKm, 3))} {t(" kg/km, Umwegfaktor")}{t(' ')}
+              {t(num(data.assumptions.detourFactor, 1))}{t(", ")}{t(data.assumptions.pointsPerKgCo2)} {t(" XP je kg. Quelle: ")}{t(data.assumptions.source)}{t(".")}</p>
 
             <div className="sep" style={{ margin: '11px 0' }} />
 
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-              {data.xpNote}
+              {t(data.xpNote)}
             </p>
           </div>
         </>
-      )}
+      ))}
     </Screen>
   )
 }
@@ -309,19 +322,19 @@ function OptionCard({
 
         <span className="grow">
           <span className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
-            <b className="sm">{option.label}</b>
-            <span className="num sm">{option.minutes} Min</span>
-            <span className="xs mut">{km(option.km)} km</span>
+            <b className="sm">{t(option.label)}</b>
+            <span className="num sm">{t(option.minutes)} {t(" Min")}</span>
+            <span className="xs mut">{t(km(option.km))} {t(" km")}</span>
           </span>
           <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
-            {option.detail}
+            {t(option.detail)}
           </span>
         </span>
 
         <span style={{ textAlign: 'right', flex: 'none' }}>
           <span className="row" style={{ gap: 5, justifyContent: 'flex-end' }}>
-            <span className="num sm">{option.co2Kg.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</span>
-            <span className="xs mut">kg</span>
+            <span className="num sm">{t(option.co2Kg.toLocaleString(getLocale(), { minimumFractionDigits: 2 }))}</span>
+            <span className="xs mut">{t("kg")}</span>
           </span>
           <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
             <Icon name="chevron" size={13} style={{ transform: open ? 'rotate(90deg)' : undefined }} />
@@ -331,47 +344,47 @@ function OptionCard({
 
       {/* The point of the screen: what this way does to the credit. */}
       <div className="row" style={{ gap: 7, marginTop: 10, flexWrap: 'wrap' }}>
-        {blocked ? (
-          <Label tone="warn">{option.xp.text}</Label>
+        {t(blocked ? (
+          <Label tone="warn">{t(option.xp.text)}</Label>
         ) : option.xp.effect === 'full' ? (
-          <Coin star>{option.xp.text}</Coin>
+          <Coin star>{t(option.xp.text)}</Coin>
         ) : (
-          <Coin>{option.xp.text}</Coin>
-        )}
+          <Coin>{t(option.xp.text)}</Coin>
+        ))}
         <Tag von="estimate">
-          {option.mode === 'car' ? 'Vergleichswert' : option.savedVsCarText}
+          {t(option.mode === 'car' ? 'Vergleichswert' : option.savedVsCarText)}
         </Tag>
       </div>
 
-      {open && (
+      {t(open && (
         <>
           <div className="sep" style={{ margin: '12px 0 11px' }} />
 
           <p className="xs" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
-            {option.xp.reason}
+            {t(option.xp.reason)}
           </p>
 
           <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
-            <b>Rechenweg:</b> {option.formula}
+            <b>{t("Rechenweg:")}</b> {t(option.formula)}
             <br />
-            {option.co2Note}
+            {t(option.co2Note)}
           </p>
 
-          {option.note !== null && (
+          {t(option.note !== null && (
             <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
-              {option.note}
+              {t(option.note)}
             </p>
-          )}
+          ))}
 
-          {option.legs !== null && (
+          {t(option.legs !== null && (
             <div className="col" style={{ gap: 7 }}>
-              {option.legs.map((leg, i) => (
+              {t(option.legs.map((leg, i) => (
                 <Leg key={i} leg={leg} />
-              ))}
+              )))}
             </div>
-          )}
+          ))}
         </>
-      )}
+      ))}
     </div>
   )
 }
@@ -382,9 +395,8 @@ function Leg({ leg }: { leg: RouteLeg }) {
       <div className="row xs mut" style={{ gap: 8 }}>
         <Icon name="users" size={14} className="ico" />
         <span>
-          {leg.to !== undefined ? `Zu Fuß zur Haltestelle ${leg.to}` : `Zu Fuß ab ${leg.from}`} ·{' '}
-          {Math.max(1, Math.round((leg.seconds ?? 0) / 60))} Min
-        </span>
+          {t(leg.to !== undefined ? `Zu Fuß zur Haltestelle ${leg.to}` : `Zu Fuß ab ${leg.from}`)} {t(" ·")}{t(' ')}
+          {t(Math.max(1, Math.round((leg.seconds ?? 0) / 60)))} {t(" Min")}</span>
       </div>
     )
   }
@@ -394,13 +406,12 @@ function Leg({ leg }: { leg: RouteLeg }) {
       <Icon name="truck" size={14} className="ico" />
       <span className="grow">
         <b>
-          {leg.mode} {leg.line}
-        </b>{' '}
-        Richtung {leg.headsign}
+          {t(leg.mode)} {t(leg.line)}
+        </b>{t(' ')}
+        {t("Richtung ")}{t(leg.headsign)}
         <span className="mut">
-          {' '}
-          · {leg.departTime} ab {leg.from} → {leg.arriveTime} {leg.to} ({leg.stops} Halte)
-        </span>
+          {t(' ')}
+          {t("· ")}{t(leg.departTime)} {t(" ab ")}{t(leg.from)} {t(" → ")}{t(leg.arriveTime)} {t(leg.to)} {t(" (")}{t(leg.stops)} {t(" Halte)")}</span>
       </span>
     </div>
   )

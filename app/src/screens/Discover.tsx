@@ -1,3 +1,4 @@
+import { t } from './../lib/i18n'
 import { useCallback, useEffect, useState } from 'react'
 
 import OpportunityCard from '../components/OpportunityCard'
@@ -161,59 +162,57 @@ export default function Discover({ user, onSelect }: Props) {
 
   return (
     <div className="screen" id="panel-discover" role="tabpanel">
-      <h2>Search area</h2>
+      <h2>{t("Search area")}</h2>
       <div className="chips">
-        {AREAS.map((a) => (
+        {t(AREAS.map((a) => (
           <button
             key={a.label}
             className="chip"
             aria-pressed={a.label === area.label}
             onClick={() => setArea(a)}
           >
-            📍 {a.label}
+            {t("📍 ")}{t(a.label)}
           </button>
-        ))}
+        )))}
       </div>
 
-      <h2>How are you getting there?</h2>
+      <h2>{t("How are you getting there?")}</h2>
       <div className="chips">
-        {(Object.keys(MODE_LABELS) as TravelMode[]).map((m) => (
+        {t((Object.keys(MODE_LABELS) as TravelMode[]).map((m) => (
           <button key={m} className="chip" aria-pressed={m === mode} onClick={() => setMode(m)}>
-            {MODE_LABELS[m]}
+            {t(MODE_LABELS[m])}
           </button>
-        ))}
+        )))}
       </div>
 
       <h2>
-        Opportunities{' '}
+        {t("Opportunities")}{t(' ')}
         <span className="muted" style={{ textTransform: 'none', letterSpacing: 0 }}>
-          — by relevance
-        </span>
+          {t("— by relevance")}</span>
       </h2>
 
-      {error && (
+      {t(error && (
         <div className="card" style={{ background: 'var(--bad-soft)', borderColor: 'transparent' }}>
-          <b className="small">Could not load everything</b>
+          <b className="small">{t("Could not load everything")}</b>
           <div className="tiny" style={{ marginTop: 4 }}>
-            {error}
+            {t(error)}
           </div>
         </div>
-      )}
+      ))}
 
-      {loading && (
+      {t(loading && (
         <div className="empty">
-          <span className="spinner" /> Loading from the API…
-        </div>
-      )}
+          <span className="spinner" /> {t(" Loading from the API…")}</div>
+      ))}
 
-      {!loading && opportunities.length === 0 && !error && (
-        <div className="empty">Nothing found in this area.</div>
-      )}
+      {t(!loading && opportunities.length === 0 && !error && (
+        <div className="empty">{t("Nothing found in this area.")}</div>
+      ))}
 
-      {!loading &&
+      {t(!loading &&
         opportunities
           .slice(0, 15)
-          .map((o) => <OpportunityCard key={o.id} opportunity={o} onSelect={onSelect} />)}
+          .map((o) => <OpportunityCard key={o.id} opportunity={o} onSelect={onSelect} />))}
 
       {/* TODO(#2): "on my way" mode — pick two traffiQ stops, rank by detour
           minutes instead of distance, and charge only the detour as emissions.

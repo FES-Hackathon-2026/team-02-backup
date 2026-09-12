@@ -26,7 +26,14 @@ export const weekday = (day) => parse(day).getUTCDay()
 export const weekdayName = (day) => WEEKDAYS[weekday(day)]
 export const weekdayShort = (day) => WEEKDAYS_SHORT[weekday(day)]
 
-export const today = () => iso(new Date())
+export const localTimestamp = (date = new Date()) => {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).formatToParts(date).map(p => [p.type, p.value]))
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`
+}
+export const today = (date = new Date()) => localTimestamp(date).slice(0, 10)
 
 /** Whole days between two YYYY-MM-DD strings. */
 export const daysBetween = (from, to) => Math.round((parse(to) - parse(from)) / DAY)

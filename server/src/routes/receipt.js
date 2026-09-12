@@ -198,6 +198,10 @@ function provenance({ action, subject, impact, history, entry, owner }) {
   }
 
   switch (action.kind) {
+    case 'bonus': {
+      confirmed.push(line('Bonus', ref?.title, 'ReMain-Regeln'), line('Grundlage', ref?.details, 'Einmalig auf dem Server geprüft'))
+      break
+    }
     case 'quest': {
       const quest = subject.quest
       if (quest) {
@@ -297,6 +301,8 @@ function provenance({ action, subject, impact, history, entry, owner }) {
       break
   }
 
+  if (subject.facts.mode) stated.push(line('Verkehrsmittel', impact.modeLabel, 'deine Angabe beim Start des Hinwegs'))
+
   /* The computed side, the same for every kind. */
   const travels = causesTravel(action.kind, action.user_id, subject)
   if (travels && subject.home && (subject.straightKm ?? 0) > 0) {
@@ -312,11 +318,7 @@ function provenance({ action, subject, impact, history, entry, owner }) {
         `${km(impact.routeKm)} (${impact.marginal ? 'Umweg' : 'hin und zurück'})`,
         `Umwegfaktor ${nShort(A.detourFactor, 1)}`,
       ),
-      line(
-        'Verkehrsmittel',
-        impact.modeAssumed ? `${impact.modeLabel} (angenommen)` : impact.modeLabel,
-        impact.modeAssumed ? 'Annahme aus der Entfernung' : 'deine Angabe',
-      ),
+      ...(impact.modeAssumed ? [line('Verkehrsmittel', `${impact.modeLabel} (angenommen)`, 'Annahme aus der Entfernung')] : []),
       line('CO₂e Anfahrt', `${n(impact.travelCo2, 2)} kg`, sourceForMode(impact)),
     )
   } else {

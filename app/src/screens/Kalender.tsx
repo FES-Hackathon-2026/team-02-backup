@@ -1,3 +1,5 @@
+import { t } from './../lib/i18n'
+import CollectionCalendar from '../components/CollectionCalendar'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -24,6 +26,7 @@ import { useSession } from '../lib/session'
 export default function Kalender() {
   const navigate = useNavigate()
   const { me } = useSession()
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
   const [storniert, setStorniert] = useState<string | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const [arbeitet, setArbeitet] = useState<string | null>(null)
@@ -50,117 +53,109 @@ export default function Kalender() {
   }
 
   const daten = kalender.data?.dates ?? []
+  const shown = selectedDay ? daten.filter(d => d.date.slice(0, 10) === selectedDay) : daten
   const eigene = daten.filter((d) => d.own).length
 
   return (
     <Screen
       back
-      title="Abfuhrkalender"
-      sub={
-        kalender.data
-          ? `${kalender.data.district.name} · Ortsbezirk ${kalender.data.district.bezirk}`
-          : `${me.district.name} · Ortsbezirk ${me.district.bezirk}`
-      }
+      title={t("Abfuhrkalender")}
+      sub={t("Wann deine Tonnen geleert werden")}
       gap={13}
       action={
         <button
           className="icobtn"
-          onClick={() => navigate('/abholung')}
-          aria-label="Sperrmüll anmelden"
+          onClick={() => navigate('/mitteilungen')}
+          aria-label={t("Sperrmüll anmelden")}
         >
           <Icon name="plus" size={21} />
         </button>
       }
     >
-      {kalender.loading && (
+      {t(kalender.loading && (
         <div className="empty">
           <span className="spinner" />
         </div>
-      )}
+      ))}
 
-      {kalender.error && (
+      {t(kalender.error && (
         <p className="sm" style={{ margin: 0 }}>
-          <Label tone="warn">{de.state.error}</Label>{' '}
-          <span className="mut">{kalender.error.message}</span>
+          <Label tone="warn">{t(de.state.error)}</Label>{t(' ')}
+          <span className="mut">{t(kalender.error.message)}</span>
         </p>
-      )}
+      ))}
 
-      {kalender.data && (
+      {t(kalender.data && (
         <>
+          <CollectionCalendar dates={daten} selected={selectedDay} onSelect={setSelectedDay} />
           <div className="between">
-            <p className="lbl">Als Nächstes</p>
+            <p className="lbl">{t(selectedDay ? `Termine am ${selectedDay.split('-').reverse().join('.')}` : 'Als Nächstes')}</p>
             <Tag von="simulated" icon />
           </div>
 
           <div className="col" style={{ gap: 9 }}>
-            {daten.map((d) => (
+            {t(shown.map((d) => (
               <Zeile
                 key={d.id}
                 termin={d}
                 arbeitet={arbeitet === d.pickupId}
                 onStorno={() => d.pickupId && void stornieren(d.pickupId)}
               />
-            ))}
+            )))}
           </div>
 
-          {daten.length === 0 && (
+          {t(shown.length === 0 && (
             <div className="empty">
               <Icon name="calendar" size={28} />
-              {de.state.empty}
+              {t(selectedDay ? 'Für diesen Tag liegt kein Termin vor.' : de.state.empty)}
             </div>
-          )}
+          ))}
 
-          {fehler && (
+          {t(fehler && (
             <p className="sm" style={{ margin: 0 }}>
-              <Label tone="warn">{de.state.error}</Label> <span className="mut">{fehler}</span>
+              <Label tone="warn">{t(de.state.error)}</Label> <span className="mut">{t(fehler)}</span>
             </p>
-          )}
+          ))}
 
-          {storniert && (
+          {t(storniert && (
             <div className="card tight row" style={{ alignItems: 'flex-start', gap: 10 }}>
               <Icon name="info" size={18} className="ico" style={{ marginTop: 1 }} />
-              <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>{storniert}</p>
+              <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>{t(storniert)}</p>
             </div>
-          )}
+          ))}
 
           {/* the difference between the two kinds of line, spelled out */}
           <div className="card sky tight row" style={{ alignItems: 'flex-start', gap: 10 }}>
             <Icon name="spark" size={19} style={{ color: 'var(--blue-deep)', marginTop: 1 }} />
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
-              {eigene > 0 ? (
+              {t(eigene > 0 ? (
                 <>
-                  {eigene === 1 ? 'Ein Termin' : `${eigene} Termine`} in dieser Liste{' '}
-                  {eigene === 1 ? 'stammt' : 'stammen'} von dir und {eigene === 1 ? 'ist' : 'sind'}{' '}
-                  als <b style={{ color: 'var(--ink)' }}>„eingetragen"</b> markiert — angelegt in
-                  ReMain, nicht von FES bestätigt. Der Unterschied bleibt sichtbar.
-                </>
+                  {t(eigene === 1 ? 'Ein Termin' : `${eigene} Termine`)} {t(" in dieser Liste")}{t(' ')}
+                  {t(eigene === 1 ? 'stammt' : 'stammen')} {t(" von dir und ")}{t(eigene === 1 ? 'ist' : 'sind')}{t(' ')}
+                  {t("als ")}<b style={{ color: 'var(--ink)' }}>{t("„eingetragen\"")}</b> {t(" markiert — angelegt in ReMain, nicht von FES bestätigt. Der Unterschied bleibt sichtbar.")}</>
               ) : (
                 <>
-                  Ein gebuchter Sperrmülltermin trägt sich hier selbst ein — und bleibt als{' '}
-                  <b style={{ color: 'var(--ink)' }}>„eingetragen"</b> markiert, nicht als
-                  „bestätigt". Der Unterschied bleibt sichtbar.
-                </>
-              )}
+                  {t("Ein gebuchter Sperrmülltermin trägt sich hier selbst ein — und bleibt als")}{t(' ')}
+                  <b style={{ color: 'var(--ink)' }}>{t("„eingetragen\"")}</b> {t(" markiert, nicht als „bestätigt\". Der Unterschied bleibt sichtbar.")}</>
+              ))}
             </p>
           </div>
 
           <details>
             <summary className="xs mut" style={{ cursor: 'pointer' }}>
-              Woher kommen diese Termine?
-            </summary>
+              {t("Woher kommen diese Termine?")}</summary>
             <ul className="xs mut" style={{ margin: '8px 0 0', paddingLeft: 16, lineHeight: 1.6 }}>
-              {kalender.data.assumptions.map((a, i) => (
-                <li key={i}>{a}</li>
-              ))}
+              {t(kalender.data.assumptions.map((a, i) => (
+                <li key={i}>{t(a)}</li>
+              )))}
             </ul>
           </details>
 
-          <button className="btn" onClick={() => navigate('/abholung')}>
+          <button className="btn" onClick={() => navigate('/mitteilungen')}>
             <Icon name="truck" size={19} />
-            Sperrmüll anmelden
-          </button>
+            {t("Sperrmüll anmelden")}</button>
         </>
-      )}
+      ))}
     </Screen>
   )
 }
@@ -175,6 +170,7 @@ function Zeile({
   onStorno: () => void
 }) {
   const [offen, setOffen] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <div className="card tight">
@@ -189,43 +185,43 @@ function Zeile({
           }}
         />
         <span className="grow">
-          <b className="sm" style={{ display: 'block' }}>{termin.titel}</b>
+          <b className="sm" style={{ display: 'block' }}>{t(termin.titel)}</b>
           <span className="xs mut">
-            {termin.label} · {termin.detail ?? termin.window}
-            {termin.shifted ? ` · ${termin.shifted}` : ''}
+            {t(termin.label)} {t(" · ")}{t(termin.detail ?? termin.window)}
+            {t(termin.shifted ? ` · ${termin.shifted}` : '')}
           </span>
         </span>
-        {termin.own ? (
-          <Tag von="simulated" icon>eingetragen</Tag>
+        {t(termin.own ? (
+          <Tag von="simulated" icon>{t("eingetragen")}</Tag>
         ) : (
           <Tag von="simulated" icon />
-        )}
+        ))}
       </div>
 
-      {termin.own && (
+      {t(termin.own && (
         <>
           <div className="sep" style={{ margin: '11px 0' }} />
+          <button className="btn sm" style={{ marginBottom: 10 }} onClick={() => navigate(`/abholung/${termin.pickupId}`)}>{t("Details und Erinnerungen")}</button>
           <div className="between">
             <span className="xs mut">
-              Referenz <b style={{ color: 'var(--ink)' }}>{termin.reference}</b>
+              {t("Referenz ")}<b style={{ color: 'var(--ink)' }}>{t(termin.reference)}</b>
             </span>
-            {offen ? (
+            {t(offen ? (
               <span className="row" style={{ gap: 7 }}>
                 <button className="btn sm" onClick={() => setOffen(false)}>
-                  {de.action.cancel}
+                  {t(de.action.cancel)}
                 </button>
                 <button className="btn sm primary" disabled={arbeitet} onClick={onStorno}>
-                  {arbeitet ? <span className="spinner" /> : 'Stornieren'}
+                  {t(arbeitet ? <span className="spinner" /> : 'Stornieren')}
                 </button>
               </span>
             ) : (
               <button className="btn sm" onClick={() => setOffen(true)}>
-                Termin absagen
-              </button>
-            )}
+                {t("Termin absagen")}</button>
+            ))}
           </div>
         </>
-      )}
+      ))}
     </div>
   )
 }

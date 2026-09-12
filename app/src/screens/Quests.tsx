@@ -1,3 +1,4 @@
+import { t, getLocale } from './../lib/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -27,7 +28,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'pruefen', label: 'Gegenprüfen' },
 ]
 
-const km = (v: number) => `${v.toLocaleString('de-DE', { maximumFractionDigits: 1 })} km`
+const km = (v: number) => `${v.toLocaleString(getLocale(), { maximumFractionDigits: 1 })} km`
 
 const STATUS: Record<string, { label: string; tone: 'plain' | 'warn' }> = {
   open: { label: 'offen', tone: 'plain' },
@@ -47,7 +48,7 @@ const STATUS: Record<string, { label: string; tone: 'plain' | 'warn' }> = {
 export default function Quests() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { me } = useSession()
+  const { me, refresh } = useSession()
 
   /** A scan that routed here wants to become a report. */
   const scan = (location.state as { scan?: ScanResult } | null)?.scan ?? null
@@ -126,118 +127,110 @@ export default function Quests() {
 
   return (
     <Screen
-      title="Quests"
+      title={t("Quests")}
       sub={
-        loading
-          ? 'wird geladen …'
+        t(loading
+          ? 'Aufgaben werden geladen …'
           : tab === 'pruefen'
-            ? `${reviewable.length} warten auf eine zweite Meinung`
-            : `${shown.length} im Umkreis von ${radius} km`
+            ? `${reviewable.length} ${reviewable.length === 1 ? 'Foto wartet' : 'Fotos warten'} auf Prüfung`
+            : `${shown.length} ${shown.length === 1 ? 'Aufgabe' : 'Aufgaben'} in deiner Nähe`)
       }
       tabs
       action={
-        <button className="icobtn" aria-label="Melden" onClick={() => navigate('/scan')}>
+        <button className="icobtn" aria-label={t("Melden")} onClick={() => navigate('/scan')}>
           <Icon name="camera" size={21} />
         </button>
       }
     >
-      {scan && <Melden scan={scan} onDone={() => { open.reload(); mine.reload() }} />}
+      {t(scan && <Melden scan={scan} onDone={() => { open.reload(); mine.reload(); void refresh() }} />)}
+
+      <div className="chips scroll">
+        {t(TABS.map((tabOption) => (
+          <button
+            key={tabOption.id}
+            className="chip"
+            aria-pressed={tabOption.id === tab}
+            onClick={() => {
+              setTab(tabOption.id)
+              setSelected(null)
+            }}
+          >
+            {t(tabOption.label)}
+            {t(tabOption.id === 'pruefen' && reviewable.length > 0 && ` · ${reviewable.length}`)}
+          </button>
+        )))}
+        <span className="sep" />
+        {t(RADIUS.map((r) => (
+          <button key={r} className="chip" aria-pressed={r === radius} onClick={() => setRadius(r)}>
+            {t(r)} {t(" km")}</button>
+        )))}
+      </div>
 
       <Map
+        fitMarkers
         centre={centre}
         markers={markers}
         me={pos}
         radiusKm={pos ? radius : undefined}
         selectedId={selected}
         onSelect={(id) => setSelected((cur) => (cur === id ? null : id))}
-        height={236}
+        height={350}
       />
 
       <p className="xs mut" style={{ margin: '-4px 2px 0' }}>
-        Karte und Orte: OpenStreetMap (ODbL). Keine Kachel braucht einen Schlüssel — deshalb
-        funktioniert die Karte auch, wenn am Demo-Tag ein Konto abläuft.
-      </p>
+        {t("Karte und Orte: OpenStreetMap (ODbL).")}</p>
 
-      <div className="chips scroll">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            className="chip"
-            aria-pressed={t.id === tab}
-            onClick={() => {
-              setTab(t.id)
-              setSelected(null)
-            }}
-          >
-            {t.label}
-            {t.id === 'pruefen' && reviewable.length > 0 && ` · ${reviewable.length}`}
-          </button>
-        ))}
-        <span className="sep" />
-        {RADIUS.map((r) => (
-          <button key={r} className="chip" aria-pressed={r === radius} onClick={() => setRadius(r)}>
-            {r} km
-          </button>
-        ))}
-      </div>
-
-      {note && (
+      {t(note && (
         <div className="card tight" style={{ borderColor: 'var(--alert)' }}>
-          <span className="sm">{note}</span>
+          <span className="sm">{t(note)}</span>
         </div>
-      )}
+      ))}
 
-      {loading && (
+      {t(loading && (
         <div className="empty">
           <span className="spinner" />
         </div>
-      )}
+      ))}
 
-      {open.error && tab === 'offen' && (
+      {t(open.error && tab === 'offen' && (
         <div className="empty">
           <Icon name="cross" size={24} />
-          {open.error.message}
+          {t(open.error.message)}
         </div>
-      )}
+      ))}
 
       {/* ---------------- Gegenprüfen ---------------- */}
-      {tab === 'pruefen' && (
+      {t(tab === 'pruefen' && (
         <>
           <div className="card sky tight">
             <span className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
               <Icon name="users" size={18} />
               <span className="grow xs">
                 <b className="sm" style={{ display: 'block', marginBottom: 2 }}>
-                  Eine Frage, zwanzig Sekunden
-                </b>
-                Zwei übereinstimmende Antworten geben die Gutschrift frei. Anonym, und du siehst
-                das Urteil der Regeln erst, nachdem du geantwortet hast — sonst wärst du keine
-                zweite Meinung mehr.
-              </span>
-              <Coin>+{mine.data?.reviewXp ?? 15}</Coin>
+                  {t("Eine Frage, zwanzig Sekunden")}</b>
+                {t("Zwei übereinstimmende Antworten geben die Gutschrift frei. Anonym, und du siehst das Urteil der Regeln erst, nachdem du geantwortet hast — sonst wärst du keine zweite Meinung mehr.")}</span>
+              <Coin>{t("+")}{t(mine.data?.reviewXp ?? 15)}</Coin>
             </span>
           </div>
 
-          {!mine.loading && reviewable.length === 0 && (
+          {t(!mine.loading && reviewable.length === 0 && (
             <div className="empty">
               <Icon name="check" size={24} />
-              Gerade ist nichts zu prüfen. Sobald jemand in deiner Nähe einen Nachweis einreicht,
-              steht er hier.
-            </div>
-          )}
+              {t("Gerade ist nichts zu prüfen. Sobald jemand in deiner Nähe einen Nachweis einreicht, steht er hier.")}</div>
+          ))}
 
           <div className="col" style={{ gap: 10 }}>
-            {reviewable.map((task) => (
+            {t(reviewable.map((task) => (
               <button
                 key={task.submissionId}
                 className="card tight row"
                 style={{ gap: 11, alignItems: 'flex-start', textAlign: 'left' }}
                 onClick={() => navigate(`/review/${task.submissionId}`)}
               >
-                {task.beforePhotoId ? (
+                {t(task.beforePhotoId ? (
                   <img
                     src={`/api/photos/${task.beforePhotoId}`}
-                    alt=""
+                    alt={t("")}
                     style={{
                       width: 46,
                       height: 46,
@@ -248,34 +241,34 @@ export default function Quests() {
                   />
                 ) : (
                   <Thumb icon="quest" size={46} />
-                )}
+                ))}
                 <span className="grow">
-                  <b className="sm">{task.quest.title}</b>
+                  <b className="sm">{t(task.quest.title)}</b>
                   <span className="xs mut" style={{ display: 'block', marginTop: 3 }}>
-                    {task.answers} von {task.quorum} Antworten · {task.quest.district ?? 'Frankfurt'}
-                    {task.quest.distanceKm !== undefined && ` · ${km(task.quest.distanceKm)}`}
+                    {t(task.answers)} {t(" von ")}{t(task.quorum)} {t(" Antworten · ")}{t(task.quest.district ?? 'Frankfurt')}
+                    {t(task.quest.distanceKm !== undefined && ` · ${km(task.quest.distanceKm)}`)}
                   </span>
                 </span>
                 <Icon name="chevron" size={18} />
               </button>
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
 
       {/* ---------------- Offen / Meine ---------------- */}
-      {tab !== 'pruefen' && !loading && shown.length === 0 && (
+      {t(tab !== 'pruefen' && !loading && shown.length === 0 && (
         <div className="empty">
           <Icon name="quest" size={26} />
-          {tab === 'meine'
+          {t(tab === 'meine'
             ? 'Du hast noch nichts gemeldet und nichts übernommen.'
-            : 'Hier ist gerade alles sauber. Melde etwas über das Foto.'}
+            : 'Hier ist gerade alles sauber. Melde etwas über das Foto.')}
         </div>
-      )}
+      ))}
 
-      {tab !== 'pruefen' && (
+      {t(tab !== 'pruefen' && (
         <div className="col" style={{ gap: 10 }}>
-          {shown.map((q) => {
+          {t([...shown].sort((a, b) => Number(b.id === selected) - Number(a.id === selected)).map((q) => {
             const status = STATUS[q.status] ?? STATUS.open
             const isMine =
               reported.has(q.id) || me?.id === (q as { createdById?: number }).createdById
@@ -302,10 +295,10 @@ export default function Quests() {
                   }}
                   onClick={() => setSelected((cur) => (cur === q.id ? null : q.id))}
                 >
-                  {q.photoId ? (
+                  {t(q.photoId ? (
                     <img
                       src={`/api/photos/${q.photoId}`}
-                      alt=""
+                      alt={t("")}
                       style={{
                         width: 46,
                         height: 46,
@@ -316,77 +309,74 @@ export default function Quests() {
                     />
                   ) : (
                     <Thumb icon="quest" size={46} />
-                  )}
+                  ))}
 
                   <span className="grow">
                     <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
                       <b className="sm">{q.title}</b>
-                      <Label tone={status.tone}>{status.label}</Label>
-                      {q.openForDays >= 3 && q.status === 'open' && (
-                        <Label tone="warn">seit {q.openForDays} Tagen</Label>
-                      )}
+                      <Label tone={status.tone}>{t(status.label)}</Label>
+                      {t(q.openForDays >= 3 && q.status === 'open' && (
+                        <Label tone="warn">{t("seit ")}{t(q.openForDays)} {t(" Tagen")}</Label>
+                      ))}
                     </span>
-                    {q.note && (
+                    {t(q.note && (
                       <span className="xs mut" style={{ display: 'block', marginTop: 3 }}>
                         {q.note}
                       </span>
-                    )}
+                    ))}
                     <span className="row xs mut" style={{ gap: 10, marginTop: 5, flexWrap: 'wrap' }}>
                       <span className="row" style={{ gap: 5 }}>
                         <Icon name="pin" size={14} />
-                        {q.district ?? 'Frankfurt'}
-                        {q.distanceKm !== undefined && ` · ${km(q.distanceKm)}`}
+                        {t(q.district ?? 'Frankfurt')}
+                        {t(q.distanceKm !== undefined && ` · ${km(q.distanceKm)}`)}
                       </span>
-                      {q.createdBy && (
+                      {t(q.createdBy && (
                         <span className="row" style={{ gap: 5 }}>
                           <Icon name="users" size={14} />
                           {q.createdBy}
                         </span>
-                      )}
+                      ))}
                     </span>
                   </span>
-                  <Coin>+{q.xp}</Coin>
+                  <Coin>{t("+")}{t(q.xp)}</Coin>
                 </button>
 
-                {q.id === selected && (
-                  <div className="row" style={{ gap: 8 }}>
-                    {q.status === 'open' && !isMine && (
+                {t(q.id === selected && (
+                  <div className="quest-card-actions">
+                    {t(q.status === 'open' && !isMine && (
                       <button
-                        className="btn primary grow"
+                        className="btn primary quest-main-action"
                         disabled={busy === q.id}
                         onClick={() => void claim(q.id)}
                       >
-                        {busy === q.id ? 'einen Moment …' : `Übernehmen · 2 Std. für dich`}
+                        {t(busy === q.id ? 'Wird reserviert …' : 'Für 2 Stunden übernehmen')}
                       </button>
-                    )}
-                    {q.status === 'open' && isMine && (
+                    ))}
+                    {t(q.status === 'open' && isMine && (
                       <span className="xs mut grow">
-                        Deine Meldung. Wegräumen darf sie jemand anderes — sonst wären Melden und
-                        Erledigen ein Klick.
-                      </span>
-                    )}
-                    {q.status !== 'open' && (
+                        {t("Deine Meldung. Wegräumen darf sie jemand anderes — sonst wären Melden und Erledigen ein Klick.")}</span>
+                    ))}
+                    {t(q.status !== 'open' && (
                       <button
-                        className="btn grow"
+                        className="btn quest-main-action"
                         onClick={() => navigate(`/quests/${q.id}/nachweis`)}
                       >
-                        Nachweis ansehen
-                      </button>
-                    )}
+                        {t("Nachweis ansehen")}</button>
+                    ))}
                     <button
-                      className="btn"
-                      aria-label="Weg dorthin"
+                      className="btn quest-route-action"
+                      aria-label={t("Weg dorthin")}
                       onClick={() => navigate(`/route/${q.id}`)}
                     >
                       <Icon name="route" size={17} />
                     </button>
                   </div>
-                )}
+                ))}
               </div>
             )
-          })}
+          }))}
         </div>
-      )}
+      ))}
     </Screen>
   )
 }
@@ -414,16 +404,12 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
       <div className="card" style={{ borderColor: 'var(--alert)', gap: 10 }}>
         <span className="row" style={{ gap: 8 }}>
           <Icon name="shield" size={20} />
-          <b>Das wird keine Quest</b>
+          <b>{t("Das wird keine Quest")}</b>
         </span>
         <p className="sm" style={{ margin: 0 }}>
-          Gefahrstoffe räumt niemand freiwillig weg, und ReMain bezahlt auch niemanden dafür. FES
-          sagt es Freiwilligen bei Sauberkeitsaktionen ausdrücklich: Farbeimer, Ölkanister und
-          Autobatterien nicht einsammeln, sondern den Fundort melden.
-        </p>
+          {t("Gefahrstoffe räumt niemand freiwillig weg, und ReMain bezahlt auch niemanden dafür. FES sagt es Freiwilligen bei Sauberkeitsaktionen ausdrücklich: Farbeimer, Ölkanister und Autobatterien nicht einsammeln, sondern den Fundort melden.")}</p>
         <button className="btn primary" onClick={() => navigate(`/erkannt/${scan.photoId}`)}>
-          Zum sicheren Weg
-        </button>
+          {t("Zum sicheren Weg")}</button>
       </div>
     )
   }
@@ -433,30 +419,29 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
       <div className="card" style={{ gap: 10 }}>
         <span className="row" style={{ gap: 8 }}>
           <Icon name="check" size={20} />
-          <b>{done.quest.title} steht auf der Karte</b>
+          <b>{t(done.quest.title)} {t(" steht auf der Karte")}</b>
         </span>
         <p className="sm mut" style={{ margin: 0 }}>
-          {done.message}
+          {t(done.message)}
         </p>
-        {done.award && (
+        {t(done.award && (
           <span className="row between">
             <span className="row" style={{ gap: 7 }}>
-              <Coin star>+{done.award.xp} XP</Coin>
-              <Tag von="estimate">Schätzung</Tag>
+              <Coin star>{t("+")}{t(done.award.xp)} {t(" XP")}</Coin>
+              <Tag von="estimate">{t("Schätzung")}</Tag>
             </span>
             <button
               className="btn sm"
               onClick={() => navigate(`/nachweis/${done.award?.actionId}`)}
             >
-              Beleg
-            </button>
+              {t("Beleg")}</button>
           </span>
-        )}
-        {done.award?.blocked && done.award.hint && (
+        ))}
+        {t(done.award?.blocked && done.award.hint && (
           <p className="xs mut" style={{ margin: 0 }}>
-            {done.award.hint}
+            {t(done.award.hint)}
           </p>
-        )}
+        ))}
       </div>
     )
   }
@@ -491,17 +476,14 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
       <span className="row" style={{ gap: 11, alignItems: 'flex-start' }}>
         <img
           src={`/api/photos/${scan.photoId}`}
-          alt=""
+          alt={t("")}
           style={{ width: 56, height: 56, borderRadius: 13, objectFit: 'cover', flexShrink: 0 }}
         />
         <span className="grow">
           <b className="sm" style={{ display: 'block' }}>
-            Als Quest melden
-          </b>
+            {t("Als Quest melden")}</b>
           <span className="xs mut">
-            Dein Foto wird das Vorher-Bild. Wer es wegräumt, fotografiert dieselbe Stelle noch
-            einmal — daraus entsteht der Nachweis.
-          </span>
+            {t("Dein Foto wird das Vorher-Bild. Wer es wegräumt, fotografiert dieselbe Stelle noch einmal — daraus entsteht der Nachweis.")}</span>
         </span>
       </span>
 
@@ -509,34 +491,32 @@ function Melden({ scan, onDone }: { scan: ScanResult; onDone: () => void }) {
         className="field"
         value={title}
         maxLength={80}
-        placeholder="Was liegt da? „Müllsack an der Bushaltestelle“"
+        placeholder={t("Was liegt da? „Müllsack an der Bushaltestelle“")}
         onChange={(e) => setTitle(e.target.value)}
       />
       <input
         className="field"
         value={note}
         maxLength={200}
-        placeholder="Hinweis für die Person, die hingeht (optional)"
+        placeholder={t("Hinweis für die Person, die hingeht (optional)")}
         onChange={(e) => setNote(e.target.value)}
       />
 
-      {error && (
+      {t(error && (
         <p className="xs" style={{ margin: 0, color: 'var(--alert)' }}>
-          {error}
+          {t(error)}
         </p>
-      )}
+      ))}
 
       <button
         className="btn primary"
         disabled={busy || title.trim().length < 3}
         onClick={() => void melden()}
       >
-        {busy ? 'wird gemeldet …' : 'Melden'}
+        {t(busy ? 'wird gemeldet …' : 'Melden')}
       </button>
       <p className="xs mut" style={{ margin: 0 }}>
-        Der Standort kommt aus deinem Foto. Ohne ihn kann niemand hingehen und niemand
-        gegenprüfen — deshalb ist er Pflicht.
-      </p>
+        {t("Der Standort kommt aus deinem Foto. Ohne ihn kann niemand hingehen und niemand gegenprüfen — deshalb ist er Pflicht.")}</p>
     </div>
   )
 }

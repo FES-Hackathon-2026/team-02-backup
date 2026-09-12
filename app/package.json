@@ -9,7 +9,9 @@
     "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:i18n": "node scripts/test-i18n.mjs",
+    "test:onboarding": "node scripts/test-onboarding.mjs"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",

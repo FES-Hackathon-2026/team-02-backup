@@ -1,7 +1,10 @@
+import { t, getLocale } from './../lib/i18n'
+import DecisionSheet from '../components/DecisionSheet'
+import MarketPhoto from '../components/MarketPhoto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import Icon, { type IconName } from '../components/Icon'
+import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Label, Tag, Thumb } from '../components/ui'
 import {
@@ -28,17 +31,11 @@ import { useMe } from '../lib/session'
  * Nothing here has a price. Free-to-take is the design.
  */
 
-const KATEGORIE_ICON: Record<string, IconName> = {
-  elektro: 'market',
-  moebel: 'home',
-  fahrrad: 'route',
-  sonstiges: 'wrench',
-}
 
 const UMKREIS = [
-  { km: 25, label: 'ganz Frankfurt' },
-  { km: 5, label: 'unter 5 km' },
-  { km: 2, label: 'unter 2 km' },
+  { km: 25, label: '25 km' },
+  { km: 5, label: '5 km' },
+  { km: 2, label: '2 km' },
 ] as const
 
 const STATUS_LABEL: Record<string, string> = {
@@ -116,6 +113,12 @@ export default function Markt() {
   const [modus, setModus] = useState<Modus>('suchen')
   const [kategorie, setKategorie] = useState('')
   const [umkreis, setUmkreis] = useState<number>(25)
+  const [search, setSearch] = useState('')
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState('distance')
+  const [filterOpen, setFilterOpen] = useState(false)
+  const [draft, setDraft] = useState({ category: '', radius: 25, sort: 'distance' })
+  useEffect(() => { const timer = setTimeout(() => setQuery(search.trim()), 250); return () => clearTimeout(timer) }, [search])
   const [anbieten, setAnbieten] = useState(false)
 
   // The scan hands over here:
@@ -130,10 +133,12 @@ export default function Markt() {
   const suche = useMemo(() => {
     const q = new URLSearchParams({ lat: String(pos.lat), lon: String(pos.lon), r: String(umkreis) })
     if (kategorie) q.set('category', kategorie)
+    if (query) q.set('q', query)
+    q.set('sort', sort)
     return `/api/market?${q}`
-  }, [kategorie, umkreis, pos.lat, pos.lon])
+  }, [kategorie, umkreis, query, sort, pos.lat, pos.lon])
 
-  const markt = useApi<{ items: MarketItem[] }>(modus === 'suchen' ? suche : null)
+  const markt = useApi<{ items: MarketItem[]; total: number }>(modus === 'suchen' ? suche : null)
   // Always loaded, not only on the tab: a handover waiting on this person is
   // the one thing they must not have to go looking for.
   const meine = useApi<MarketMine>('/api/market/mine')
@@ -146,6 +151,8 @@ export default function Markt() {
   const katalog = useApi<MarketCatalogue>('/api/market/defects')
 
   const items = markt.data?.items ?? []
+  const filterCount = Number(!!kategorie) + Number(umkreis !== 25) + Number(sort !== 'distance')
+  function resetFilters() { setKategorie(''); setUmkreis(25); setSort('distance'); setSearch(''); setQuery('') }
   const kategorien = katalog.data?.categories ?? []
 
   /** Handovers where the other side has confirmed and this person has not. */
@@ -167,95 +174,74 @@ export default function Markt() {
 
   return (
     <Screen
-      title="Reparatur-Markt"
-      sub={`${exact ? 'um dich herum' : me.district.name} · ${UMKREIS.find((u) => u.km === umkreis)?.label}`}
+      title={t("Reparatur-Markt")}
+      sub={t("Gebrauchtes aus deiner Nähe")}
       tabs
       action={
-        <button className="icobtn" aria-label="Etwas anbieten" onClick={() => setAnbieten(true)}>
+        <button className="icobtn" aria-label={t("Etwas anbieten")} onClick={() => setAnbieten(true)}>
           <Icon name="plus" size={21} />
         </button>
       }
     >
-      <div className="card sky tight row" style={{ alignItems: 'flex-start', gap: 10 }}>
-        <Icon name="wrench" size={19} style={{ color: 'var(--blue-deep)', marginTop: 1 }} />
-        <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-          Fast ganz. Nur ein kleiner Defekt.{' '}
-          <b style={{ color: 'var(--ink)' }}>Betriebe und Bastler:innen holen kostenlos ab</b> —
-          bevor daraus Sperrmüll wird.
-        </p>
-      </div>
+      <p className="sm mut" style={{ margin: 0 }}>{t("Gebrauchtes finden, kostenlos weitergeben oder reparieren lassen.")}</p>
 
       <Segment modus={modus} onChange={setModus} offen={wartetAufDich || undefined} />
 
-      {modus === 'suchen' && (
+      {t(modus === 'suchen' && (
         <>
-          <div className="chips scroll">
-            <button className="chip" aria-pressed={kategorie === ''} onClick={() => setKategorie('')}>
-              Alles
-            </button>
-            {kategorien.map((k) => (
-              <button
-                key={k.id}
-                className="chip"
-                aria-pressed={k.id === kategorie}
-                onClick={() => setKategorie(k.id)}
-              >
-                {k.label}
-              </button>
-            ))}
+          <div className="market-search-row">
+            <label className="market-search"><Icon name="search" size={21} /><input aria-label={t("Angebote durchsuchen")} placeholder={t("Was suchst du?")} value={search} onChange={event => setSearch(event.target.value)} />{t(search && <button className="icobtn bare" aria-label={t("Suche löschen")} onClick={() => { setSearch(''); setQuery('') }}><Icon name="cross" size={18} /></button>)}</label>
+            <button className="market-filter-trigger" aria-haspopup="dialog" onClick={() => { setDraft({ category: kategorie, radius: umkreis, sort }); setFilterOpen(true) }}><Icon name="filter" size={20} />{t("Filter")}{t(filterCount > 0 && <span>{t(filterCount)}</span>)}</button>
           </div>
+          {t(filterCount > 0 && <div className="market-active-filters" aria-label={t("Aktive Filter")}>
+            {t(kategorie && <button onClick={() => setKategorie('')} aria-label={t("Kategoriefilter entfernen")}>{t(kategorien.find(k => k.id === kategorie)?.label ?? kategorie)}<Icon name="cross" size={14} /></button>)}
+            {t(umkreis !== 25 && <button onClick={() => setUmkreis(25)} aria-label={t("Entfernungsfilter entfernen")}>{t("Bis ")}{t(umkreis)} {t(" km")}<Icon name="cross" size={14} /></button>)}
+            {t(sort !== 'distance' && <button onClick={() => setSort('distance')} aria-label={t("Sortierung zurücksetzen")}>{t("Neueste zuerst")}<Icon name="cross" size={14} /></button>)}
+            <button className="market-reset" onClick={resetFilters}>{t("Zurücksetzen")}</button>
+          </div>)}
+          <div className="market-results-heading"><h2 className="h3" aria-live="polite">{t(markt.loading ? 'Angebote laden …' : `${markt.data?.total ?? items.length} ${(markt.data?.total ?? items.length) === 1 ? 'Angebot' : 'Angebote'}`)}</h2><span className="xs mut">{t(sort === 'distance' ? 'Nächste zuerst' : 'Neueste zuerst')}</span></div>
+          {t(markt.error && <div className="card" role="alert"><p>{t("Angebote konnten nicht geladen werden.")}</p><button className="btn" onClick={markt.reload}>{t("Erneut laden")}</button></div>)}
+          {t(katalog.error && <div role="alert"><p className="sm">{t("Kategorien konnten nicht geladen werden.")}</p><button className="btn sm" onClick={katalog.reload}>{t("Kategorien laden")}</button></div>)}
 
-          <div className="chips scroll">
-            {UMKREIS.map((u) => (
-              <button
-                key={u.km}
-                className="chip"
-                aria-pressed={u.km === umkreis}
-                onClick={() => setUmkreis(u.km)}
-              >
-                {u.label}
-              </button>
-            ))}
-          </div>
-
-          {markt.loading && (
+          {t(markt.loading && (
             <div className="empty">
               <span className="spinner" />
             </div>
-          )}
+          ))}
 
-          {!markt.loading && items.length === 0 && (
+          {t(!markt.loading && !markt.error && items.length === 0 && (
             <div className="empty">
               <Icon name="market" size={26} />
-              Hier ist gerade nichts zu vergeben. Stell das Erste ein.
+              <h2 className="h2">{t("Keine passenden Angebote")}</h2><p className="sm mut">{t("Versuche einen anderen Suchbegriff oder einen größeren Umkreis.")}</p>{t((filterCount > 0 || search) && <button className="btn" onClick={resetFilters}>{t("Alle Angebote ansehen")}</button>)}
             </div>
-          )}
+          ))}
 
+          {t((markt.data?.total ?? 0) > items.length && <p className="xs mut">{t("Die ersten ")}{t(items.length)} {t(" Treffer. Grenze deine Suche ein, um weitere Angebote zu finden.")}</p>)}
           <div className="col" style={{ gap: 10 }}>
-            {items.map((item) => (
+            {t(items.map((item) => (
               <AngebotKarte key={item.id} item={item} />
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
 
-      {modus === 'meine' && <Meine load={meine} meId={me.id} />}
+      {t(modus === 'meine' && <Meine load={meine} meId={me.id} />)}
 
-      {modus === 'betriebe' && (
+      {t(modus === 'betriebe' && (
         <>
           <p className="xs mut" style={{ lineHeight: 1.5, margin: 0 }}>
-            {betriebe.data?.places.length ?? 0} Reparaturbetriebe im Umkreis von 12 km.{' '}
-            <Tag von="api">OpenStreetMap</Tag>
+            {t(betriebe.data?.places.length ?? 0)} {t(" Reparaturbetriebe im Umkreis von 12 km.")}{t(' ')}
+            <Tag von="api">{t("OpenStreetMap")}</Tag>
           </p>
 
-          {betriebe.loading && (
+          {t(betriebe.loading && (
             <div className="empty">
               <span className="spinner" />
             </div>
-          )}
+          ))}
 
           <div className="col" style={{ gap: 9 }}>
-            {betriebe.data?.places.map((p) => (
+            {t(betriebe.data?.places.map((p) => (
               <div key={p.id} className="card tight row" style={{ gap: 11, display: 'flex' }}>
                 <span className="thumb" style={{ width: 38, height: 38, flex: 'none' }}>
                   <Icon name="wrench" size={19} />
@@ -265,17 +251,24 @@ export default function Markt() {
                     {p.name}
                   </b>
                   <span className="xs mut">
-                    {p.addr ?? 'Adresse nicht hinterlegt'}
-                    {p.distanceKm !== undefined && ` · ${p.distanceKm.toFixed(1)} km`}
+                    {t(p.addr ?? 'Adresse nicht hinterlegt')}
+                    {t(p.distanceKm !== undefined && ` · ${p.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`)}
                   </span>
                 </span>
               </div>
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
 
-      {anbieten && (
+      {t(filterOpen && <DecisionSheet title={t("Angebote filtern")} onClose={() => setFilterOpen(false)}>
+        <fieldset className="market-filter-group"><legend>{t("Kategorie")}</legend><div className="market-category-options">{t([{ id: '', label: 'Alle Kategorien' }, ...kategorien].map(category => <label key={category.id}><input type="radio" name="market-category" checked={draft.category === category.id} onChange={() => setDraft({ ...draft, category: category.id })} /><span>{t(category.label)}</span></label>))}</div></fieldset>
+        <fieldset className="market-filter-group"><legend>{t("Entfernung")}</legend><p className="xs mut">{t(exact ? 'Ab deinem aktuellen Standort' : `Ab Stadtteilmitte ${me.district.name}`)}</p><div className="market-radius-options">{t([...UMKREIS].reverse().map(radius => <label key={radius.km}><input type="radio" name="market-radius" checked={draft.radius === radius.km} onChange={() => setDraft({ ...draft, radius: radius.km })} /><span>{t(radius.label)}</span></label>))}</div></fieldset>
+        <label className="market-sort-label">{t("Sortieren nach")}<select className="input" value={draft.sort} onChange={event => setDraft({ ...draft, sort: event.target.value })}><option value="distance">{t("Nächste zuerst")}</option><option value="newest">{t("Neueste zuerst")}</option></select></label>
+        <div className="market-filter-actions"><button className="btn" onClick={() => setDraft({ category: '', radius: 25, sort: 'distance' })}>{t("Zurücksetzen")}</button><button className="btn primary" onClick={() => { setKategorie(draft.category); setUmkreis(draft.radius); setSort(draft.sort); setFilterOpen(false) }}>{t("Anwenden")}</button></div>
+      </DecisionSheet>)}
+
+      {t(anbieten && (
         <AnbietenSheet
           katalog={katalog.data}
           position={pos}
@@ -287,7 +280,7 @@ export default function Markt() {
           }}
           onClose={schliessen}
         />
-      )}
+      ))}
     </Screen>
   )
 }
@@ -306,74 +299,40 @@ function Segment({
   offen?: number
 }) {
   const tabs: [Modus, string][] = [
-    ['suchen', 'Zu vergeben'],
+    ['suchen', 'Entdecken'],
     ['meine', offen ? `Meine · ${offen}` : 'Meine'],
-    ['betriebe', 'Wer repariert'],
+    ['betriebe', 'Reparatur'],
   ]
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
-        gap: 4,
-        background: 'var(--sky)',
-        padding: 4,
-        borderRadius: 13,
-      }}
-    >
-      {tabs.map(([id, label]) => (
+    <div className="market-segments" aria-label={t("Marktbereiche")}>
+      {t(tabs.map(([id, label]) => (
         <button
           key={id}
           onClick={() => onChange(id)}
           aria-pressed={modus === id}
-          style={{
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 10,
-            border: 'none',
-            fontSize: 12.5,
-            fontWeight: modus === id ? 700 : 600,
-            background: modus === id ? 'var(--card)' : 'transparent',
-            color: modus === id ? 'var(--ink)' : 'var(--blue-ink)',
-            boxShadow: modus === id ? 'var(--sh)' : 'none',
-          }}
+          className="market-segment"
         >
-          {label}
+          {t(label)}
         </button>
-      ))}
+      )))}
     </div>
   )
 }
 
 function AngebotKarte({ item }: { item: MarketItem }) {
   return (
-    <Link className="card tight" to={`/markt/${item.id}`}>
-      <span className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
-        {item.photoId ? (
-          <img
-            src={`/api/photos/${item.photoId}`}
-            alt=""
-            style={{ width: 66, height: 66, borderRadius: 13, objectFit: 'cover', flex: 'none' }}
-          />
-        ) : (
-          <Thumb icon={KATEGORIE_ICON[item.category] ?? 'market'} size={66} />
-        )}
+    <Link className="card tight market-offer" to={`/markt/${item.id}`}>
+      <span className="row" style={{ gap: 14, alignItems: 'flex-start' }}>
+        <MarketPhoto item={item} size={82} />
 
         <span className="grow col" style={{ gap: 5, alignItems: 'flex-start' }}>
-          <span className="between" style={{ width: '100%', alignItems: 'flex-start' }}>
-            <b className="sm">{item.title}</b>
-            <Tag von="api">kostenlos</Tag>
-          </span>
-          <span className="row" style={{ gap: 5, flexWrap: 'wrap' }}>
-            <Label tone="warn">{item.defect}</Label>
-            {item.condition && <Tag von="input">{item.condition}</Tag>}
-          </span>
+          <b className="market-offer-title">{item.title}</b>
+          <span className="market-offer-price">{t("Zu verschenken")}</span>
+          <span className="sm mut">{t(item.defect)}{t(item.condition ? ` · ${item.condition}` : '')}</span>
           <span className="xs mut">
             {item.district}
-            {item.distanceKm !== undefined && ` · ${item.distanceKm.toFixed(1)} km`}
+            {t(item.distanceKm !== undefined && ` · ${item.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`)}
           </span>
         </span>
       </span>
@@ -398,34 +357,33 @@ function Meine({ load, meId }: { load: ReturnType<typeof useApi<MarketMine>>; me
     return (
       <div className="empty">
         <Icon name="market" size={26} />
-        Du hast noch nichts angeboten und nichts reserviert.
-      </div>
+        {t("Du hast noch nichts angeboten und nichts reserviert.")}</div>
     )
   }
 
   return (
     <>
-      {offered.length > 0 && (
+      {t(offered.length > 0 && (
         <>
-          <h2 className="h3">Von dir angeboten</h2>
+          <h2 className="h3">{t("Von dir angeboten")}</h2>
           <div className="col" style={{ gap: 9 }}>
-            {offered.map((i) => (
+            {t(offered.map((i) => (
               <MeineKarte key={i.id} item={i} meId={meId} />
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
 
-      {claimed.length > 0 && (
+      {t(claimed.length > 0 && (
         <>
-          <h2 className="h3">Von dir reserviert</h2>
+          <h2 className="h3">{t("Von dir reserviert")}</h2>
           <div className="col" style={{ gap: 9 }}>
-            {claimed.map((i) => (
+            {t(claimed.map((i) => (
               <MeineKarte key={i.id} item={i} meId={meId} />
-            ))}
+            )))}
           </div>
         </>
-      )}
+      ))}
     </>
   )
 }
@@ -436,15 +394,15 @@ function MeineKarte({ item, meId }: { item: MarketMineItem; meId: number }) {
   const andereHatBestaetigt = istBesitz ? item.handover.claimer : item.handover.owner
 
   const hinweis = item.handover.complete
-    ? 'Übergeben und gutgeschrieben.'
+    ? 'Übergabe bestätigt. Punkte gutgeschrieben.'
     : item.status !== 'reserved'
       ? istBesitz
-        ? 'Wartet auf jemanden, der es abholt.'
+        ? 'Noch verfügbar.'
         : null
       : ichHabeBestaetigt
         ? `Du hast bestätigt. Es fehlt noch ${(istBesitz ? item.claimerName : item.ownerName) ?? 'die andere Seite'}.`
         : andereHatBestaetigt
-          ? 'Die andere Seite hat bestätigt — jetzt bist du dran.'
+          ? 'Abholung bestätigt. Deine Bestätigung fehlt noch.'
           : `Reserviert von ${(istBesitz ? item.claimerName : item.ownerName) ?? 'jemandem'}.`
 
   return (
@@ -453,21 +411,20 @@ function MeineKarte({ item, meId }: { item: MarketMineItem; meId: number }) {
         <span className="grow col" style={{ gap: 5, alignItems: 'flex-start' }}>
           <b className="sm">{item.title}</b>
           <span className="row" style={{ gap: 5, flexWrap: 'wrap' }}>
-            <Label tone="warn">{item.defect}</Label>
-            {item.window && <Label>{item.window.label}</Label>}
+            <Label tone="warn">{t(item.defect)}</Label>
+            {t(item.window && <Label>{t(item.window.label)}</Label>)}
           </span>
-          {hinweis && <span className="xs mut">{hinweis}</span>}
+          {t(hinweis && <span className="xs mut">{t(hinweis)}</span>)}
         </span>
         <span className="col" style={{ gap: 6, alignItems: 'flex-end' }}>
-          {item.handover.complete ? (
+          {t(item.handover.complete ? (
             <Tag von="api" icon>
-              übergeben
-            </Tag>
+              {t("übergeben")}</Tag>
           ) : (
             <Label tone={item.status === 'reserved' ? 'warn' : 'plain'}>
-              {STATUS_LABEL[item.status] ?? item.status}
+              {t(STATUS_LABEL[item.status] ?? item.status)}
             </Label>
-          )}
+          ))}
           <Icon name="chevron" size={16} style={{ color: 'var(--ink3)' }} />
         </span>
       </span>
@@ -559,7 +516,7 @@ function AnbietenSheet({
   return (
     <div
       role="dialog"
-      aria-label="Etwas anbieten"
+      aria-label={t("Etwas anbieten")}
       onClick={(e) => e.target === e.currentTarget && onClose()}
       style={{
         position: 'fixed',
@@ -579,96 +536,94 @@ function AnbietenSheet({
 
         <div className="between" style={{ marginBottom: 4 }}>
           <h2 className="h2" style={{ margin: 0 }}>
-            Etwas anbieten
-          </h2>
-          <button className="icobtn bare" onClick={() => onClose()} aria-label="Schließen">
+            {t("Etwas anbieten")}</h2>
+          <button className="icobtn bare" onClick={() => onClose()} aria-label={t("Schließen")}>
             <Icon name="cross" size={20} />
           </button>
         </div>
 
         <p className="xs mut" style={{ marginTop: 0, lineHeight: 1.5 }}>
-          Kostenlos abzugeben. Gutgeschrieben wird erst, wenn ihr beide die Übergabe bestätigt.
-        </p>
+          {t("Kostenlos abzugeben. Gutgeschrieben wird erst, wenn ihr beide die Übergabe bestätigt.")}</p>
 
         <div className="col" style={{ gap: 14 }}>
           <label className="col" style={{ gap: 6 }}>
-            <span className="lbl">Was ist es?</span>
+            <span className="lbl">{t("Was ist es?")}</span>
             <input
               className="field"
               value={titel}
               onChange={(e) => setTitel(e.target.value)}
-              placeholder="Waschmaschine, Bosch"
+              placeholder={t("Waschmaschine, Bosch")}
               maxLength={80}
               autoFocus={titel === ''}
             />
           </label>
 
           <div className="col" style={{ gap: 6 }}>
-            <span className="lbl">Kategorie</span>
+            <span className="lbl">{t("Kategorie")}</span>
             <div className="chips">
-              {(katalog?.categories ?? []).map((k) => (
+              {t((katalog?.categories ?? []).map((k) => (
                 <button
                   key={k.id}
                   className="chip"
                   aria-pressed={k.id === kategorie}
                   onClick={() => setKategorie(k.id)}
                 >
-                  {k.label}
+                  {t(k.label)}
                 </button>
-              ))}
+              )))}
             </div>
           </div>
 
           <div className="col" style={{ gap: 6 }}>
-            <span className="lbl">Was fehlt? Ein Tag, kein Aufsatz.</span>
+            <span className="lbl">{t("Was fehlt? Ein Tag, kein Aufsatz.")}</span>
             <div className="chips">
-              {defekte.map((d) => (
+              {t(defekte.map((d) => (
                 <button
                   key={d}
                   className="chip"
                   aria-pressed={d === defekt}
                   onClick={() => setDefekt(d)}
                 >
-                  {d}
+                  {t(d)}
                 </button>
-              ))}
+              )))}
             </div>
           </div>
 
           <div className="col" style={{ gap: 6 }}>
             <span className="lbl">
-              Zustand <span className="mut">— optional</span>
+              {t("Zustand ")}<span className="mut">{t("— optional")}</span>
             </span>
             <div className="chips">
-              {(katalog?.conditions ?? []).map((z) => (
+              {t((katalog?.conditions ?? []).map((z) => (
                 <button
                   key={z}
                   className="chip"
                   aria-pressed={z === zustand}
                   onClick={() => setZustand(z === zustand ? '' : z)}
                 >
-                  {z}
+                  {t(z)}
                 </button>
-              ))}
+              )))}
             </div>
           </div>
 
           <div className="row" style={{ gap: 11 }}>
-            {photoId ? (
+            {t(photoId ? (
               <img
                 src={`/api/photos/${photoId}`}
-                alt=""
+                alt={t("")}
                 style={{ width: 58, height: 58, borderRadius: 13, objectFit: 'cover', flex: 'none' }}
               />
             ) : (
               <Thumb icon="camera" size={58} />
-            )}
+            ))}
             <div className="grow col" style={{ gap: 3 }}>
-              <b className="sm">{photoId ? 'Foto dabei' : 'Foto dazu'}</b>
+              <b className="sm">{t(photoId ? 'Foto dabei' : 'Foto dazu')}</b>
               <span className="xs mut">
-                {photoId
+                {t(photoId
                   ? 'Wird verkleinert übertragen — ohne EXIF.'
-                  : 'Hilft enorm. Optional.'}
+                  : 'Hilft enorm. Optional.')}
               </span>
             </div>
             <button
@@ -676,7 +631,7 @@ function AnbietenSheet({
               disabled={ladeFoto}
               onClick={() => datei.current?.click()}
             >
-              {ladeFoto ? <span className="spinner" /> : photoId ? 'Ändern' : 'Wählen'}
+              {t(ladeFoto ? <span className="spinner" /> : photoId ? 'Ändern' : 'Wählen')}
             </button>
             <input
               ref={datei}
@@ -691,14 +646,14 @@ function AnbietenSheet({
             />
           </div>
 
-          {fehler && (
+          {t(fehler && (
             <p className="xs" style={{ color: 'var(--alert)', margin: 0 }}>
-              {fehler}
+              {t(fehler)}
             </p>
-          )}
+          ))}
 
           <button className="btn primary" disabled={!bereit} onClick={() => void abschicken()}>
-            {sendet ? <span className="spinner" /> : 'Kostenlos anbieten'}
+            {t(sendet ? <span className="spinner" /> : 'Kostenlos anbieten')}
           </button>
         </div>
       </div>
