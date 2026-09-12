@@ -17,10 +17,13 @@ const { db, one, run } = await import('../src/db.js')
 const app = Fastify()
 await app.register(cookie)
 for (const route of ['progression', 'session', 'content', 'fes', 'market-write', 'quests-write', 'rewards', 'receipt', 'mobility', 'vytal']) {
-  await app.register((await import(`../src/routes/${route}.js`)).default)
+  await app.register((await import(`../src/routes/${route}.js`)).default, route === 'session' ? {
+    googleEnabled: () => true,
+    verifyGoogleToken: async idToken => ({ uid: `test-${idToken}`, name: idToken, email: `${idToken.replaceAll(' ', '')}@example.test`, emailVerified: true, signInProvider: 'google.com' }),
+  } : {})
 }
 run("INSERT INTO districts VALUES ('bockenheim','Bockenheim',2,50.12,8.64)")
-for (let user = 1; user <= 4; user++) run("INSERT INTO users(id,name,district_id,created_at) VALUES (?,?,'bockenheim',?)", user, `Test ${user}`, new Date().toISOString())
+for (let user = 1; user <= 4; user++) run("INSERT INTO users(id,name,district_id,created_at,auth_provider,google_uid) VALUES (?,?,'bockenheim',?,'google',?)", user, `Test ${user}`, new Date().toISOString(), `seed-${user}`)
 const bytes = jpeg.encode({ width: 32, height: 32, data: Buffer.alloc(32 * 32 * 4, 180) }, 70).data
 for (const user of [1, 2]) run("INSERT INTO photos(id,user_id,mime,bytes,byte_size,lat,lon,created_at) VALUES (?,?,'image/jpeg',?,?,50.12,8.64,?)", `photo-${user}`, user, bytes, bytes.length, new Date().toISOString())
 const token = user => `${user}.${createHmac('sha256', process.env.SESSION_SECRET).update(String(user)).digest('base64url')}`
@@ -124,7 +127,7 @@ test('transport previews use ledger factors and match pre-cap quest rewards for 
 
 
 test('quiz checks answers on the server and pays only once with a linked receipt', async () => {
-  const created = await call('POST', '/api/session', { name: 'Quiz Test', districtId: 'bockenheim' }, 1, 201)
+  const created = await call('POST', '/api/session/google', { idToken: 'Quiz Test', districtId: 'bockenheim' }, 1, 201)
   const user = created.id
   const questions = await call('GET', '/api/knowledge/quiz', undefined, user)
   assert.equal(questions.questions.length, 3)
@@ -144,7 +147,7 @@ test('quiz checks answers on the server and pays only once with a linked receipt
 
 test('signed invitation binds signup; reward requires a scored photo action and cannot repeat', async () => {
   const progress = await call('GET', '/api/progression', undefined, 1)
-  const created = await call('POST', '/api/session', { name: 'Invited Test', districtId: 'bockenheim', inviteCode: progress.invitation.code }, 1, 201)
+  const created = await call('POST', '/api/session/google', { idToken: 'Invited Test', districtId: 'bockenheim', inviteCode: progress.invitation.code }, 1, 201)
   const user = created.id
   assert.equal(one('SELECT referrer_id FROM referrals WHERE referred_id=?', user).referrer_id, 1)
   const before = (await call('GET', '/api/me')).xp
@@ -156,7 +159,7 @@ test('signed invitation binds signup; reward requires a scored photo action and 
   await call('POST', '/api/quests', { title: 'Weitere Foto-Aktion', photoId }, user, 201)
   assert.equal((await call('GET', '/api/me')).xp, rewarded)
   assert.equal(one('SELECT COUNT(*) n FROM reward_events WHERE id=?', `referral:${user}`).n, 1)
-  const invalid = await call('POST', '/api/session', { name: 'Invalid Test', districtId: 'bockenheim', inviteCode: progress.invitation.code + 'x' }, 1, 201)
+  const invalid = await call('POST', '/api/session/google', { idToken: 'Invalid Test', districtId: 'bockenheim', inviteCode: progress.invitation.code + 'x' }, 1, 201)
   assert.equal(one('SELECT * FROM referrals WHERE referred_id=?', invalid.id), undefined)
 })
 
@@ -164,7 +167,7 @@ test('weekly and level bonuses are atomic, exactly once and excluded from activi
   const { award } = await import('../src/engine/award.js')
   const { weeklyProgress, weekKey } = await import('../src/engine/progression.js')
   const { tx } = await import('../src/db.js')
-  const created = await call('POST', '/api/session', { name: 'Weekly Test', districtId: 'bockenheim' }, 1, 201)
+  const created = await call('POST', '/api/session/google', { idToken: 'Weekly Test', districtId: 'bockenheim' }, 1, 201)
   const user = created.id
   const monday = weekKey()
   for (let i = 0; i < 4; i++) {
@@ -190,7 +193,7 @@ test('weekly and level bonuses are atomic, exactly once and excluded from activi
 })
 
 test('crossing a level through quiz credit awards the level bonus once with matching receipts', async () => {
-  const created = await call('POST', '/api/session', { name: 'Level Test', districtId: 'bockenheim' }, 1, 201)
+  const created = await call('POST', '/api/session/google', { idToken: 'Level Test', districtId: 'bockenheim' }, 1, 201)
   const user = created.id
   run("INSERT INTO ledger_entries(user_id,xp,coins,reason,tier,created_at) VALUES(?,195,19,'Before level boundary','confirmed',?)", user, new Date().toISOString())
   await call('POST', '/api/knowledge/quiz', { answers: [0, 1, 2] }, user)
@@ -207,7 +210,7 @@ test('crossing a level through quiz credit awards the level bonus once with matc
 
 
 test('account deletion cleans collection, referral, journey and partner records', async () => {
-  const user = await call('POST', '/api/session', { name: 'Delete Test', districtId: 'bockenheim' }, 1, 201)
+  const user = await call('POST', '/api/session/google', { idToken: 'Delete Test', districtId: 'bockenheim' }, 1, 201)
   const userId = user.id
   const stamp = new Date().toISOString()
   run("INSERT INTO pickups(id,user_id,category,volume_m3,district_id,address,slot_date,status,reference,created_at) VALUES ('delete-pickup',?,'moebel',1,'bockenheim','Testweg 1','2099-01-01','booked','DELETE',?)", userId, stamp)

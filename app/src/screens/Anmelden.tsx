@@ -1,64 +1,33 @@
 import BrandMark from '../components/BrandMark'
 import { t } from './../lib/i18n'
-import { useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 import GoogleButton from '../components/GoogleButton'
-import Icon from '../components/Icon'
 import { ApiError } from '../lib/client'
 import { firebaseConfigured } from '../lib/firebase'
 import { SignInError } from '../lib/firebase'
-import { STADTTEILE_BY_NAME, nearestStadtteil } from '../lib/frankfurt'
+import { STADTTEILE_BY_NAME } from '../lib/frankfurt'
 import { DistrictRequired, useSession } from '../lib/session'
 
-/**
- * Sign-in.
- *
- * Two ways in, deliberately:
- *
- *   Google   a real account, so progress follows the person to their next
- *            device instead of living in one browser's cookie.
- *   Gast     a name and a Stadtteil. No password, no e-mail, no
- *            confirmation. A judge holding a phone should be inside the app
- *            in ten seconds, and not everyone wants to hand a hackathon
- *            prototype their Google account.
- *
- * The Stadtteil is the one thing the app genuinely needs either way — it is
- * what a person's actions count towards — so when Google cannot supply it,
- * the screen asks for it as a second step rather than up front.
- */
-
-type Step = 'choose' | 'district' | 'guest'
+/** Google is the only authentication flow; new accounts choose a district once. */
+type Step = 'choose' | 'district'
 
 export default function Anmelden() {
-  const [params] = useSearchParams()
-  const { signIn, signInWithGoogle, auth, offline } = useSession()
+  const { signInWithGoogle, cancelGoogleSignIn, pendingGoogleProfile, auth, offline } = useSession()
 
-  const [step, setStep] = useState<Step>('choose')
-  const [name, setName] = useState('')
+  const [step, setStep] = useState<Step>(pendingGoogleProfile ? 'district' : 'choose')
   const [districtId, setDistrictId] = useState('')
-  const [busy, setBusy] = useState<'google' | 'guest' | null>(null)
+  const [busy, setBusy] = useState<'google' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [located, setLocated] = useState(false)
   /** the Google profile, once we know it needs a Stadtteil to finish */
-  const [greeting, setGreeting] = useState<string | null>(null)
+  const [greeting, setGreeting] = useState<string | null>(pendingGoogleProfile?.name || pendingGoogleProfile?.email || null)
 
   useEffect(() => {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setDistrictId((current) =>
-          current === ''
-            ? nearestStadtteil({ lat: pos.coords.latitude, lon: pos.coords.longitude }).id
-            : current,
-        )
-        setLocated(true)
-      },
-      // Refusing is a normal answer. The dropdown still works.
-      () => undefined,
-      { timeout: 5000, maximumAge: 300_000 },
-    )
-  }, [])
+    if (pendingGoogleProfile) {
+      setGreeting(pendingGoogleProfile.name || pendingGoogleProfile.email)
+      setStep('district')
+    }
+  }, [pendingGoogleProfile])
 
   /** Everything that can go wrong, in one sentence the person can act on. */
   function explain(err: unknown): string {
@@ -80,24 +49,13 @@ export default function Anmelden() {
         setStep('district')
       } else {
         setError(explain(err))
+        if (err instanceof ApiError && err.status === 401) setStep('choose')
       }
       setBusy(null)
     }
   }
 
-  async function guest(event: React.FormEvent) {
-    event.preventDefault()
-    setError(null)
-    setBusy('guest')
-    try {
-      await signIn(name, districtId, params.get('invite') ?? undefined)
-    } catch (err) {
-      setError(explain(err))
-      setBusy(null)
-    }
-  }
-
-  const googleOffered = firebaseConfigured && auth?.google !== false
+  const googleOffered = firebaseConfigured && auth?.google === true && !offline
 
   return (
     <div className="app">
@@ -123,17 +81,10 @@ export default function Anmelden() {
 
         {t(step === 'choose' && (
           <div className="col" style={{ gap: 14 }}>
-            {t(googleOffered && (
-              <>
-                <GoogleButton onClick={() => void google()} busy={busy === 'google'} />
-                <div className="or">
-                  <span>{t("oder")}</span>
-                </div>
-              </>
-            ))}
-
-            <button className="btn primary" onClick={() => setStep('guest')}>
-              {t("Ohne Konto starten")}</button>
+            <GoogleButton onClick={() => void google()} busy={busy === 'google'} disabled={!googleOffered} />
+            {!googleOffered && <p className="sm mut" role="status">{t(offline
+              ? 'Keine Verbindung zum Server. Bitte versuche es gleich noch einmal.'
+              : 'Google-Anmeldung ist noch nicht eingerichtet. Bitte versuche es später erneut.')}</p>}
 
             {t(error !== null && <ErrorNote>{t(error)}</ErrorNote>)}
           </div>
@@ -144,7 +95,6 @@ export default function Anmelden() {
             <DistrictField
               value={districtId}
               onChange={setDistrictId}
-              located={located}
               autoFocus
             />
             {t(error !== null && <ErrorNote>{t(error)}</ErrorNote>)}
@@ -155,67 +105,15 @@ export default function Anmelden() {
             >
               {t(busy === 'google' ? 'Einen Moment …' : 'Fertig')}
             </button>
+            <button className="btn ghost" disabled={busy !== null} onClick={() => {
+              cancelGoogleSignIn(); setStep('choose'); setGreeting(null); setError(null)
+            }}>{t('Anderes Google-Konto wählen')}</button>
           </div>
         ))}
 
-        {t(step === 'guest' && (
-          <form onSubmit={guest} className="col" style={{ gap: 14 }}>
-            <label className="col" style={{ gap: 7 }}>
-              <span className="lbl">{t("Wie heißt du?")}</span>
-              <input
-                id="name"
-                className="field"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("Vorname reicht")}
-                autoComplete="given-name"
-                maxLength={40}
-                required
-                autoFocus
-              />
-            </label>
-
-            <DistrictField value={districtId} onChange={setDistrictId} located={located} />
-
-            {t(error !== null && <ErrorNote>{t(error)}</ErrorNote>)}
-
-            <button
-              className="btn primary"
-              type="submit"
-              disabled={name.trim().length < 2 || districtId === '' || busy !== null}
-            >
-              {t(busy === 'guest' ? 'Einen Moment …' : 'Los geht’s')}
-            </button>
-
-            {t(googleOffered && (
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => {
-                  setError(null)
-                  setStep('choose')
-                }}
-              >
-                {t("Zurück")}</button>
-            ))}
-          </form>
-        ))}
-
         <p className="xs mut" style={{ lineHeight: 1.55 }}>
-          {t(step === 'guest' ? (
-            <>
-              {t("Kein Passwort, keine E-Mail. Der Name steht auf deinen Quests, der Stadtteil zählt auf das Stadtziel ein. Ohne Konto bleibt dein Fortschritt in diesem Browser — meldest du dich später mit Google an, nehmen wir ihn mit.")}</>
-          ) : (
-            <>
-              {t("Mit Google übernehmen wir Name, E-Mail und Profilbild — mehr nicht, und kein Zugriff auf dein Konto. Dein Standort wird nur benutzt, wenn du eine Aktion startest.")}</>
-          ))}
+          {t('Mit Google übernehmen wir deinen Namen, deine E-Mail-Adresse und dein Profilbild. Deinen Stadtteil wählst du einmal beim ersten Anmelden.')}
         </p>
-
-        {t(offline && (
-          <p className="stub">
-            {t("Der Server ist gerade nicht erreichbar. Läuft ")}<code>{t("npm start")}</code> {t(" in")}{t(' ')}
-            <code>{t("server/")}</code>{t("?")}</p>
-        ))}
       </div>
     </div>
   )
@@ -236,12 +134,10 @@ function ErrorNote({ children }: { children: React.ReactNode }) {
 function DistrictField({
   value,
   onChange,
-  located,
   autoFocus = false,
 }: {
   value: string
   onChange: (id: string) => void
-  located: boolean
   autoFocus?: boolean
 }) {
   return (
@@ -263,11 +159,6 @@ function DistrictField({
           </option>
         )))}
       </select>
-      {t(located && (
-        <span className="xs mut row" style={{ gap: 5 }}>
-          <Icon name="pin" size={14} />
-          {t("Anhand deines Standorts vorausgewählt — änderbar.")}</span>
-      ))}
     </label>
   )
 }

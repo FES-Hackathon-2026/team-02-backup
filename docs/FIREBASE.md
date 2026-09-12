@@ -1,11 +1,8 @@
 # Google-Anmeldung einrichten (Firebase Authentication)
 
-Ungefähr zehn Minuten, einmalig. Danach hat ReMain zwei Anmeldewege: **Mit
-Google anmelden** und **Ohne Konto starten** (Name + Stadtteil, wie bisher).
-
-Ist Firebase *nicht* konfiguriert, funktioniert die App unverändert weiter —
-der Google-Knopf erscheint dann gar nicht erst, und im Bundle landet kein
-einziges Byte des Firebase-SDK.
+ReMain bietet ausschließlich **Mit Google anmelden** an. Gast-Anmeldung und
+Demo-Kontowechsel sind deaktiviert, auch über direkte API-Aufrufe. Ohne Firebase-
+Konfiguration bleibt die Anmeldung gesperrt; der Google-Knopf zeigt den Status an.
 
 ---
 
@@ -17,8 +14,8 @@ Kurz, weil es die Einrichtung erklärt:
    ein **ID-Token** — ein von Google signiertes JWT.
 2. Die App schickt dieses Token an `POST /api/session/google`.
 3. Der Server prüft die Signatur gegen **Googles öffentliche Schlüssel** und
-   setzt danach *sein eigenes* Session-Cookie — dasselbe, das die Gast-
-   Anmeldung setzt.
+   setzt danach *sein eigenes* Session-Cookie. Nur bestätigte Google-Konten
+   erhalten Zugriff.
 
 Daraus folgt das Wichtigste für die Konfiguration:
 
@@ -84,7 +81,7 @@ VITE_FIREBASE_PROJECT_ID=remain-frankfurt
 VITE_FIREBASE_APP_ID=1:123456789012:web:abc123def456
 ```
 
-**`server/.env`** — der Server. Nur diese eine Zeile, und die **Projekt-ID muss
+**`server/.env`** — der Server. Die **Projekt-ID muss
 identisch sein**, sonst wird jedes Token abgelehnt:
 
 ```bash
@@ -97,12 +94,12 @@ FIREBASE_PROJECT_ID=remain-frankfurt
 
 ## 5. Domains freigeben
 
-**Authentication → Settings → Authorized domains.** `localhost` steht schon
-drin. Ergänzen, was sonst noch benutzt wird:
+**Authentication → Settings → Authorized domains.** `localhost` prüfen und
+bei Bedarf ergänzen. Weitere verwendete Domains ebenfalls freigeben:
 
 | Umgebung | Eintrag |
 |---|---|
-| Laptop | `localhost` (bereits vorhanden) |
+| Laptop | `localhost` (prüfen und ergänzen) |
 | Handy im selben WLAN | die LAN-IP, z. B. `192.168.1.42` |
 | Render | `remain.onrender.com` (die Domain aus dem Dashboard) |
 | GitHub Pages | `fes-hackathon-2026.github.io` |
@@ -121,8 +118,8 @@ cd app    && npm run dev    # Terminal 2
 
 - [ ] `curl localhost:8080/api/auth/config` antwortet `{"google":true,…}`.
       Steht dort `false`, fehlt `FIREBASE_PROJECT_ID` in `server/.env`.
-- [ ] Der Anmeldebildschirm zeigt **Mit Google anmelden** über dem Trenner.
-      Fehlt er, fehlen die `VITE_FIREBASE_*` oder es wurde nicht neu gestartet.
+- [ ] Der Anmeldebildschirm zeigt **Mit Google anmelden** als einzigen Anmeldeweg.
+      Ist er deaktiviert, die Firebase-Konfiguration prüfen und beide Server neu starten.
 - [ ] Klick öffnet Googles Kontoauswahl.
 - [ ] Beim **ersten** Mal fragt die App danach noch den Stadtteil — Google
       liefert keinen, und die App braucht ihn.
@@ -149,7 +146,7 @@ Anschließend die Render-Domain unter **Authorized domains** ergänzen.
 Die Werte als **Repository secrets** hinterlegen und im Workflow-Schritt
 `npm run build` als `env:` durchreichen. Achtung: auf Pages läuft **nur** der
 Client, ohne `server/`. Ohne Server gibt es kein `/api/session/google` und
-damit keine Google-Anmeldung — die Pages-Variante bleibt die Gast-Version.
+damit keine Anmeldung. Auch auf Pages ist ein angebundener Backend-Server erforderlich; eine Gast-Version gibt es nicht.
 
 ---
 
@@ -182,3 +179,12 @@ Unter **Einstellungen → Konto löschen** wird der ReMain-Datensatz samt XP,
 Münzen und Belegen entfernt. Gemeldete Quests und Markt-Anzeigen bleiben
 ohne Namen stehen, damit der Nachbarschaft nichts wegbricht. Das
 Google-Konto selbst bleibt unberührt — darauf hatte ReMain nie Zugriff.
+
+## Google-only behavior and validation
+
+- `POST /api/session` and `POST /api/session/switch` return 403 and never create a cookie. Existing guest and demo cookies cannot read `/api/me` or use authenticated APIs.
+- Firebase tokens require a valid Google signature, matching issuer/audience, required time claims, `google.com` provider and verified email. Production requires `SESSION_SECRET`; startup fails when it is missing.
+- A valid legacy guest cookie may migrate its own data only after verified Google sign-in with a previously unlinked Google UID. No legacy users or content are deleted.
+- New Google accounts select a district after authentication; returning accounts skip that step. Popup and redirect use the same server exchange, preserve invitation parameters, and support choosing a different Google account.
+- Run `npm test --prefix server`, `npm run test:google-login --prefix app`, `npm run test:i18n --prefix app` and `npm run build --prefix app`.
+- Automated checks use a mock only at the external Google verification boundary; they cover forbidden login methods, token claims, account creation/reuse, guest migration, cookie access and bilingual sign-in states. Live OAuth still requires configured Firebase credentials and an interactive browser check.

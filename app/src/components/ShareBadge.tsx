@@ -177,7 +177,7 @@ export default function ShareBadge({
             aria-label={`${t('Teilen auf')} Instagram`}
           >
             <Mark id="instagram" />
-            <span className="xs">Instagram</span>
+            <span className="xs">{t('Instagram')}</span>
           </button>
         )}
       </div>

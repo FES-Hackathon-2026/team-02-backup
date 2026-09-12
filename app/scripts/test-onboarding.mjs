@@ -21,6 +21,11 @@ for (const blocked of [false, true]) {
       stored.set('remain.onboarding.v1', 'done')
       assert.equal(hasCompletedOnboarding(), true, 'Existing completion is restored')
       stored.clear()
+      for (const key of ['remain.introduced', 'remain.introduced.v2']) {
+        stored.set(key, '1')
+        assert.equal(hasCompletedOnboarding(), true, 'Previous introductions remain completed')
+        stored.clear()
+      }
     }
     completeOnboarding()
     assert.equal(hasCompletedOnboarding(), true, 'Completing or skipping works even without storage')
@@ -29,7 +34,7 @@ for (const blocked of [false, true]) {
       setLanguage(language)
       const html = renderToStaticMarkup(<Onboarding onComplete={() => {}} />)
       assert.ok(html.includes(language === 'de' ? 'Überspringen' : 'Skip'))
-      assert.ok(html.includes(language === 'de' ? 'Ein Foto.' : 'One photo.'))
+      assert.ok(html.includes(language === 'de' ? 'Scannen' : 'Scan'))
       assert.equal((html.match(/aria-current="step"/g) ?? []).length, 1)
       assert.ok(html.includes('value="' + language + '"'))
       const splash = renderToStaticMarkup(<SplashScreen />)
@@ -37,6 +42,6 @@ for (const blocked of [false, true]) {
       assert.ok(splash.includes(language === 'de' ? 'ReMain wird geladen' : 'Loading ReMain'))
     }
     console.log('✓ Onboarding storage ${blocked ? 'blocked' : 'available'}: completion, bilingual welcome and splash passed')
-  `, resolveDir: root, loader: 'tsx' }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' })
+  `, resolveDir: root, loader: 'tsx' }, loader: { '.svg': 'text' }, bundle: true, platform: 'node', format: 'cjs', write: false, jsx: 'automatic' })
   process.stdout.write(execFileSync(process.execPath, ['--input-type=commonjs'], { input: result.outputFiles[0].text }))
 }

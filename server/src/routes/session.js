@@ -2,7 +2,7 @@ import { bindInvitation } from '../engine/progression.js'
 import { all, db, now, one, run } from '../db.js'
 import { TokenError, firebaseEnabled, verifyIdToken } from '../auth/firebase.js'
 import { totals } from '../engine/totals.js'
-import { clearSession, currentUser, requireUser, setSession } from '../session.js'
+import { clearSession, currentUser, legacyGuestForUpgrade, requireUser, setSession } from '../session.js'
 
 const NAME_MAX = 40
 
@@ -30,51 +30,15 @@ const cleanName = (value) => (typeof value === 'string' ? value.trim().slice(0, 
 const findDistrict = (districtId) =>
   one('SELECT id FROM districts WHERE id = ?', districtId) ?? null
 
-export default async function sessionRoutes(app) {
-  /**
-   * Which sign-in methods this deployment actually has.
-   *
-   * The client asks before painting the login screen, so a build without
-   * Firebase configured shows the guest form alone rather than a Google
-   * button that fails the moment it is pressed.
-   */
-  app.get('/api/auth/config', async () => ({ google: firebaseEnabled(), guest: true }))
+export default async function sessionRoutes(app, { verifyGoogleToken = verifyIdToken, googleEnabled = firebaseEnabled } = {}) {
+  app.get('/api/auth/config', async () => ({ google: googleEnabled(), guest: false }))
 
-  /** Sign in as a guest. A name and a Stadtteil, nothing else. */
-  app.post('/api/session', async (request, reply) => {
-    const { name, districtId } = request.body ?? {}
-
-    const clean = cleanName(name)
-    if (clean.length < 2) {
-      return reply.code(422).send({
-        error: 'name_too_short',
-        message: 'Bitte gib einen Namen mit mindestens zwei Zeichen an.',
-      })
-    }
-
-    const district = findDistrict(districtId)
-    if (!district) {
-      return reply.code(422).send({
-        error: 'unknown_district',
-        message: 'Diesen Stadtteil kennen wir nicht. Bitte aus der Liste wählen.',
-      })
-    }
-
-    const result = run(
-      `INSERT INTO users (name, district_id, role, is_demo, created_at, auth_provider, last_seen_at)
-       VALUES (?, ?, ?, 0, ?, 'guest', ?)`,
-      clean,
-      district.id,
-      'citizen',
-      now(),
-      now(),
-    )
-    const user = one('SELECT * FROM users WHERE id = ?', Number(result.lastInsertRowid))
-    bindInvitation(user.id, request.body?.inviteCode)
-
-    setSession(reply, user.id)
-    return reply.code(201).send(publicUser(user))
+  /** Retired endpoints explicitly reject guest creation and demo impersonation. */
+  const googleOnly = (_request, reply) => reply.code(403).send({
+    error: 'google_sign_in_required', message: 'Bitte zuerst mit Google anmelden.',
   })
+  app.post('/api/session', googleOnly)
+  app.post('/api/session/switch', googleOnly)
 
   /**
    * Sign in with Google.
@@ -94,7 +58,7 @@ export default async function sessionRoutes(app) {
    *                      and the client asks for one and calls again
    */
   app.post('/api/session/google', async (request, reply) => {
-    if (!firebaseEnabled()) {
+    if (!googleEnabled()) {
       return reply.code(501).send({
         error: 'google_not_configured',
         message:
@@ -106,7 +70,7 @@ export default async function sessionRoutes(app) {
 
     let profile
     try {
-      profile = await verifyIdToken(idToken)
+      profile = await verifyGoogleToken(idToken)
     } catch (error) {
       if (error instanceof TokenError) {
         request.log.warn({ reason: error.message }, 'google sign-in rejected')
@@ -115,12 +79,16 @@ export default async function sessionRoutes(app) {
       throw error
     }
 
+    if (profile.signInProvider !== 'google.com' || !profile.emailVerified) {
+      return reply.code(401).send({ error: 'invalid_provider', message: 'Bitte mit einem bestätigten Google-Konto anmelden.' })
+    }
+
     const existing = one('SELECT * FROM users WHERE google_uid = ?', profile.uid)
     if (existing) {
       // Picture and address can change on the Google side, so keep them
       // current — but never overwrite a name the person edited here.
       run(
-        'UPDATE users SET email = ?, photo_url = ?, last_seen_at = ? WHERE id = ?',
+        "UPDATE users SET auth_provider = 'google', email = ?, photo_url = ?, last_seen_at = ? WHERE id = ?",
         profile.email,
         profile.picture,
         now(),
@@ -131,16 +99,11 @@ export default async function sessionRoutes(app) {
     }
 
     // First sign-in with this Google account on this server.
-    const guest = currentUser(request)
-    const upgradable =
-      guest !== null &&
-      guest.is_demo === 0 &&
-      !guest.google_uid &&
-      (guest.auth_provider ?? 'guest') === 'guest'
+    const guest = legacyGuestForUpgrade(request)
 
     const district = findDistrict(districtId)
 
-    if (upgradable) {
+    if (guest) {
       run(
         `UPDATE users
             SET auth_provider = 'google', google_uid = ?, email = ?, photo_url = ?,
@@ -307,31 +270,6 @@ export default async function sessionRoutes(app) {
 
     clearSession(reply)
     return { ok: true }
-  })
-
-  /**
-   * Switch the acting person on one device — how the demo shows peer review.
-   *
-   * Demo rows only. This used to take any user id and hand out a session for
-   * it, which meant a signed-in Google account could be taken over by anyone
-   * who could POST a number.
-   */
-  app.post('/api/session/switch', async (request, reply) => {
-    const { userId } = request.body ?? {}
-    const target = one('SELECT * FROM users WHERE id = ?', userId)
-    if (!target) return reply.code(404).send({ error: 'unknown_user' })
-    // Public demo switching must never grant access to private driver manifests.
-    if (target.role === 'driver') return reply.code(403).send({ error: 'restricted_role' })
-
-    if (target.is_demo !== 1) {
-      return reply.code(403).send({
-        error: 'not_a_demo_user',
-        message: 'Es lässt sich nur zu Demo-Konten wechseln.',
-      })
-    }
-
-    setSession(reply, target.id)
-    return publicUser(target)
   })
 
   app.post('/api/session/logout', async (request, reply) => {

@@ -11,15 +11,13 @@ import { consumeRedirectResult, redirectPending, signInWithGoogle, signOutOfGoog
  * asks again. `loading` is the only reason the app shows a blank frame, and
  * it lasts one request.
  *
- * Two ways in, one session out: Google gets verified by the server and then
- * issues the SAME cookie the guest sign-in does. Nothing downstream of here
- * knows or cares which button was pressed.
+ * Google is verified by the server before it issues the application cookie.
  */
 
 /** What the server can tell us about the sign-in methods it offers. */
 export interface AuthConfig {
   google: boolean
-  guest: boolean
+  guest: false
 }
 
 /**
@@ -43,7 +41,8 @@ interface SessionValue {
   offline: boolean
   /** which sign-in methods this deployment offers; null until known */
   auth: AuthConfig | null
-  signIn: (name: string, districtId: string, inviteCode?: string) => Promise<void>
+  pendingGoogleProfile: DistrictRequired['profile'] | null
+  cancelGoogleSignIn: () => void
   /**
    * Google sign-in, end to end. Throws DistrictRequired when the account is
    * new here — call again with the chosen district and the same token is
@@ -73,6 +72,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    * no reason for one to outlive the question it is waiting on.
    */
   const [pendingToken, setPendingToken] = useState<string | null>(null)
+  const [pendingGoogleProfile, setPendingGoogleProfile] = useState<DistrictRequired['profile'] | null>(null)
 
   const refresh = useCallback(async () => {
     try {
@@ -97,19 +97,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setMe(await api.post<Me>('/api/session/google', { idToken, districtId, inviteCode: new URLSearchParams(window.location.search).get('invite') ?? undefined }))
       setOffline(false)
       setPendingToken(null)
+      setPendingGoogleProfile(null)
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && error.code === 'district_required') {
         // Hold the token so answering the question costs one request, not a
         // second trip through Google.
         setPendingToken(idToken)
-        throw new DistrictRequired(
-          (error.body as { profile?: DistrictRequired['profile'] } | null)?.profile ?? {
+        const profile = (error.body as { profile?: DistrictRequired['profile'] } | null)?.profile ?? {
             name: '',
             email: null,
             photoUrl: null,
-          },
-        )
+          }
+        setPendingGoogleProfile(profile)
+        throw new DistrictRequired(profile)
       }
+      if (error instanceof ApiError && error.status === 401) { setPendingToken(null); setPendingGoogleProfile(null) }
       throw error
     }
   }, [])
@@ -122,7 +124,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         api.get<AuthConfig>('/api/auth/config').catch(() => null),
         consumeRedirectResult(),
       ])
-      setAuth(config ?? { google: false, guest: true })
+      setAuth(config ?? { google: false, guest: false })
 
       if (redirectToken !== null) {
         try {
@@ -149,10 +151,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener('focus', update); document.removeEventListener('visibilitychange', update) }
   }, [refresh])
 
-  const signIn = useCallback(async (name: string, districtId: string, inviteCode?: string) => {
-    setMe(await api.post<Me>('/api/session', { name, districtId, inviteCode }))
-    setOffline(false)
-  }, [])
+  const cancelGoogleSignIn = useCallback(() => { setPendingToken(null); setPendingGoogleProfile(null) }, [])
 
   const startGoogle = useCallback(
     async (districtId?: string) => {
@@ -163,19 +162,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [pendingToken, exchange],
   )
 
-  /**
-   * Both halves of the session, in the order that cannot strand anyone:
-   * Google first (a failure there still leaves a working app), our cookie
-   * second, local state last.
-   */
+  /** End the server session first; a failed request must not pretend logout succeeded. */
   const signOut = useCallback(async () => {
+    await api.post('/api/session/logout')
     await signOutOfGoogle()
-    try {
-      await api.post('/api/session/logout')
-    } catch {
-      /* already gone, or offline — the device is signed out either way */
-    }
     setPendingToken(null)
+    setPendingGoogleProfile(null)
     setMe(null)
   }, [])
 
@@ -197,7 +189,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         loading: loading || redirectPending(),
         offline,
         auth,
-        signIn,
+        pendingGoogleProfile,
+        cancelGoogleSignIn,
         signInWithGoogle: startGoogle,
         signOut,
         updateProfile,

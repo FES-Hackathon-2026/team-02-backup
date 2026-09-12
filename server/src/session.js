@@ -2,22 +2,12 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import { one } from './db.js'
 
-/**
- * Identity without a hurdle.
- *
- * A judge should be signed in within ten seconds: a name, a Stadtteil, done.
- * No password, no email, no confirmation step — there is nothing here worth
- * stealing, and every barrier costs us demo time.
- *
- * The device gets a cookie holding "<userId>.<hmac>". The signature is what
- * stops someone editing the number to act as another person; it is not
- * pretending to be authentication.
- */
+/** Signed application sessions are issued only after verified Google sign-in. */
 const COOKIE = 'remain_session'
 const SECRET = process.env.SESSION_SECRET ?? 'dev-only-not-a-secret'
 
 if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
-  console.warn('[remain] SESSION_SECRET is unset in production — sessions are forgeable.')
+  throw new Error('SESSION_SECRET must be configured in production.')
 }
 
 const sign = (value) => createHmac('sha256', SECRET).update(value).digest('base64url')
@@ -32,8 +22,9 @@ function verify(token) {
   const want = Buffer.from(sign(value))
   if (given.length !== want.length || !timingSafeEqual(given, want)) return null
 
-  const userId = Number.parseInt(value, 10)
-  return Number.isInteger(userId) && userId > 0 ? userId : null
+  if (!/^[1-9][0-9]*$/.test(value)) return null
+  const userId = Number(value)
+  return Number.isSafeInteger(userId) && userId > 0 ? userId : null
 }
 
 export function setSession(reply, userId) {
@@ -52,10 +43,22 @@ export function clearSession(reply) {
 }
 
 /** The signed-in user row, or null. */
-export function currentUser(request) {
+function cookieUser(request) {
   const userId = verify(request.cookies?.[COOKIE])
   if (userId === null) return null
   return one('SELECT * FROM users WHERE id = ?', userId) ?? null
+}
+
+/** Legacy cookies may only be used to migrate their own guest row after Google verification. */
+export function legacyGuestForUpgrade(request) {
+  const user = cookieUser(request)
+  return user && user.is_demo === 0 && !user.google_uid && user.auth_provider === 'guest' ? user : null
+}
+
+/** Guest and demo cookies cannot access authenticated routes. */
+export function currentUser(request) {
+  const user = cookieUser(request)
+  return user && user.is_demo === 0 && user.auth_provider === 'google' && user.google_uid ? user : null
 }
 
 /**
@@ -70,7 +73,7 @@ export function requireUser(request, reply) {
   if (!user) {
     reply.code(401).send({
       error: 'not_signed_in',
-      message: 'Bitte zuerst anmelden — Name und Stadtteil genügen.',
+      message: 'Bitte zuerst mit Google anmelden.',
     })
     return null
   }

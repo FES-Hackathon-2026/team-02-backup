@@ -20,7 +20,7 @@ await app.register(cookie)
 await app.register(routes)
 await app.register((await import('../src/routes/session.js')).default)
 run("INSERT INTO districts VALUES ('bockenheim','Bockenheim',2,50.1,8.6)")
-for (const user of [1, 2]) run("INSERT INTO users(id,name,district_id,created_at) VALUES (?,?,'bockenheim',?)", user, `Person ${user}`, new Date().toISOString())
+for (const user of [1, 2]) run("INSERT INTO users(id,name,district_id,created_at,auth_provider,google_uid) VALUES (?,?,'bockenheim',?,'google',?)", user, `Person ${user}`, new Date().toISOString(), `seed-${user}`)
 for (let i = 1; i <= 12; i++) run("INSERT INTO photos(id,user_id,mime,bytes,byte_size,created_at) VALUES (?,1,'image/jpeg',?,1,?)", `photo${i}`, Buffer.from([1]), new Date().toISOString())
 const token = user => `${user}.${createHmac('sha256', process.env.SESSION_SECRET).update(String(user)).digest('base64url')}`
 const call = async (method, url, payload, user = 1) => {
@@ -176,7 +176,7 @@ test('multi-object basket joins shared tour; citizen sees only their own stop', 
 
 test('driver permissions, planning, completion and registration snapshot', async () => {
   assert.equal((await call('GET', '/api/fes/driver/tours')).status, 403)
-  run("INSERT INTO users(id,name,district_id,role,created_at) VALUES (3,'Driver','bockenheim','driver',?)", new Date().toISOString())
+  run("INSERT INTO users(id,name,district_id,role,created_at,auth_provider,google_uid) VALUES (3,'Driver','bockenheim','driver',?,'google','driver-test')", new Date().toISOString())
   const tours = (await call('GET', '/api/fes/driver/tours', undefined, 3)).body.tours
   const tour = tours.find(t => t.stops.some(s => s.address === 'Teststraße 40'))
   assert.ok(tour)
