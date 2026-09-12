@@ -1408,6 +1408,7 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .welcome-item-back { left: 15%; top: 20px; transform: rotate(-14deg); background: var(--sky2); }
 .welcome-item-front { right: 13%; top: 65px; transform: rotate(10deg); }
 .welcome-round-badge { position: absolute; top: 45px; right: 15%; padding: 12px; border-radius: 50%; background: var(--blue-deep); color: var(--on-blue); box-shadow: 0 0 0 5px var(--paper); }
+.welcome-round-badge .ico { color: #ffffff; }
 .welcome-route-line { position: absolute; width: 65%; height: 95px; border: 2px dashed var(--blue); border-left: 0; border-radius: 0 70px 70px 0; top: 65px; left: 12%; }
 .welcome-route-pin { position: absolute; top: 45px; left: 14%; color: var(--blue-deep); }
 .welcome-truck { transform: translate(22px, -12px); color: var(--blue-deep); animation: welcome-float 4s ease-in-out infinite; }
@@ -1429,7 +1430,8 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .welcome-actions { display: flex; gap: 12px; }
 .welcome-actions .btn { width: auto; min-width: 0; min-height: 54px; height: auto; padding: 14px 18px; }
 .welcome-actions .ico { flex-shrink: 0; }
-.welcome-actions .primary { flex: 1; justify-content: space-between; }
+.welcome-actions .primary { flex: 1; justify-content: space-between; font-size: 17px; }
+.welcome-actions .primary .ico { color: #ffffff; }
 @keyframes welcome-orbit { to { transform: rotate(360deg); } }
 @keyframes welcome-breathe { 50% { transform: scale(.88); } }
 @keyframes welcome-loading { to { transform: translateX(100%); } }
