@@ -438,6 +438,29 @@ export default async function questsWriteRoutes(app) {
    * Registered as a static path, which find-my-way prefers over the
    * `/api/quests/:id` in content.js, so the two never collide.
    */
+  app.get('/api/quests/:id/journey', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    const quest = loadQuest(request.params.id)
+    if (!quest || quest.claimed_by !== user.id || (quest.status === 'claimed' && !claimHolds(quest))) return { journey: null }
+    return { journey: one('SELECT mode, started_at AS startedAt FROM quest_journeys WHERE quest_id=? AND user_id=?', request.params.id, user.id) ?? null }
+  })
+
+  app.post('/api/quests/:id/journey', async (request, reply) => {
+    const user = requireUser(request, reply)
+    if (!user) return
+    const quest = loadQuest(request.params.id)
+    if (!quest) return reply.code(404).send({ error: 'unknown_quest', message: 'Diese Quest gibt es nicht.' })
+    if (quest.claimed_by !== user.id || quest.status !== 'claimed' || !claimHolds(quest)) {
+      return reply.code(409).send({ error: 'not_claimed', message: 'Übernimm die offene Quest zuerst. Nach Einreichen des Nachweises bleibt der Hinweg unverändert.' })
+    }
+    const mode = request.body?.mode
+    if (!['walk', 'bike', 'transit', 'car'].includes(mode)) return reply.code(422).send({ error: 'invalid_mode', message: 'Bitte ein Verkehrsmittel wählen.' })
+    if (latestSubmission(quest.id)) return reply.code(409).send({ error: 'proof_exists', message: 'Zu diesem Hinweg liegt bereits ein Nachweis vor.' })
+    run('INSERT INTO quest_journeys(quest_id,user_id,mode,started_at) VALUES(?,?,?,?) ON CONFLICT(quest_id,user_id) DO UPDATE SET mode=excluded.mode', quest.id, user.id, mode, now())
+    return { journey: one('SELECT mode, started_at AS startedAt FROM quest_journeys WHERE quest_id=? AND user_id=?', quest.id, user.id) }
+  })
+
   app.get('/api/quests/mine', async (request, reply) => {
     const user = requireUser(request, reply)
     if (!user) return
@@ -544,7 +567,7 @@ export default async function questsWriteRoutes(app) {
 
     let photo = null
     if (body.photoId) {
-      photo = one('SELECT id, lat, lon FROM photos WHERE id = ?', body.photoId)
+      photo = one('SELECT id, lat, lon FROM photos WHERE id = ? AND user_id = ?', body.photoId, user.id)
       if (!photo) {
         return reply
           .code(422)

@@ -1,5 +1,6 @@
 import { all, db, now, one, run } from '../db.js'
 import { TokenError, firebaseEnabled, verifyIdToken } from '../auth/firebase.js'
+import { bindInvitation } from '../engine/progression.js'
 import { totals } from '../engine/totals.js'
 import { clearSession, currentUser, requireUser, setSession } from '../session.js'
 
@@ -70,6 +71,7 @@ export default async function sessionRoutes(app) {
     )
     const user = one('SELECT * FROM users WHERE id = ?', Number(result.lastInsertRowid))
 
+    bindInvitation(user.id, request.body?.inviteCode)
     setSession(reply, user.id)
     return reply.code(201).send(publicUser(user))
   })
@@ -183,6 +185,7 @@ export default async function sessionRoutes(app) {
     )
     const user = one('SELECT * FROM users WHERE id = ?', Number(result.lastInsertRowid))
 
+    bindInvitation(user.id, request.body?.inviteCode)
     setSession(reply, user.id)
     return reply.code(201).send(publicUser(user))
   })
@@ -315,6 +318,16 @@ export default async function sessionRoutes(app) {
       return reply.code(403).send({
         error: 'not_a_demo_user',
         message: 'Es lässt sich nur zu Demo-Konten wechseln.',
+      })
+    }
+
+    // Both guards, not one. Demo-only is the broader rule, but a seeded
+    // driver would BE a demo row — and public demo switching must never hand
+    // out a private driver manifest.
+    if (target.role === 'driver') {
+      return reply.code(403).send({
+        error: 'restricted_role',
+        message: 'Zu Fahrer-Konten lässt sich nicht wechseln.',
       })
     }
 

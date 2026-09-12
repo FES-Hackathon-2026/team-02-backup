@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
+import { useSession } from '../lib/session'
 import { Coin, Label, Tag } from '../components/ui'
 import {
   ApiError,
@@ -92,6 +93,7 @@ export default function Vytal() {
     [modus],
   )
 
+  const { refresh } = useSession()
   const scanner = useQrScanner(modus !== null, aufnehmen)
 
   async function bestaetigen() {
@@ -108,6 +110,9 @@ export default function Vytal() {
       state.reload()
       impact.reload()
       status.reload()
+      // A return pays XP, and the header and Start card read that from the
+      // session rather than from this screen's own data.
+      void refresh()
     } catch (error) {
       if (error instanceof ApiError) setProblem(error)
       setScan(null)

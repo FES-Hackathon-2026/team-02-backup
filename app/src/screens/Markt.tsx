@@ -1,7 +1,8 @@
+import MarketPhoto from '../components/MarketPhoto'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import Icon, { type IconName } from '../components/Icon'
+import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Label, Tag, Thumb } from '../components/ui'
 import {
@@ -28,12 +29,6 @@ import { useMe } from '../lib/session'
  * Nothing here has a price. Free-to-take is the design.
  */
 
-const KATEGORIE_ICON: Record<string, IconName> = {
-  elektro: 'market',
-  moebel: 'home',
-  fahrrad: 'route',
-  sonstiges: 'wrench',
-}
 
 const UMKREIS = [
   { km: 25, label: 'ganz Frankfurt' },
@@ -176,14 +171,7 @@ export default function Markt() {
         </button>
       }
     >
-      <div className="card sky tight row" style={{ alignItems: 'flex-start', gap: 10 }}>
-        <Icon name="wrench" size={19} style={{ color: 'var(--blue-deep)', marginTop: 1 }} />
-        <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-          Fast ganz. Nur ein kleiner Defekt.{' '}
-          <b style={{ color: 'var(--ink)' }}>Betriebe und Bastler:innen holen kostenlos ab</b> —
-          bevor daraus Sperrmüll wird.
-        </p>
-      </div>
+      <div className="between"><p className="sm mut" style={{ margin: 0 }}>Rettet Sachen vor dem Sperrmüll</p><button className="btn sm" onClick={() => setAnbieten(true)}>Anbieten</button></div>
 
       <Segment modus={modus} onChange={setModus} offen={wartetAufDich || undefined} />
 
@@ -352,15 +340,7 @@ function AngebotKarte({ item }: { item: MarketItem }) {
   return (
     <Link className="card tight" to={`/markt/${item.id}`}>
       <span className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
-        {item.photoId ? (
-          <img
-            src={`/api/photos/${item.photoId}`}
-            alt=""
-            style={{ width: 66, height: 66, borderRadius: 13, objectFit: 'cover', flex: 'none' }}
-          />
-        ) : (
-          <Thumb icon={KATEGORIE_ICON[item.category] ?? 'market'} size={66} />
-        )}
+        <MarketPhoto item={item} size={82} />
 
         <span className="grow col" style={{ gap: 5, alignItems: 'flex-start' }}>
           <span className="between" style={{ width: '100%', alignItems: 'flex-start' }}>

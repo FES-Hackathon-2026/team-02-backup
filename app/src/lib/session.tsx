@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { ApiError, api, type Me } from './client'
 import { consumeRedirectResult, redirectPending, signInWithGoogle, signOutOfGoogle } from './firebase'
@@ -42,13 +43,17 @@ interface SessionValue {
   offline: boolean
   /** which sign-in methods this deployment offers; null until known */
   auth: AuthConfig | null
-  signIn: (name: string, districtId: string) => Promise<void>
+  signIn: (name: string, districtId: string, inviteCode?: string) => Promise<void>
   /**
    * Google sign-in, end to end. Throws DistrictRequired when the account is
    * new here — call again with the chosen district and the same token is
    * reused, so the person is not sent back to Google.
+   *
+   * Takes the invite code too: a referral has to survive whichever button
+   * the newcomer happens to press, or it works for half the people who were
+   * invited and silently does nothing for the rest.
    */
-  signInWithGoogle: (districtId?: string) => Promise<void>
+  signInWithGoogle: (districtId?: string, inviteCode?: string) => Promise<void>
   signOut: () => Promise<void>
   updateProfile: (changes: { name?: string; districtId?: string }) => Promise<void>
   deleteAccount: () => Promise<void>
@@ -58,6 +63,7 @@ interface SessionValue {
 const SessionContext = createContext<SessionValue | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
   const [me, setMe] = useState<Me | null>(null)
   // A pending redirect means this load is the second half of a sign-in.
   // Starting in the loading state stops the login screen flashing first.
@@ -90,9 +96,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /** Sends a verified Google token to our server and adopts the result. */
-  const exchange = useCallback(async (idToken: string, districtId?: string) => {
+  const exchange = useCallback(async (idToken: string, districtId?: string, inviteCode?: string) => {
     try {
-      setMe(await api.post<Me>('/api/session/google', { idToken, districtId }))
+      setMe(await api.post<Me>('/api/session/google', { idToken, districtId, inviteCode }))
       setOffline(false)
       setPendingToken(null)
     } catch (error) {
@@ -134,18 +140,49 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       }
       await refresh()
     })()
-  }, [refresh, exchange])
+    // Boot runs once. The two effects below keep it current afterwards.
+     
+  }, [])
 
-  const signIn = useCallback(async (name: string, districtId: string) => {
-    setMe(await api.post<Me>('/api/session', { name, districtId }))
+  /**
+   * Re-read the person on every navigation and whenever the tab comes back.
+   * XP and Münzen change as a side effect of what happens on other screens,
+   * so a stale header is the normal state without this.
+   *
+   * The mount run is skipped: boot above already fetched, and firing both
+   * would mean two /api/me calls on every cold start.
+   */
+  const booted = useRef(false)
+  useEffect(() => {
+    if (!booted.current) {
+      booted.current = true
+      return
+    }
+    void refresh()
+  }, [refresh, pathname])
+
+  useEffect(() => {
+    const update = () => {
+      if (!document.hidden) void refresh()
+    }
+    window.addEventListener('focus', update)
+    document.addEventListener('visibilitychange', update)
+    return () => {
+      window.removeEventListener('focus', update)
+      document.removeEventListener('visibilitychange', update)
+    }
+  }, [refresh])
+
+  const signIn = useCallback(async (name: string, districtId: string, inviteCode?: string) => {
+    setMe(await api.post<Me>('/api/session', { name, districtId, inviteCode }))
     setOffline(false)
   }, [])
 
   const startGoogle = useCallback(
-    async (districtId?: string) => {
+    async (districtId?: string, inviteCode?: string) => {
       // The retry after DistrictRequired reuses the token we already hold.
       const idToken = pendingToken ?? (await signInWithGoogle())
-      await exchange(idToken, districtId)
+      await exchange(idToken, districtId, inviteCode)
     },
     [pendingToken, exchange],
   )

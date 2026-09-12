@@ -1,10 +1,11 @@
+import { KnowledgeQuiz } from '../components/ReferenceActions'
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
 import { Label, Tag } from '../components/ui'
-import { useApi, type AbcAnswer } from '../lib/client'
+import { useApi, type ScanResult, type AbcAnswer } from '../lib/client'
 import { de } from '../lib/de'
 import { FRAKTION_FARBE, type Fraktion } from '../lib/demo'
 
@@ -40,10 +41,12 @@ const REUSE_ZIEL: Record<string, { to: string; label: string }> = {
 
 export default function Wissen() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const scan = (location.state as { scan?: ScanResult } | null)?.scan
   const [params] = useSearchParams()
   const [gewaehlt, setGewaehlt] = useState<string | null>(null)
 
-  const frage = gewaehlt ?? params.get('category') ?? params.get('q') ?? ''
+  const frage = gewaehlt ?? params.get('category') ?? params.get('q') ?? scan?.category ?? ''
   const antwort = useApi<AbcAnswer>(`/api/fes/abc?category=${encodeURIComponent(frage)}`)
 
   const eintrag = antwort.data?.entry ?? null
@@ -149,7 +152,7 @@ export default function Wissen() {
 
           {/* 3 — booking, when that is the answer */}
           {eintrag.route === 'pickup' && (
-            <button className="btn primary" onClick={() => navigate(`/abholung?category=${eintrag.id}`)}>
+            <button className="btn primary" onClick={() => navigate(`/mitteilungen?category=${eintrag.id}`)}>
               <Icon name="truck" size={19} />
               Abholung anmelden
             </button>
@@ -240,6 +243,7 @@ export default function Wissen() {
               {antwort.data?.note}
             </p>
           </div>
+          <KnowledgeQuiz />
         </>
       )}
     </Screen>

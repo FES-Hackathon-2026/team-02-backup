@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import GoogleButton from '../components/GoogleButton'
 import Icon from '../components/Icon'
@@ -28,7 +29,12 @@ import { DistrictRequired, useSession } from '../lib/session'
 type Step = 'choose' | 'district' | 'guest'
 
 export default function Anmelden() {
+  const [params] = useSearchParams()
   const { signIn, signInWithGoogle, auth, offline } = useSession()
+
+  /** ?invite=… survives both buttons, so a referral does not depend on which
+      one the newcomer happens to press. */
+  const invite = params.get('invite') ?? undefined
 
   const [step, setStep] = useState<Step>('choose')
   const [name, setName] = useState('')
@@ -66,7 +72,7 @@ export default function Anmelden() {
     setError(null)
     setBusy('google')
     try {
-      await signInWithGoogle(withDistrict)
+      await signInWithGoogle(withDistrict, invite)
       // On success the gate in App.tsx swaps this screen out; nothing to do.
     } catch (err) {
       if (err instanceof DistrictRequired) {
@@ -86,7 +92,7 @@ export default function Anmelden() {
     setError(null)
     setBusy('guest')
     try {
-      await signIn(name, districtId)
+      await signIn(name, districtId, invite)
     } catch (err) {
       setError(explain(err))
       setBusy(null)

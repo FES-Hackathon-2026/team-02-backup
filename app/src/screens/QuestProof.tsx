@@ -1,3 +1,4 @@
+import PhotoCompare from '../components/PhotoCompare'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
@@ -141,7 +142,7 @@ export default function QuestProof() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { me } = useSession()
+  const { me, refresh } = useSession()
 
   const passed = (location.state as { detail?: QuestDetail } | null)?.detail ?? null
 
@@ -200,6 +201,7 @@ export default function QuestProof() {
         hash,
       })
       setDetail(result)
+      void refresh()
       setMessage(result.message ?? null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Der Nachweis ließ sich nicht senden.')
@@ -214,6 +216,7 @@ export default function QuestProof() {
     try {
       const result = await api.post<QuestDetail>(`/api/quests/${id}/release`)
       setDetail(result)
+      void refresh()
       setMessage(result.message ?? null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Das hat nicht geklappt.')
@@ -276,7 +279,7 @@ export default function QuestProof() {
       )}
 
       {/* ------- the two photos ------- */}
-      <div className="row" style={{ gap: 10 }}>
+      {quest.photoId && submission?.photoId ? <PhotoCompare before={quest.photoId} after={submission.photoId} /> : <div className="row" style={{ gap: 10 }}>
         <Foto id={quest.photoId} label="Vorher" by={quest.createdBy} />
         <Foto
           id={submission?.photoId ?? null}
@@ -284,7 +287,7 @@ export default function QuestProof() {
           by={submission?.userName ?? null}
           empty={canSubmit ? 'Noch kein Foto' : 'Steht noch aus'}
         />
-      </div>
+      </div>}
 
       {quest.note && (
         <p className="sm mut" style={{ margin: 0 }}>

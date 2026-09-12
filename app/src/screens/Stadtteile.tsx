@@ -1,3 +1,5 @@
+import { InviteNeighbour } from '../components/ReferenceActions'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import Icon, { type IconName } from '../components/Icon'
@@ -43,6 +45,7 @@ const STEP_ICON: Record<string, IconName> = {
 const zahl = (value: number) => value.toLocaleString('de-DE')
 
 export default function Stadtteile() {
+  const [showAll, setShowAll] = useState(false)
   const { me } = useSession()
   const season = useApi<Season>('/api/season')
   const impact = useApi<Impact>('/api/impact')
@@ -89,6 +92,7 @@ export default function Stadtteile() {
         </div>
       )}
 
+      {meiner && <div className="card district-goal"><p className="lbl">{rows[0]?.id === meiner.id ? 'Gemeinsam vorn' : 'Bis Platz 1'}</p><strong className="num">{zahl(Math.max(0, spitze - meiner.seasonXp))} XP</strong><p className="sm mut">{rows[0]?.name} führt · {meiner.name} auf Platz {rows.findIndex(d => d.id === meiner.id) + 1} von {rows.length}</p></div>}
       {/* --- the season, and what the reset does ------------------------- */}
       {data && (
         <div className="card tight">
@@ -163,6 +167,7 @@ export default function Stadtteile() {
         </div>
       )}
 
+      {rows.length > 8 && <button className="text-link" onClick={() => setShowAll(v => !v)}>{showAll ? 'Weniger Stadtteile' : `Alle ${rows.length} Stadtteile anzeigen`}</button>}
       {/* --- the table ---------------------------------------------------- */}
       {rows.length > 0 ? (
         <div className="card tight">
@@ -173,7 +178,7 @@ export default function Stadtteile() {
             <Tag von="api" icon />
           </div>
           <div className="col" style={{ gap: 11 }}>
-            {rows.slice(0, 8).map((s, i) => {
+            {(showAll ? rows : rows.slice(0, 8)).map((s, i) => {
               const mine = s.id === me.district.id
               const trend = TREND[s.trend] ?? TREND.flat
               return (
@@ -271,6 +276,7 @@ export default function Stadtteile() {
           Band, nie als Platz.
         </p>
       </div>
+      <InviteNeighbour />
     </Screen>
   )
 }

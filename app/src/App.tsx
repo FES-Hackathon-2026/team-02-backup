@@ -1,7 +1,10 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
 import Abholung from './screens/Abholung'
+import AbholungDetail from './screens/AbholungDetail'
+import Mitteilungen from './screens/Mitteilungen'
+import Touren from './screens/Touren'
 import Anmelden from './screens/Anmelden'
 import Belohnungen from './screens/Belohnungen'
 import Einstellungen from './screens/Einstellungen'
@@ -19,6 +22,7 @@ import RouteScreen from './screens/Route'
 import Scan from './screens/Scan'
 import Stadtteile from './screens/Stadtteile'
 import Start from './screens/Start'
+import LevelUp from './components/LevelUp'
 import Wirkung from './screens/Wirkung'
 import Wissen from './screens/Wissen'
 import Vytal from './screens/Vytal'
@@ -35,6 +39,7 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <SessionProvider>
         <Gate />
+        <LevelUp />
       </SessionProvider>
     </BrowserRouter>
   )
@@ -42,6 +47,7 @@ export default function App() {
 
 function Gate() {
   const { me, loading } = useSession()
+  const { pathname } = useLocation()
 
   // One request long. Anything more elaborate here flashes on every load.
   if (loading) {
@@ -57,7 +63,7 @@ function Gate() {
   if (!me) return <Anmelden />
 
   return (
-    <Routes>
+    <Routes key={pathname}>
       <Route path="/" element={<Start />} />
       <Route path="/quests" element={<Quests />} />
       <Route path="/scan" element={<Scan />} />
@@ -73,6 +79,9 @@ function Gate() {
       <Route path="/nachweis/:actionId" element={<Nachweis />} />
       <Route path="/erkannt/:photoId" element={<Erkannt />} />
       <Route path="/abholung" element={<Abholung />} />
+      <Route path="/abholung/:pickupId" element={<AbholungDetail />} />
+      <Route path="/mitteilungen" element={<Mitteilungen />} />
+      <Route path="/touren" element={<Touren />} />
       <Route path="/wissen" element={<Wissen />} />
       <Route path="/markt/:id" element={<MarktDetail />} />
       <Route path="/quests/:id/nachweis" element={<QuestProof />} />

@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
+import ScanTransport from '../components/ScanTransport'
 import Screen from '../components/Screen'
-import { Bar, Coin, Label, Tag, Thumb } from '../components/ui'
+import { Coin, Label, Tag, Thumb } from '../components/ui'
 import {
   api,
   ApiError,
@@ -245,40 +246,17 @@ export default function Erkannt() {
         </button>
       }
     >
-      {/* the verdict */}
-      <div className="card">
-        <div className="row" style={{ gap: 13, alignItems: 'flex-start' }}>
-          <img
-            className="thumb"
-            src={`/api/photos/${scan.photoId}`}
-            alt="Das aufgenommene Foto"
-            style={{ width: 76, height: 76, objectFit: 'cover' }}
-          />
-          <div className="grow">
-            <h1 className="h1" style={{ fontSize: 23 }}>
-              {scan.categoryLabel}
-            </h1>
-            <div className="sm mut" style={{ marginTop: 2 }}>
-              {scan.subtype}
-            </div>
-            <div className="row" style={{ gap: 6, marginTop: 8 }}>
-              {scan.corrected ? <Tag von="input" /> : <Tag von="estimate" icon />}
-              {scan.corrected && <Label>von dir korrigiert</Label>}
-            </div>
-          </div>
+      <div className="card recognition-hero">
+        <img src={`/api/photos/${encodeURIComponent(scan.photoId)}`} alt="Das aufgenommene Foto" />
+        <div className="recognition-copy"><div className="between"><Tag von={scan.corrected ? 'input' : 'estimate'}>{scan.categoryLabel}</Tag><b className="sm">{prozent(scan.confidence)}</b></div>
+          <h1 className="h1">{scan.subtype || scan.categoryLabel}</h1>
+          <p className="sm mut">{scan.estimatedVolumeLabel} · {scan.modeLabel}</p>
+          {scan.corrected && <Label>von dir korrigiert</Label>}
         </div>
-
-        <div className="between" style={{ marginTop: 14, marginBottom: 6 }}>
-          <span className="sm mut">Sicherheit</span>
-          <span className="num" style={{ fontSize: 15 }}>
-            {prozent(scan.confidence)}
-          </span>
-        </div>
-        <Bar value={scan.confidence * 100} />
       </div>
 
-      {herkunft}
-      {warum}
+      {scan.mode === 'sperrmuell' && <ScanTransport scan={scan} />}
+      <details className="card tight"><summary>Warum diese Einordnung?</summary><div className="col" style={{ gap: 10, marginTop: 12 }}>{herkunft}{warum}</div></details>
 
       {/* the two numbers behind the routing decision */}
       <div className="card">
@@ -311,7 +289,7 @@ export default function Erkannt() {
         <button
           key={route.id}
           className={route.primary ? 'card sky' : 'card'}
-          onClick={() => navigate(route.to, { state: { scan } })}
+          onClick={() => navigate(route.to.startsWith('/abholung') ? `/mitteilungen?photo=${encodeURIComponent(scan.photoId)}` : route.to, { state: { scan } })}
         >
           <div className="row">
             <Thumb icon={ROUTE_ICON[route.id]} size={42} />

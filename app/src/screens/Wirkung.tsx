@@ -1,3 +1,4 @@
+import { BonusReceipts } from '../components/ReferenceActions'
 import { Link, useNavigate } from 'react-router-dom'
 
 import Icon, { type IconName } from '../components/Icon'
@@ -87,6 +88,13 @@ export default function Wirkung() {
 
       {data && (
         <>
+          <div className="impact-grid">
+            <div className="card"><Icon name="check" size={21} /><Tag von="api" /><Stat wert={zahl(data.confirmed.actions)} label="Aktionen" stark /></div>
+            <div className="card"><Icon name="market" size={21} /><Tag von="input" /><Stat wert={zahl(data.stated.handedOver)} label="Dinge weitergegeben" stark /></div>
+            <div className="card"><Icon name="leaf" size={21} /><Tag von="estimate" /><Stat wert={`${kg(data.estimated.netCo2)} kg`} label="CO₂e netto vermieden" stark /></div>
+            <div className="card"><Icon name="clock" size={21} /><Tag von="api" /><Stat wert={zahl(data.streak.weeks)} label="Wochen in Folge" stark /></div>
+          </div>
+          <details className="impact-details"><summary>Dein Beitrag · Zahlen und Nachweise</summary><div className="col" style={{ gap: 12, marginTop: 12 }}>
           {/* --- bestätigt ------------------------------------------------ */}
           <div className="card">
             <div className="between" style={{ marginBottom: 12 }}>
@@ -257,6 +265,9 @@ export default function Wirkung() {
             <Tag von="api" />
           </div>
 
+          {city && <p className="xs mut">{city.formula}</p>}
+          </div></details>
+
           {/* --- Frankfurt zusammen --------------------------------------- */}
           {city && saison && (
             <button className="card sky" onClick={() => navigate('/stadtteile')}>
@@ -272,10 +283,6 @@ export default function Wirkung() {
               </div>
               <Bar value={city.weekXp} max={city.goalXp} />
 
-              <p className="xs mut" style={{ margin: '9px 0 0', lineHeight: 1.5, textAlign: 'left' }}>
-                {city.formula}
-              </p>
-
               <div
                 className="row"
                 style={{ gap: 10, paddingTop: 11, marginTop: 11, borderTop: '1px solid var(--sky)' }}
@@ -285,8 +292,7 @@ export default function Wirkung() {
                     Saison {saison.number} · Woche {saison.week} von {saison.weeks}
                   </b>
                   <span className="xs mut">
-                    noch {saison.daysLeft} {saison.daysLeft === 1 ? 'Tag' : 'Tage'}, dann beginnt
-                    die Stadtteil-Tabelle neu — XP und Münzen bleiben
+                    noch {saison.daysLeft} {saison.daysLeft === 1 ? 'Tag' : 'Tage'} · Stadtteile ansehen
                   </span>
                 </span>
                 <Icon name="chevron" size={19} className="ico" />
@@ -299,9 +305,9 @@ export default function Wirkung() {
             <p className="lbl" style={{ marginBottom: 10 }}>
               Abzeichen
             </p>
-            <div className="col" style={{ gap: 9 }}>
+            <div className="badge-grid">
               {data.badges.map((b) => (
-                <div key={b.id} className="card tight row" style={{ gap: 12 }}>
+                <details key={b.id} className="card tight badge-card"><summary>
                   <span
                     style={{
                       width: 42,
@@ -322,8 +328,9 @@ export default function Wirkung() {
                     <b className="sm" style={{ display: 'block' }}>
                       {b.title}
                     </b>
-                    <span className="xs mut">{b.note}</span>
+
                   </span>
+                  </summary><p className="xs mut">{b.note}</p>
                   {b.earned ? (
                     <Tag von="api" icon>
                       erreicht
@@ -333,11 +340,12 @@ export default function Wirkung() {
                       {b.value}/{b.goal}
                     </span>
                   )}
-                </div>
+                </details>
               ))}
             </div>
           </div>
 
+          <BonusReceipts />
           {/* --- Münzen --------------------------------------------------- */}
           {/* The row lives inside the button: `button.card` is display:block
               in the design system, so a `row` class on the button itself

@@ -31,6 +31,7 @@ export interface MapMarker {
 }
 
 interface Props {
+  ariaLabel?: string
   centre: { lat: number; lon: number }
   markers: MapMarker[]
   /** the device's own position, drawn as a dot rather than a pin */
@@ -39,6 +40,7 @@ interface Props {
   radiusKm?: number
   selectedId?: string | null
   onSelect?: (id: string) => void
+  fitMarkers?: boolean
   height?: number
   /** a still map for a detail screen: no dragging, no zooming */
   still?: boolean
@@ -93,9 +95,11 @@ export default function Map({
   radiusKm,
   selectedId = null,
   onSelect,
+  fitMarkers = false,
   height = 240,
   still = false,
   zoom = 13,
+  ariaLabel = 'Karte mit den offenen Quests',
 }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
@@ -147,6 +151,14 @@ export default function Map({
     if (!map.current || selectedId) return
     map.current.setView([centre.lat, centre.lon], map.current.getZoom(), { animate: false })
   }, [centre.lat, centre.lon, selectedId])
+
+  const boundsKey = markers.map(m => `${m.id}:${m.lat}:${m.lon}`).join('|')
+  useEffect(() => {
+    if (!fitMarkers || !map.current || selectedId || markers.length === 0) return
+    const points: L.LatLngTuple[] = markers.map(m => [m.lat, m.lon])
+    if (me) points.push([me.lat, me.lon])
+    map.current.fitBounds(points, { padding: [30, 30], maxZoom: 14, animate: false })
+  }, [fitMarkers, boundsKey, selectedId, me?.lat, me?.lon])
 
   /** The pins. */
   useEffect(() => {
@@ -208,7 +220,7 @@ export default function Map({
     <div
       ref={box}
       role="application"
-      aria-label="Karte mit den offenen Quests"
+      aria-label={ariaLabel}
       style={{
         height,
         width: '100%',

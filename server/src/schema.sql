@@ -249,3 +249,99 @@ CREATE TABLE IF NOT EXISTS vytal_transactions (
 );
 
 CREATE INDEX IF NOT EXISTS vytal_tx_user ON vytal_transactions(user_id, created_at DESC);
+
+-- Collection lifecycle extensions: additive, preserving existing bookings.
+CREATE TABLE IF NOT EXISTS pickup_items (
+  id TEXT PRIMARY KEY,
+  pickup_id TEXT NOT NULL REFERENCES pickups(id),
+  photo_id TEXT REFERENCES photos(id),
+  category TEXT NOT NULL,
+  volume_m3 REAL NOT NULL CHECK(volume_m3 > 0),
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS pickup_items_booking ON pickup_items(pickup_id);
+CREATE INDEX IF NOT EXISTS pickup_items_photo ON pickup_items(photo_id);
+CREATE TABLE IF NOT EXISTS pickup_requests (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  request_key TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  pickup_id TEXT NOT NULL REFERENCES pickups(id),
+  PRIMARY KEY(user_id, request_key)
+);
+CREATE TABLE IF NOT EXISTS pickup_preferences (
+  pickup_id TEXT PRIMARY KEY REFERENCES pickups(id),
+  reminders INTEGER NOT NULL DEFAULT 0,
+  revision INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS pickup_notifications (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  pickup_id TEXT NOT NULL REFERENCES pickups(id),
+  event_key TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL,
+  message TEXT NOT NULL,
+  due_local TEXT NOT NULL,
+  read_at TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS pickup_notifications_due ON pickup_notifications(user_id, due_local);
+CREATE TABLE IF NOT EXISTS pickup_registration_snapshots (
+  pickup_id TEXT PRIMARY KEY REFERENCES pickups(id),
+  category TEXT NOT NULL,
+  volume_m3 REAL NOT NULL,
+  slot_date TEXT NOT NULL,
+  reference TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pickup_tours (
+  id TEXT PRIMARY KEY,
+  district_id TEXT NOT NULL REFERENCES districts(id),
+  collection_date TEXT NOT NULL,
+  period_start TEXT NOT NULL,
+  period_end TEXT NOT NULL,
+  closes_local TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'collecting',
+  capacity_m3 REAL NOT NULL DEFAULT 20,
+  created_at TEXT NOT NULL,
+  UNIQUE(district_id, collection_date)
+);
+CREATE TABLE IF NOT EXISTS pickup_tour_stops (
+  pickup_id TEXT PRIMARY KEY REFERENCES pickups(id),
+  tour_id TEXT NOT NULL REFERENCES pickup_tours(id),
+  position INTEGER,
+  eta_start TEXT,
+  eta_end TEXT,
+  status TEXT NOT NULL DEFAULT 'pending'
+);
+CREATE TABLE IF NOT EXISTS pickup_contacts (
+  pickup_id TEXT PRIMARY KEY REFERENCES pickups(id),
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL DEFAULT '',
+  phone TEXT NOT NULL DEFAULT '',
+  postcode TEXT NOT NULL DEFAULT '',
+  placement TEXT NOT NULL DEFAULT ''
+);
+
+-- A journey is a declared mode, never a GPS measurement. Frozen once proof is submitted.
+CREATE TABLE IF NOT EXISTS quest_journeys (
+  quest_id TEXT NOT NULL REFERENCES quests(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  mode TEXT NOT NULL CHECK(mode IN ('walk','bike','transit','car')),
+  started_at TEXT NOT NULL,
+  PRIMARY KEY (quest_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS reward_events (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  title TEXT NOT NULL,
+  base_xp INTEGER NOT NULL,
+  details TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS referrals (
+  referred_id INTEGER PRIMARY KEY REFERENCES users(id),
+  referrer_id INTEGER NOT NULL REFERENCES users(id),
+  created_at TEXT NOT NULL,
+  CHECK(referred_id <> referrer_id)
+);

@@ -14,12 +14,10 @@
 import { distanceKm } from '../../db.js'
 import {
   ASSUMPTIONS,
-  CAR_EARNS_NOTHING,
   MODES,
   kg,
   km,
   minutes,
-  usingFallbackAssumptions,
 } from './factors.js'
 import * as gtfs from './gtfs.js'
 
@@ -54,20 +52,11 @@ function option({ mode, straightKm, seconds, detail, note, legs }) {
    *
    * Travelling never earns anything in either direction — it can only cost.
    * `deducted` is the net rule from the plan: the CO2 of getting there comes
-   * off the action's XP. The car is the one categorical case, and it says so
-   * as a rule rather than as a claim about this particular trip.
+   * off the action's XP. The same deduction applies to every transport mode.
    */
   const deducted = Math.round(co2 * ASSUMPTIONS.pointsPerKgCo2)
 
-  const xp =
-    mode === 'car'
-      ? {
-          effect: 'none',
-          deducted,
-          text: CAR_EARNS_NOTHING.text,
-          reason: CAR_EARNS_NOTHING.reason(nf(co2)),
-        }
-      : deducted === 0
+  const xp = deducted === 0
         ? {
             effect: 'full',
             deducted: 0,
@@ -199,7 +188,8 @@ export function compare({ from, to, at = gtfs.secondsOfDay(), baseXp = null }) {
     // ever created by engine/award.js, after the proof.
     if (baseXp !== null) {
       o.xp.baseXp = baseXp
-      o.xp.resultXp = o.xp.effect === 'none' ? 0 : Math.max(0, baseXp - o.xp.deducted)
+      o.xp.resultXp = Math.max(0, baseXp - o.xp.deducted)
+      if (o.xp.resultXp === 0) o.xp.effect = 'none'
       o.xp.text =
         o.xp.effect === 'none'
           ? `0 von ${baseXp} XP`
@@ -229,9 +219,7 @@ export function compare({ from, to, at = gtfs.secondsOfDay(), baseXp = null }) {
       tier: 'confirmed',
     },
     assumptions: {
-      source: usingFallbackAssumptions
-        ? 'app/src/lib/impact.ts (engine/assumptions.js aus Phase 3 steht noch aus)'
-        : 'server/src/engine/assumptions.js',
+      source: 'Offengelegte ReMain-Annahmen (siehe Nachweis)',
       detourFactor: ASSUMPTIONS.detourFactor,
       roundTrip: ASSUMPTIONS.roundTrip,
       carCo2PerKm: ASSUMPTIONS.carCo2PerKg,

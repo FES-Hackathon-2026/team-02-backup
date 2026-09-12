@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "ReMain API — Frankfurt Impact Challenge, Team 02",
+  "description": "ReMain API \u2014 Frankfurt Impact Challenge, Team 02",
   "license": "MIT",
   "engines": {
     "node": ">=22"
@@ -11,7 +11,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "seed": "node src/seed.js --reset"
+    "seed": "node src/seed.js --reset",
+    "test": "node --test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.125.0",

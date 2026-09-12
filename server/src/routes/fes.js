@@ -1,10 +1,12 @@
-import { all, distanceKm, id, now, one, run } from '../db.js'
+import { all, distanceKm, id, now, one, run, tx } from '../db.js'
 import { award } from '../engine/award.js'
 import * as abc from '../integrations/fes/abfall-abc.js'
 import * as calendar from '../integrations/fes/calendar.js'
 import { formatDe, today } from '../integrations/fes/dates.js'
 import * as pickup from '../integrations/fes/pickup.js'
 import { requireUser } from '../session.js'
+import { attachTour, decorateSlots, syncTours, tourCapacity, tourFor, period } from './pickup-tours.js'
+import lifecycleRoutes, { activePhotoBooking, attachItem, checkItem, detail, notify, scheduleReminders, snapshotRegistration, localTime, pickupShape } from './pickup-lifecycle.js'
 
 /**
  * Phase 5 — the FES services: bulky-waste booking, collection calendar,
@@ -45,22 +47,14 @@ const districtOf = (request, user) => {
 }
 
 /** The shape the app reads. Keeps snake_case out of the client. */
-const shape = (p) => ({
-  id: p.id,
-  address: p.address,
-  districtId: p.district_id,
-  category: p.category,
-  categoryName: pickup.category(p.category)?.name ?? p.category,
-  volumeM3: p.volume_m3,
-  date: p.slot_date,
-  label: formatDe(p.slot_date),
-  reference: p.reference,
-  status: p.status,
-  source: p.source,
-  createdAt: p.created_at,
-})
+const shape = pickupShape
 
 export default async function fesRoutes(app) {
+  app.addHook('onRequest', async () => syncTours(localTime()))
+  const planningTimer = setInterval(() => syncTours(localTime()), 60_000)
+  planningTimer.unref()
+  app.addHook('onClose', async () => clearInterval(planningTimer))
+  await app.register(lifecycleRoutes)
   /* ----------------------------------------------------------------
      What can be booked, and what has its own route instead.
      ---------------------------------------------------------------- */
@@ -76,7 +70,7 @@ export default async function fesRoutes(app) {
 
     const districtId = districtOf(request, user)
     const volume = asNumber(request.query?.volume, 1)
-    return pickup.slots(districtId, volume)
+    return decorateSlots(pickup.slots(districtId, volume), volume)
   })
 
   /* ----------------------------------------------------------------
@@ -87,88 +81,110 @@ export default async function fesRoutes(app) {
     const user = requireUser(request, reply)
     if (!user) return
 
-    const body = request.body ?? {}
-    const districtId = body.districtId || user.district_id
-    const district = one('SELECT id, name FROM districts WHERE id = ?', districtId)
-    if (!district) {
-      return reply.code(400).send({ error: 'unknown_district', message: 'Diesen Stadtteil gibt es nicht.' })
-    }
+    return tx(() => {
+      const body = request.body ?? {}
+      const itemError = checkItem(body, user.id)
+      if (itemError) return reply.code(400).send({ error: 'invalid_item', message: itemError })
+      const contact = body.contact ?? {}
+      if (body.contact && (typeof contact !== 'object' || ['fullName','email','phone','postcode','placement'].some(k => contact[k] != null && (typeof contact[k] !== 'string' || contact[k].length > 400)))) return reply.code(400).send({ error: 'invalid_contact', message: 'Bitte Kontaktdaten prüfen.' })
+      const payload = JSON.stringify([body.address, body.districtId, body.category, body.volumeM3, body.slotDate, body.photoId, body.contact, body.items])
+      if (body.requestKey && (typeof body.requestKey !== 'string' || body.requestKey.length > 100)) return reply.code(400).send({ error: 'invalid_key', message: 'Ungültige Anfrage.' })
+      const prior = body.requestKey && one('SELECT * FROM pickup_requests WHERE user_id=? AND request_key=?', user.id, body.requestKey)
+      if (prior) {
+        if (prior.payload !== payload) return reply.code(409).send({ error: 'request_changed', message: 'Diese Anfrage wurde bereits mit anderen Angaben verarbeitet.' })
+        return { ...detail(one('SELECT * FROM pickups WHERE id=?', prior.pickup_id)), award: null }
+      }
+      const linked = activePhotoBooking(user.id, body.items?.map(i => i.photoId) ?? body.photoId)
+      if (linked) return reply.code(409).send({ error: 'already_booked', message: 'Dieses Objekt ist bereits eingetragen. Bitte den vorhandenen Termin öffnen.' })
+      const districtId = body.districtId || user.district_id
+      const district = one('SELECT id, name FROM districts WHERE id = ?', districtId)
+      if (!district) {
+        return reply.code(400).send({ error: 'unknown_district', message: 'Diesen Stadtteil gibt es nicht.' })
+      }
 
-    const result = pickup.book({
-      address: body.address,
-      districtId,
-      categoryId: body.category,
-      volumeM3: body.volumeM3,
-      slotDate: body.slotDate,
-    })
-
-    if (!result.ok) {
-      return reply.code(400).send({
-        error: result.code,
-        message: result.message,
-        alternative: result.alternative ?? null,
+      const result = pickup.book({
+        address: body.address,
+        districtId,
+        categoryId: pickup.category(body.category).id,
+        volumeM3: body.volumeM3,
+        slotDate: body.slotDate,
       })
-    }
 
-    // The reference is derived from address, date and category, so booking
-    // the same thing twice would produce two rows with one Auftragsnummer.
-    // FES would refuse that, and so does this.
-    const twin = one(
-      "SELECT * FROM pickups WHERE reference = ? AND status = 'booked'",
-      result.reference,
-    )
-    if (twin) {
-      return reply.code(409).send({
-        error: 'already_booked',
-        message: `Für diese Adresse steht am ${formatDe(result.slotDate)} schon ein Termin: ${twin.reference}.`,
-        pickup: shape(twin),
+      if (!result.ok) {
+        return reply.code(400).send({
+          error: result.code,
+          message: result.message,
+          alternative: result.alternative ?? null,
+        })
+      }
+
+      // The reference is derived from address, date and category, so booking
+      // the same thing twice would produce two rows with one Auftragsnummer.
+      // FES would refuse that, and so does this.
+      if (!tourCapacity(districtId, result.slotDate, result.volumeM3)) return reply.code(409).send({ error: 'tour_full', message: 'Diese gemeinsame Tour ist bereits voll oder geplant. Bitte einen anderen Zeitraum wählen.' })
+      const twin = all("SELECT * FROM pickups WHERE user_id=? AND status='booked' AND slot_date=? AND district_id=?", user.id, result.slotDate, districtId)
+        .find(p => p.address.trim().toLocaleLowerCase('de-DE').replace(/\s+/g, ' ') === body.address.trim().toLocaleLowerCase('de-DE').replace(/\s+/g, ' '))
+      if (twin) {
+        return reply.code(409).send({
+          error: 'already_booked',
+          message: `Für diese Adresse steht am ${formatDe(result.slotDate)} schon ein Termin: ${twin.reference}.`,
+          pickup: shape(twin),
+        })
+      }
+
+      const pickupId = id('pu')
+      run(
+        `INSERT INTO pickups (id, user_id, address, district_id, category, volume_m3,
+                              slot_date, reference, status, source, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'booked', ?, ?)`,
+        pickupId,
+        user.id,
+        body.address.trim(),
+        districtId,
+        result.category,
+        result.volumeM3,
+        result.slotDate,
+        result.reference,
+        pickup.SOURCE,
+        now(),
+      )
+
+      const stored = one('SELECT * FROM pickups WHERE id=?', pickupId)
+      attachTour(stored)
+      run('INSERT INTO pickup_contacts VALUES (?,?,?,?,?,?)', pickupId, contact.fullName || user.name, contact.email || '', contact.phone || '', contact.postcode || '', contact.placement || '')
+      snapshotRegistration(one('SELECT * FROM pickups WHERE id=?', pickupId))
+      attachItem(pickupId, body)
+      if (body.requestKey) run('INSERT INTO pickup_requests VALUES (?,?,?,?)', user.id, body.requestKey, payload, pickupId)
+      notify(one('SELECT * FROM pickups WHERE id=?', pickupId), 'booked', `Anfrage für ${period(result.slotDate).periodLabel} eingegangen. Dein Ankunftsfenster folgt nach gemeinsamer Tourplanung. Simulation, keine FES-Buchung.`, 'created')
+
+      // 'simulated' and never anything better: we rebuilt this service, so the
+      // receipt has to say the booking was not confirmed by FES.
+      const credit = award({
+        userId: user.id,
+        kind: 'pickup',
+        refTable: 'pickups',
+        refId: pickupId,
+        tier: 'simulated',
+        reason: `Sperrmüll für den ${formatDe(result.slotDate)} angemeldet statt auf den Gehweg gestellt`,
+        xp: PICKUP_XP,
+        eventKey: `fes:pickup:${result.reference}`,
       })
-    }
 
-    const pickupId = id('pu')
-    run(
-      `INSERT INTO pickups (id, user_id, address, district_id, category, volume_m3,
-                            slot_date, reference, status, source, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'booked', ?, ?)`,
-      pickupId,
-      user.id,
-      body.address.trim(),
-      districtId,
-      result.category,
-      result.volumeM3,
-      result.slotDate,
-      result.reference,
-      pickup.SOURCE,
-      now(),
-    )
-
-    // 'simulated' and never anything better: we rebuilt this service, so the
-    // receipt has to say the booking was not confirmed by FES.
-    const credit = award({
-      userId: user.id,
-      kind: 'pickup',
-      refTable: 'pickups',
-      refId: pickupId,
-      tier: 'simulated',
-      reason: `Sperrmüll für den ${formatDe(result.slotDate)} angemeldet statt auf den Gehweg gestellt`,
-      xp: PICKUP_XP,
-      eventKey: `fes:pickup:${result.reference}`,
-    })
-
-    const row = one('SELECT * FROM pickups WHERE id = ?', pickupId)
-    return {
-      pickup: shape(row),
-      instructions: result.instructions,
-      window: result.window,
-      vehicle: result.vehicle,
-      district: district.name,
-      award: credit.ok
-        ? { xp: credit.xp, coins: credit.coins, actionId: credit.actionId, totals: credit.totals }
-        : null,
-      awardNote: credit.ok ? null : credit.message,
-      source: pickup.SOURCE,
-      note: 'Der Termin steht in ReMain, nicht bei FES. Sobald die Schnittstelle da ist, wird aus „eingetragen" ein „bestätigt".',
-    }
+      const row = one('SELECT * FROM pickups WHERE id = ?', pickupId)
+      return {
+        pickup: shape(row),
+        instructions: result.instructions,
+        window: result.window,
+        vehicle: result.vehicle,
+        district: district.name,
+        award: credit.ok
+          ? { xp: credit.xp, coins: credit.coins, actionId: credit.actionId, totals: credit.totals }
+          : null,
+        awardNote: credit.ok ? null : credit.message,
+        source: pickup.SOURCE,
+        note: 'Der Termin steht in ReMain, nicht bei FES. Sobald die Schnittstelle da ist, wird aus „eingetragen" ein „bestätigt".',
+      }
+    })()
   })
 
   /** The person's own bookings, newest slot first. */
@@ -206,7 +222,12 @@ export default async function fesRoutes(app) {
     const result = pickup.cancel(row.reference, { slotDate: row.slot_date })
     if (!result.ok) return reply.code(400).send({ error: result.code, message: result.message })
 
-    run("UPDATE pickups SET status = 'cancelled' WHERE id = ?", row.id)
+    if (row.status !== 'booked') return reply.code(409).send({ error: 'inactive', message: 'Dieser Termin ist nicht aktiv.' })
+    tx(() => {
+      run("UPDATE pickups SET status = 'cancelled' WHERE id = ?", row.id)
+      scheduleReminders({ ...row, status: 'cancelled' })
+      notify(row, 'cancelled', `Termin ${row.reference} storniert. Die Gutschrift bleibt als Anmeldung erhalten.`, 'cancelled')
+    })()
 
     return {
       pickup: shape(one('SELECT * FROM pickups WHERE id = ?', row.id)),
@@ -248,8 +269,8 @@ export default async function fesRoutes(app) {
       fraktion: 'sperrmuell',
       titel: `Sperrmüll · ${pickup.category(p.category)?.name ?? p.category}`,
       date: p.slot_date,
-      label: formatDe(p.slot_date),
-      window: '06:00–15:00 Uhr',
+      label: shape(p).label,
+      window: tourFor(p)?.eta ? `${tourFor(p).eta} Uhr · simuliert` : tourFor(p) ? 'Zeitfenster folgt nach Tourplanung' : '06:00–15:00 Uhr',
       own: true,
       pickupId: p.id,
       reference: p.reference,

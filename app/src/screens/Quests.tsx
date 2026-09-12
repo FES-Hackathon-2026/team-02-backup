@@ -47,7 +47,7 @@ const STATUS: Record<string, { label: string; tone: 'plain' | 'warn' }> = {
 export default function Quests() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { me } = useSession()
+  const { me, refresh } = useSession()
 
   /** A scan that routed here wants to become a report. */
   const scan = (location.state as { scan?: ScanResult } | null)?.scan ?? null
@@ -141,22 +141,7 @@ export default function Quests() {
         </button>
       }
     >
-      {scan && <Melden scan={scan} onDone={() => { open.reload(); mine.reload() }} />}
-
-      <Map
-        centre={centre}
-        markers={markers}
-        me={pos}
-        radiusKm={pos ? radius : undefined}
-        selectedId={selected}
-        onSelect={(id) => setSelected((cur) => (cur === id ? null : id))}
-        height={236}
-      />
-
-      <p className="xs mut" style={{ margin: '-4px 2px 0' }}>
-        Karte und Orte: OpenStreetMap (ODbL). Keine Kachel braucht einen Schlüssel — deshalb
-        funktioniert die Karte auch, wenn am Demo-Tag ein Konto abläuft.
-      </p>
+      {scan && <Melden scan={scan} onDone={() => { open.reload(); mine.reload(); void refresh() }} />}
 
       <div className="chips scroll">
         {TABS.map((t) => (
@@ -180,6 +165,21 @@ export default function Quests() {
           </button>
         ))}
       </div>
+
+      <Map
+        fitMarkers
+        centre={centre}
+        markers={markers}
+        me={pos}
+        radiusKm={pos ? radius : undefined}
+        selectedId={selected}
+        onSelect={(id) => setSelected((cur) => (cur === id ? null : id))}
+        height={350}
+      />
+
+      <p className="xs mut" style={{ margin: '-4px 2px 0' }}>
+        Karte und Orte: OpenStreetMap (ODbL).
+      </p>
 
       {note && (
         <div className="card tight" style={{ borderColor: 'var(--alert)' }}>
@@ -275,7 +275,7 @@ export default function Quests() {
 
       {tab !== 'pruefen' && (
         <div className="col" style={{ gap: 10 }}>
-          {shown.map((q) => {
+          {[...shown].sort((a, b) => Number(b.id === selected) - Number(a.id === selected)).map((q) => {
             const status = STATUS[q.status] ?? STATUS.open
             const isMine =
               reported.has(q.id) || me?.id === (q as { createdById?: number }).createdById
