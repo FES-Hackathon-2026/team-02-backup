@@ -102,6 +102,7 @@ bei Bedarf ergänzen. Weitere verwendete Domains ebenfalls freigeben:
 | Laptop | `localhost` (prüfen und ergänzen) |
 | Handy im selben WLAN | die LAN-IP, z. B. `192.168.1.42` |
 | Render | `remain.onrender.com` (die Domain aus dem Dashboard) |
+| Vercel | die `*.vercel.app`-Domain — Preview-Deployments haben eigene, siehe `docs/VERCEL.md` |
 | GitHub Pages | `fes-hackathon-2026.github.io` |
 
 > Fehlt der Eintrag, meldet die App beim Klick:
