@@ -46,7 +46,7 @@ export default function Start() {
         </span>
         <span className="level-water-badge">{t(me.level)}</span>
       </button>
-      <div className="grow"><b>{t(me.xp.toLocaleString(getLocale()))} {t(" XP")}</b><span className="xs mut row" style={{ gap: 5, marginTop: 4 }}><Icon name="clock" size={13} />{t(impact.data ? `${impact.data.streak.weeks} ${impact.data.streak.weeks === 1 ? 'Woche' : 'Wochen'}` : `${me.actions} ${me.actions === 1 ? 'Aktion' : 'Aktionen'}`)}</span></div>
+      <div className="grow"><b className="num home-xp">{t(me.xp.toLocaleString(getLocale()))} {t(" XP")}</b><span className="xs mut row" style={{ gap: 5, marginTop: 4 }}><Icon name="clock" size={13} />{t(impact.data ? `${impact.data.streak.weeks} ${impact.data.streak.weeks === 1 ? 'Woche' : 'Wochen'}` : `${me.actions} ${me.actions === 1 ? 'Aktion' : 'Aktionen'}`)}</span></div>
       <button className="reward-link" onClick={() => navigate('/belohnungen')} aria-label={t(`${me.coins} Münzen einlösen`)}><Coin star>{t(me.coins)}</Coin></button>
     </div>
     <WeeklyGoal />

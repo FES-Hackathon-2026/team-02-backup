@@ -740,7 +740,14 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .text-link { font-size: 14px; }
 .notification-button { position: relative; }
 .notification-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue-deep); position: absolute; top: 8px; right: 9px; }
-.home-progress { gap: 13px; }
+/* The hero. It is the first thing on the screen and it is about one number,
+   but that number used to sit at body size beside a 64px tile — which read
+   as a caption next to an ornament rather than the headline it is. Bigger
+   tile, bigger figure, more room around both. */
+.home-progress { gap: 16px; padding: 19px 17px; align-items: center; }
+.home-progress .level-water { width: 84px; height: 84px; border-radius: 24px; }
+.home-progress .level-water-badge { width: 31px; height: 31px; font-size: 15px; bottom: -4px; right: -4px; }
+.home-xp { display: block; font-size: 31px; line-height: 1.05; color: var(--blue-deep); }
 /* Two continuous waves share the actual XP waterline. Clip only the tank,
    leaving the level badge and keyboard focus ring outside its rounded edge. */
 .level-water { width: 64px; height: 64px; padding: 0; border-radius: 20px; border: 0; position: relative; flex: none; background: var(--sky2); }

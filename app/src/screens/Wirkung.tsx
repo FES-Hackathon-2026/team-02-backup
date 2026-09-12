@@ -52,6 +52,11 @@ export default function Wirkung() {
       title={t("Wirkung")}
       sub={t("Was du bisher erreicht hast")}
       tabs
+      /* A tab AND a drill-in: the level tile on Start comes straight here,
+         and arriving that way with no way back is the one navigation dead
+         end in the app. Screen's back falls back to "/" when there is no
+         history, so opening the tab directly still behaves. */
+      back
       action={
         <button
           className="icobtn"
