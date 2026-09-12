@@ -276,6 +276,34 @@ const ENTRIES = [
     reuse: null,
     legal: [HIERARCHIE, '§ 6 KrWG — Beseitigung steht auf der letzten Stufe der Abfallhierarchie.'],
   },
+    {
+      /**
+       * The catch-all, and the one entry that has to exist.
+       *
+       * `sonstiges` is where the scan agent puts anything it cannot place —
+       * including, deliberately, a photo it cannot read at all. Without a row
+       * here that answer routed to this screen and found nothing, so the most
+       * likely outcome of a bad photo was a dead end with an apology on it.
+       * The rule below is the honest general one rather than a guess at the
+       * object: check the exclusions first, and if none apply it is Restmüll.
+       */
+      id: 'sonstiges',
+      name: 'Unklarer Gegenstand',
+      aliases: ['unklar', 'unbekannt', 'divers', 'sonstige'],
+      bin: 'Erst prüfen, dann Restmüll',
+      fraktion: 'rest',
+      route: 'tonne',
+      why: 'Wenn nicht klar ist, was es ist, entscheidet die Ausnahme: Schadstoff, Elektro, Batterie und Bioabfall müssen getrennt werden. Trifft nichts davon zu, bleibt der Restmüll.',
+      notAllowed: [
+        'Nichts mit Warnsymbol, Batterie oder Kabel in den Restmüll.',
+        'Im Zweifel nicht raten — am Wertstoffhof schaut jemand drauf.',
+      ],
+      reuse: {
+        titel: 'Noch brauchbar?',
+        text: 'Ganze, funktionierende Dinge gehören eher auf den Markt als in eine Tonne.',
+      },
+      legal: [HIERARCHIE],
+    },
   {
     id: 'bauschutt',
     name: 'Bauschutt',
@@ -337,11 +365,39 @@ export function lookup(term) {
     .trim()
   if (!q) return null
 
+  // Two different inputs arrive here and they need different rules.
+  //
+  // A single term ("moebel", "schadstoff") comes from a category link and
+  // should match loosely, prefixes included.
+  //
+  // A whole question ("wo kommt die batterie hin") comes from the assistant,
+  // and loose matching is wrong for it in both directions: `q.startsWith(id)`
+  // made "biologie studieren" a Bioabfall answer, while dropping substring
+  // matching altogether lost the German compounds that make the feature work
+  // at all — "glasflasche" contains "flasche", "zeitungen" contains
+  // "zeitung".
+  //
+  // So: prefix rules only when the input IS one term, and inside a question
+  // a needle must sit within a single word and be long enough not to be
+  // noise. Five characters excludes "bio" and keeps "flasche".
+  const words = q.split(/[^a-z0-9]+/).filter(Boolean)
+  const single = words.length === 1
+  const set = new Set(words)
+
+  const exact = (needle) => (needle.includes(' ') ? q.includes(needle) : set.has(needle))
+  const inWord = (needle) => needle.length >= 5 && words.some((w) => w.includes(needle))
+
   return (
     ENTRIES.find((e) => e.id === q) ??
     ENTRIES.find((e) => e.aliases.includes(q)) ??
-    ENTRIES.find((e) => e.id.startsWith(q) || q.startsWith(e.id)) ??
-    ENTRIES.find((e) => e.aliases.some((a) => q.includes(a) || a.includes(q))) ??
+    (single
+      ? ENTRIES.find((e) => e.id.startsWith(q) || q.startsWith(e.id)) ??
+        ENTRIES.find((e) => e.aliases.some((a) => a.startsWith(q) || q.startsWith(a)))
+      : undefined) ??
+    ENTRIES.find((e) => exact(e.id)) ??
+    ENTRIES.find((e) => e.aliases.some((a) => exact(a))) ??
+    ENTRIES.find((e) => inWord(e.id)) ??
+    ENTRIES.find((e) => e.aliases.some((a) => inWord(a))) ??
     null
   )
 }

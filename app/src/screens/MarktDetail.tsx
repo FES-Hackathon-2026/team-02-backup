@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
+import RepairCafeCard from '../components/RepairCafeCard'
 import Screen from '../components/Screen'
 import { Coin, Label, Tag } from '../components/ui'
 import { ApiError, api, useApi, type MarketDetail } from '../lib/client'
@@ -115,18 +116,23 @@ export default function MarktDetail() {
       }
     >
       {/* --- the thing itself --- */}
+        {/* Three tiers, in the order they are wanted: what is wrong with it,
+            who has it, and — quietest — where the picture came from. The
+            title is gone because the screen is already named after the item
+            one line above, and repeating it pushed everything actually new
+            further down. The credit left the column beside a 160px image,
+            where four lines of licence text wrapped at ~20 characters. */}
       <div className="card tight">
         <div className="row" style={{ gap: 13, alignItems: 'flex-start' }}>
-        <MarketPhoto item={item} size={160} credits />
+        <MarketPhoto item={item} size={132} />
 
           <div className="grow col" style={{ gap: 7, alignItems: 'flex-start' }}>
-            <b style={{ fontSize: 15.5, lineHeight: 1.3 }}>{item.title}</b>
             <div className="row" style={{ gap: 5, flexWrap: 'wrap' }}>
               <Label tone="warn">{t(item.defect)}</Label>
               {t(item.condition && <Tag von="input">{t(item.condition)}</Tag>)}
             </div>
-            <span className="xs mut">
-              {t("Von ")}{t(item.ownerName ?? 'jemandem')}
+            <span className="sm">
+              {t("Von ")}<b>{t(item.ownerName ?? 'jemandem')}</b>
               {t(item.distanceKm !== undefined && ` · ${item.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`)}
             </span>
           </div>
@@ -175,8 +181,6 @@ export default function MarktDetail() {
         <div className="card tight col" style={{ gap: 10 }}>
           <div>
             <b className="sm">{t("Wann würdest du es abholen?")}</b>
-            <p className="xs mut" style={{ margin: '3px 0 0', lineHeight: 1.5 }}>
-              {t(item.ownerName ?? 'Die andere Seite')} {t(" sieht das Fenster sofort. Optional — ihr könnt es auch offen lassen.")}</p>
           </div>
           <div className="chips">
             {t(d.windowOptions.map((w) => (
@@ -267,30 +271,16 @@ export default function MarktDetail() {
           {t("Nachweis ansehen")}</Link>
       ))}
 
-      {/* --- who could actually fix this --- */}
-      {t(d.repairShops.length > 0 && (
+      {/* --- where this could actually be fixed --- */}
+      {t(d.repairCafes.length > 0 && (
         <>
           <h2 className="h3" style={{ marginBottom: -4 }}>
-            {t("Wer das reparieren kann")}</h2>
+            {t("Wo das repariert werden kann")}</h2>
           <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-            {t("Betriebe in der Nähe des Angebots. ")}<Tag von="api">{t(d.attribution)}</Tag>
-          </p>
+            {t("Die nächsten Repair Cafés — ehrenamtlich, kostenlos, und du reparierst mit. Tipp für Termine und Kontakt.")}</p>
           <div className="col" style={{ gap: 9 }}>
-            {t(d.repairShops.map((shop) => (
-              <div key={shop.id} className="card tight">
-                <div className="row" style={{ gap: 11 }}>
-                  <span className="thumb" style={{ width: 38, height: 38, flex: 'none' }}>
-                    <Icon name="wrench" size={19} />
-                  </span>
-                  <span className="grow">
-                    <b className="sm" style={{ display: 'block' }}>
-                      {t(shop.name)}
-                    </b>
-                    <span className="xs mut">
-                      {t(shop.addr ?? 'Adresse nicht hinterlegt')} {t(" · ")}{t(shop.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }))} {t(" km")}</span>
-                  </span>
-                </div>
-              </div>
+            {t(d.repairCafes.map((cafe) => (
+              <RepairCafeCard key={cafe.id} cafe={cafe} />
             )))}
           </div>
         </>

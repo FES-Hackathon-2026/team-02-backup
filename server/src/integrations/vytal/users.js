@@ -27,14 +27,19 @@ export const referenceFor = (userId) => `remain-${userId}`
 /**
  * The one refusal worth naming.
  *
- * Seen live on 12.09.2026 with the FES demo token: the endpoint answers 400
- * `ServiceNameRequired` however the service is passed — query, body, header,
- * all four spellings tried. The JWT carries `service: "other"`, which this
- * endpoint evidently does not accept as a registered service, while every
- * other endpoint takes the same token happily. So it is a property of the
- * token, not of the request, and nothing we send will fix it — Vytal has to
- * reissue it. The message says so, because "die Anfrage passt nicht zu dem,
- * was Vytal erwartet" would be both true and completely useless.
+ * It blocked the whole integration for a day and the diagnosis is worth
+ * keeping, because the error names the wrong thing. The first FES demo token
+ * answered 400 `ServiceNameRequired` however the service was passed — query,
+ * body, header, all four spellings — while every *other* endpoint accepted it
+ * happily. Nothing in the request was at fault: the JWT carried
+ * `service: "other"`, and this endpoint alone insists on a registered service
+ * name. Vytal reissued the token on 12.09.2026 with `service: "qnips"` and
+ * registration started working with no change on our side.
+ *
+ * So if this fires again, do not go looking through this file. Decode the JWT
+ * payload, read the `service` claim, and ask Vytal for a new token. That is
+ * what the message says, because "die Anfrage passt nicht zu dem, was Vytal
+ * erwartet" would be both true and completely useless.
  */
 function explain(body) {
   if (!body?.errors?.includes?.('ServiceNameRequired')) return null

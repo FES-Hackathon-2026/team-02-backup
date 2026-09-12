@@ -62,12 +62,6 @@ export default function Nachweis() {
         quiet="ReMain-Server"
       />
 
-      <Block
-        von="simulated"
-        hint="nachgebauter Dienst — die echte Schnittstelle fehlt noch"
-        lines={data.simulated}
-      />
-
       <Block von="input" hint="nicht überprüfbar" lines={data.stated} />
 
       <Block von="estimate" hint="aus einer offengelegten Annahme gerechnet" lines={data.estimated}>

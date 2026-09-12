@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
-import { Label, Tag } from '../components/ui'
+import { Label } from '../components/ui'
 import { ApiError, api, useApi, type FesCalendar, type FesCalendarDate } from '../lib/client'
 import { de } from '../lib/de'
 import { FRAKTION_FARBE } from '../lib/demo'
@@ -90,7 +90,7 @@ export default function Kalender() {
           <CollectionCalendar dates={daten} selected={selectedDay} onSelect={setSelectedDay} />
           <div className="between">
             <p className="lbl">{t(selectedDay ? `Termine am ${selectedDay.split('-').reverse().join('.')}` : 'Als Nächstes')}</p>
-            <Tag von="simulated" icon />
+            
           </div>
 
           <div className="col" style={{ gap: 9 }}>
@@ -191,11 +191,6 @@ function Zeile({
             {t(termin.shifted ? ` · ${termin.shifted}` : '')}
           </span>
         </span>
-        {t(termin.own ? (
-          <Tag von="simulated" icon>{t("eingetragen")}</Tag>
-        ) : (
-          <Tag von="simulated" icon />
-        ))}
       </div>
 
       {t(termin.own && (

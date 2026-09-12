@@ -1,11 +1,13 @@
 import { t, getLocale } from './../lib/i18n'
 import { BonusReceipts } from '../components/ReferenceActions'
 import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 
 import Icon, { type IconName } from '../components/Icon'
 import Screen from '../components/Screen'
+import ShareBadge from '../components/ShareBadge'
 import { Bar, Coin, Label, Tag, type Herkunft } from '../components/ui'
-import { useApi, type Impact, type Season } from '../lib/client'
+import { useApi, type Badge, type Impact, type Season } from '../lib/client'
 import { de } from '../lib/de'
 import { useSession } from '../lib/session'
 
@@ -37,6 +39,7 @@ const BADGE_ICON: Record<string, IconName> = {
 export default function Wirkung() {
   const navigate = useNavigate()
   const { me } = useSession()
+  const [share, setShare] = useState<Badge | null>(null)
   const impact = useApi<Impact>('/api/impact')
   const season = useApi<Season>('/api/season')
 
@@ -50,8 +53,12 @@ export default function Wirkung() {
   return (
     <Screen
       title={t("Wirkung")}
-      sub={t("Was du bisher erreicht hast")}
       tabs
+      /* A tab AND a drill-in: the level tile on Start comes straight here,
+         and arriving that way with no way back is the one navigation dead
+         end in the app. Screen's back falls back to "/" when there is no
+         history, so opening the tab directly still behaves. */
+      back
       action={
         <button
           className="icobtn"
@@ -319,14 +326,21 @@ export default function Wirkung() {
 
                   </span>
                   </summary><p className="xs mut">{t(b.note)}</p>
-                  {t(b.earned ? (
-                    <Tag von="api" icon>
-                      {t("erreicht")}</Tag>
-                  ) : (
-                    <span className="xs mut num" style={{ flex: 'none' }}>
-                      {t(b.value)}{t("/")}{t(b.goal)}
-                    </span>
-                  ))}
+                    {/* State and action on one line. Share only on a badge actually
+                        earned — offering to brag about something not done yet is an
+                        announcement nobody asked for. */}
+                    <div className="badge-foot">
+                      {t(b.earned ? (
+                        <Tag von="api" icon>{t("erreicht")}</Tag>
+                      ) : (
+                        <span className="xs mut num">{t(b.value)}{t("/")}{t(b.goal)}</span>
+                      ))}
+                      {t(b.earned && (
+                        <button className="btn ghost sm" onClick={() => setShare(b)}>
+                          {t("Teilen")}
+                        </button>
+                      ))}
+                    </div>
                 </details>
               )))}
             </div>
@@ -367,12 +381,23 @@ export default function Wirkung() {
             </span>
           </button>
 
-          <div className="card dashed tight">
+          {/* Folded shut: a standing disclosure, not a thing to read every
+              visit. It opens on a tap and costs no height until then. */}
+          <details className="card dashed tight">
+            <summary className="xs mut">{t("Woher diese Zahlen kommen")}</summary>
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
               {t(data.note)}
             </p>
-          </div>
+          </details>
         </>
+      ))}
+
+      {t(share && (
+        <ShareBadge
+          badge={share}
+          icon={BADGE_ICON[share.icon] ?? 'star'}
+          onClose={() => setShare(null)}
+        />
       ))}
     </Screen>
   )

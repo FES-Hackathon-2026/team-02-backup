@@ -31,7 +31,9 @@ import {
  * The lock. A Geschäftsrettung needs a foodsharing verification, and when it
  * is missing the interface answers 403. The entries stay in the list, greyed,
  * with the reason and what it would take — hiding them would hide the reason,
- * and a silent failure is the thing this product is built against.
+ * and a silent failure is the thing this product is built against. The screen
+ * acts as one fixed foodsharing account (see `actingUser` in the route), so
+ * what is locked here is what is locked for the person using the app.
  */
 
 const SOURCE_ICON = {
@@ -76,8 +78,6 @@ const uhr = (iso: string) =>
 
 export default function Fairteiler() {
   const { refresh } = useSession()
-  /** Which of the team's two foodsharing test users is acting. */
-  const [as, setAs] = useState<number | null>(null)
   const [filter, setFilter] = useState<Filter>('alle')
   const [busy, setBusy] = useState<string | null>(null)
   const [result, setResult] = useState<FoodPickupResult | null>(null)
@@ -86,10 +86,9 @@ export default function Fairteiler() {
   const [showHistory, setShowHistory] = useState(false)
   const [alle, setAlle] = useState(false)
 
-  const q = as === null ? '' : `?as=${as}`
-  const state = useApi<FoodState>(`/api/foodsharing/state${q}`)
-  const nearby = useApi<FoodNearby>(`/api/foodsharing/nearby${q}`)
-  const history = useApi<FoodHistory>(showHistory ? `/api/foodsharing/history${q}` : null)
+  const state = useApi<FoodState>('/api/foodsharing/state')
+  const nearby = useApi<FoodNearby>('/api/foodsharing/nearby')
+  const history = useApi<FoodHistory>(showHistory ? '/api/foodsharing/history' : null)
 
   const lock = nearby.data?.lock ?? state.data?.lock ?? null
   const items = (nearby.data?.items ?? []).filter(
@@ -119,7 +118,7 @@ export default function Fairteiler() {
   async function abholen(item: FoodItem) {
     const answer = (await run(
       '/api/foodsharing/pickup',
-      { source: item.source, sourceId: item.sourceId, as },
+      { source: item.source, sourceId: item.sourceId },
       item.key,
     )) as FoodPickupResult | null
     if (!answer) return
@@ -131,7 +130,7 @@ export default function Fairteiler() {
   async function anfragen(item: FoodItem) {
     const answer = await run(
       '/api/foodsharing/request',
-      { basketId: item.sourceId, as },
+      { basketId: item.sourceId },
       `req:${item.key}`,
     )
     if (!answer) return
@@ -145,36 +144,32 @@ export default function Fairteiler() {
       title={t("Essen retten")}
       sub={t(state.error?.code === 'no_key' ? 'foodsharing ist gerade nicht verfügbar' : 'Lebensmittel in deiner Nähe abholen')}
     >
-      {/* Who is acting. The team key carries two test users in deliberately
-          different verification states — that is what makes the locked
-          Geschäftsrettung below the real thing rather than a mock-up. */}
+      {/* Which foodsharing account this is, and what it may do. Read-only:
+          the person signed into ReMain has one account, so the screen shows
+          it rather than offering a choice. */}
       <details className="card tight"><summary>{t("foodsharing-Konto und Freigaben")}</summary>
         <div className="between" style={{ marginBottom: 9 }}>
           <span className="lbl">{t("Dein foodsharing-Konto")}</span>
           <Tag von="api" icon />
         </div>
-        <div className="chips">
-          {t((state.data?.users ?? []).map((u) => (
-            <button
-              key={u.id}
-              className="chip"
-              aria-pressed={as === null ? u.isDefault : as === u.id}
-              onClick={() => {
-                setAs(u.id)
-                setResult(null)
-                setNote(null)
-                setProblem(null)
-              }}
-            >
-              {t(u.name ?? `Nutzer ${u.id}`)}
-              {t(u.isVerified ? (
-                <Icon name="shield" size={13} stroke={2.2} />
-              ) : (
-                <Icon name="clock" size={13} stroke={2.2} />
-              ))}
-            </button>
-          )))}
+        <div className="row" style={{ gap: 8 }}>
           {t(state.loading && <span className="spinner" />)}
+          {t(state.data && (
+            <>
+              <Icon
+                name={state.data.acting.verification.is_verified ? 'shield' : 'clock'}
+                size={15}
+                stroke={2.2}
+                className="ico"
+              />
+              <b className="sm grow">
+                {t(state.data.acting.display_name ?? `Nutzer ${state.data.acting.id}`)}
+              </b>
+              <Label tone={state.data.acting.verification.is_verified ? 'plain' : 'warn'}>
+                {t(state.data.acting.verification.is_verified ? 'verifiziert' : 'nicht verifiziert')}
+              </Label>
+            </>
+          ))}
         </div>
         <p className="xs mut" style={{ margin: '9px 0 0' }}>
           {t("Der Schlüssel liegt auf dem Server. Verifiziert heißt: Geschäftsrettungen sind freigeschaltet.")}</p>
@@ -451,7 +446,7 @@ function Eintrag({
 
           {t(item.ownBasket && (
             <p className="xs mut" style={{ margin: '7px 0 0' }}>
-              {t("Dein eigener Korb — foodsharing antwortet darauf mit 400. Wechsle oben den handelnden Nutzer, dann geht er.")}</p>
+              {t("Dein eigener Korb — foodsharing antwortet darauf mit 400.")}</p>
           ))}
           {t(item.locked && item.lock && (
             <p className="xs mut" style={{ margin: '7px 0 0' }}>{t(item.lock.why)}</p>

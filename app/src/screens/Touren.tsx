@@ -2,7 +2,6 @@ import { t, getLocale } from './../lib/i18n'
 import { useState } from 'react'
 import DecisionSheet from '../components/DecisionSheet'
 import Screen from '../components/Screen'
-import { Tag } from '../components/ui'
 import { api, useApi } from '../lib/client'
 import { useSession } from '../lib/session'
 
@@ -45,7 +44,7 @@ export default function Touren() {
     {t(tours.length === 0 && <p>{t("Keine offenen Touren.")}</p>)}
     <div className="chips">{t([['all', 'Alle'], ['booked', 'Gebucht'], ['fes', 'FES-Stopps']].map(([value, label]) => <button className="chip" key={value} aria-pressed={filter === value} onClick={() => setFilter(value)}>{t(label)}</button>))}</div>
     {t(tours.map(tour => <section className="card" key={tour.id}>
-      <div className="between"><h2 className="h2">{t(tour.area)}</h2><Tag von="simulated" /></div>
+      <div className="between"><h2 className="h2">{t(tour.area)}</h2></div>
       <p className="sm">{t(tour.date)} {t(" · ")}{t(tour.stops.length)} {t(" Stopps · ")}{t(tour.stops.reduce((sum, stop) => sum + stop.volumeM3, 0).toLocaleString(getLocale()))} {t(" m³")}</p>
       {t(!driver && <p className="xs mut">{t("Referenz-Demomodell: 34 km gemeinsame Route gegenüber ca. 91 km Einzelfahrten. ≈ 57 km Einsparung, kein Messwert.")}</p>)}
       <svg viewBox="0 0 360 100" role="img" aria-label={t("Schematische Stoppreihenfolge, keine Straßenkarte")} style={{ width: '100%', background: 'var(--sky2)', borderRadius: 16 }}>
@@ -60,7 +59,7 @@ export default function Touren() {
     </section>))}
     {t(error && !selected && <p role="alert">{t(error)}</p>)}
     {t(selected && <DecisionSheet title={t(`${selected.address} · ${selected.eta || 'noch ungeplant'}`)} busy={busy} onClose={() => setSelected(null)}>
-      <Tag von="simulated" /><p>{t(selected.name)}<br />{t(selected.phone)}<br />{t(selected.placement)}</p>
+      <p>{t(selected.name)}<br />{t(selected.phone)}<br />{t(selected.placement)}</p>
       <h3 className="h3">{t("Gebuchte Gegenstände")}</h3><ul>{t(selected.items.map((item, index) => <li key={index}>{t(item.category)} {t(" · ")}{t(item.volumeM3.toLocaleString(getLocale()))} {t(" m³")}</li>))}</ul>
       <button className="btn primary" disabled={busy || selected.status === 'collected'} onClick={() => {
         if (driver) void action(`/api/fes/driver/stops/${selected.id}/collect`)

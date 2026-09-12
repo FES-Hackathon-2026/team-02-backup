@@ -143,7 +143,6 @@ export default function RouteScreen() {
     <Screen
       back
       title={t("Dein Weg dorthin")}
-      sub={t(data?.target?.title ?? 'Route wird geladen …')}
       footer={journey.data?.journey ? <button className="btn primary" onClick={() => navigate(`/quests/${questId}/nachweis`)}>{t("Am Ziel · Nachweis aufnehmen")}</button> : <button className="btn primary" disabled={!selected || starting} onClick={() => void startJourney()}>{t(starting ? 'Wird gespeichert …' : `Fahrt starten${selected ? ` · ${selected.label}` : ''}`)}</button>}
     >
       {t(startError && <p className="card tight" role="alert">{t(startError)}</p>)}
@@ -242,9 +241,13 @@ export default function RouteScreen() {
           </div>
 
           {/* --- provenance, because every number above is one of two kinds --- */}
-          <div className="card flat">
-            <p className="lbl" style={{ marginTop: 0 }}>
-              {t("Woher die Zahlen kommen")}</p>
+            {/* Folded shut. Every figure above states its own tier inline, so
+                this is the long form: sources, assumptions, the XP rule. It is
+                a promise the product has to keep and it is not what somebody
+                choosing between a bike and a bus is reading, so it opens on
+                demand and takes no height until then. */}
+            <details className="card flat route-sources">
+              <summary className="lbl">{t("Woher die Zahlen kommen")}</summary>
 
             {t(data.schedule !== null && (
               <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
@@ -266,7 +269,7 @@ export default function RouteScreen() {
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
               {t(data.xpNote)}
             </p>
-          </div>
+            </details>
         </>
       ))}
     </Screen>
@@ -369,12 +372,6 @@ function OptionCard({
             <br />
             {t(option.co2Note)}
           </p>
-
-          {t(option.note !== null && (
-            <p className="xs mut" style={{ margin: '0 0 9px', lineHeight: 1.5 }}>
-              {t(option.note)}
-            </p>
-          ))}
 
           {t(option.legs !== null && (
             <div className="col" style={{ gap: 7 }}>

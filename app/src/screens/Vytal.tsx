@@ -124,18 +124,6 @@ export default function Vytal() {
 
   return (
     <Screen back title={t("Mehrweg")} sub={t("Behälter ausleihen und zurückgeben")}>
-      {/* Who we are in this transaction. The one thing that is easy to get
-          wrong about this integration, so it is the first thing said. */}
-      {t(status.data?.store && (
-        <div className="card tight row" style={{ gap: 10, borderColor: 'var(--stone)' }}>
-          <Icon name="info" size={18} className="ico" />
-          <p className="xs mut grow" style={{ margin: 0 }}>
-            {t("ReMain ist selbst eine ")}<b>{t("Vytal-Station")}</b>{t(". Ausgabe und Rücknahme laufen über")}{t(' ')}
-            {t(status.data.store.name)} {t(" — nicht über fremde Vytal-Partner.")}</p>
-          <Tag von="api" icon />
-        </div>
-      ))}
-
       {t(nichtEingerichtet && (
         <div className="card tight row" style={{ gap: 9, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
@@ -147,9 +135,9 @@ export default function Vytal() {
       {/* The LOAD failing is not the same as a write failing, and it had
           nowhere to appear: `problem` is only ever set by the scan and
           confirm paths, and `nichtEingerichtet` stays false when the token
-          exists but is refused. So a 502 from /containers rendered the
-          station banner and then an empty screen — the one outcome this
-          product is not allowed to have. */}
+          exists but is refused. So a 502 from /containers rendered a blank
+          screen with nothing to explain it — the one outcome this product is
+          not allowed to have. */}
       {state.error && (
         <div className="card tight col" style={{ gap: 8, borderColor: 'var(--alert)' }}>
           <div className="row" style={{ gap: 9 }}>

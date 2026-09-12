@@ -134,7 +134,11 @@ export default async function vytalRoutes(app) {
     try {
       const stores = q
         ? await vytal.stores.search({ query: String(q), lat: at.lat, lon: at.lon, limit: 25 })
-        : await vytal.stores.nearby({ lat: at.lat, lon: at.lon, radiusM: num(r, 5000) * 1000, limit: 25 })
+        // `r` is kilometres, hence the *1000. The default was 5000 — i.e. a
+        // 5000 km proximity, the metre default of `nearby()` run through the
+        // conversion a second time. Harmless only because the directory
+        // sorts by distance and the limit binds long before the radius does.
+        : await vytal.stores.nearby({ lat: at.lat, lon: at.lon, radiusM: num(r, 5) * 1000, limit: 25 })
 
       // Return boxes are a Vytal store type, but there are none deployed in
       // the Frankfurt area — checked against the live directory. Saying so
@@ -523,17 +527,38 @@ export default async function vytalRoutes(app) {
      ================================================================ */
 
   /**
-   * Which of the team's two foodsharing test users is acting.
+   * The one foodsharing account ReMain acts as.
    *
-   * The team key carries two of them and they are deliberately in different
-   * verification states, so the locked Geschäftsrettung can be shown as the
-   * real thing rather than as a mock-up. The choice is a query parameter
-   * because it belongs to the demo, not to the ReMain account.
+   * The team key carries two test accounts in deliberately different
+   * verification states, and the screen used to let you switch between them
+   * with `?as=`. That made the app a demonstration of the interface rather
+   * than a use of it: the person signed into ReMain has one foodsharing
+   * account, not a choice of two.
+   *
+   * So we bind to one, and to the verified one — otherwise every
+   * Geschäftsrettung is permanently locked for a reason the app offers no way
+   * out of. Resolved once from `GET /users` rather than written down here,
+   * because the ids belong to the key and change with it; FS_USER_ID pins a
+   * specific account when that is wanted.
    */
-  const actingUser = (request) => {
-    const raw = (request.query ?? {}).as ?? (request.body ?? {}).as
-    const n = Number(raw)
-    return Number.isInteger(n) && n > 0 ? n : undefined
+  let bound
+  function actingUser() {
+    if (bound === undefined) {
+      bound = (async () => {
+        const pinned = Number(process.env.FS_USER_ID)
+        if (Number.isInteger(pinned) && pinned > 0) return pinned
+        const users = await fs.users()
+        const chosen =
+          users.find((u) => u.verification?.is_verified) ?? users.find((u) => u.is_default)
+        return chosen?.id
+      })()
+      // A lookup that failed must not be the answer for the rest of the
+      // process — the next request tries again.
+      bound.catch(() => {
+        bound = undefined
+      })
+    }
+    return bound
   }
 
   /** The acting user with the verification state, straight from the API. */
@@ -542,18 +567,11 @@ export default async function vytalRoutes(app) {
     if (!user) return
 
     try {
-      const [users, acting] = await Promise.all([fs.users(), fs.me(actingUser(request))])
+      const acting = await fs.me(await actingUser())
       return {
         tier: 'confirmed',
         source: 'foodsharing Hackathon-API',
         acting,
-        users: users.map((u) => ({
-          id: u.id,
-          name: u.display_name,
-          isDefault: u.is_default,
-          isVerified: u.verification?.is_verified ?? false,
-          status: u.verification?.status ?? 'unknown',
-        })),
         lock: lockReason(acting.verification),
       }
     } catch (error) {
@@ -580,7 +598,7 @@ export default async function vytalRoutes(app) {
       lon: num(lon, home?.lon ?? 8.6821),
     }
     const radius = num(r, 15)
-    const as = actingUser(request)
+    const as = await actingUser()
 
     try {
       const [points, baskets, businesses, me] = await Promise.all([
@@ -679,7 +697,7 @@ export default async function vytalRoutes(app) {
     }
 
     try {
-      const created = await fs.requestBasket(basketId, actingUser(request), message)
+      const created = await fs.requestBasket(basketId, await actingUser(), message)
       return {
         tier: 'confirmed',
         request: created,
@@ -703,7 +721,7 @@ export default async function vytalRoutes(app) {
     if (!user) return
 
     const { source, sourceId } = request.body ?? {}
-    const as = actingUser(request)
+    const as = await actingUser()
 
     if (!['food_share_point', 'basket', 'business'].includes(source) || !sourceId) {
       return reply.code(422).send({
@@ -780,7 +798,7 @@ export default async function vytalRoutes(app) {
     if (!user) return
 
     try {
-      const rows = await fs.history(actingUser(request), 50)
+      const rows = await fs.history(await actingUser(), 50)
       const paid = new Map(
         all(
           `SELECT event_key AS eventKey, action_id AS actionId, xp, user_id AS userId
@@ -824,7 +842,7 @@ export default async function vytalRoutes(app) {
 
     const wanted = Number(request.params.pickupId)
     try {
-      const rows = await fs.history(actingUser(request), 500)
+      const rows = await fs.history(await actingUser(), 500)
       const found = rows.find((p) => p.id === wanted)
       if (!found) {
         return reply.code(404).send({

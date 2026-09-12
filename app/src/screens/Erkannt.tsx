@@ -140,7 +140,7 @@ export default function Erkannt() {
           <Icon name="spark" size={17} className="ico" stroke={1.9} />
           <span className="h3">{t(mock ? 'Offline erkannt' : 'Modell befragt')}</span>
         </span>
-        {t(mock ? <Tag von="simulated" icon /> : <Tag von="estimate" icon />)}
+        <Tag von="estimate" icon />
       </div>
       <p className="xs mut" style={{ margin: '7px 0 0' }}>
         {t(mock
@@ -312,8 +312,9 @@ export default function Erkannt() {
         </button>
       )))}
 
-      <p className="xs mut" style={{ margin: 0 }}>
-        {t("Die Punkte sind eine Vorschau. Gutgeschrieben wird erst die bestätigte Aktion — mit Formel im Nachweis.")}</p>
+        {/* The points-are-a-preview footnote is gone. Each route card already
+            says "bis N XP", which carries the same caveat in the word "bis",
+            and the full rule is on the receipt where it can be checked. */}
 
       {t(korrekturBlock)}
 
@@ -539,7 +540,7 @@ function Gefahrstoff({
                 {t(meldung ?? 'Foto und Standort sind dokumentiert.')}
               </div>
               <div className="row" style={{ gap: 6, marginTop: 7 }}>
-                <Tag von={gefahr.located === false ? 'input' : 'simulated'} icon />
+                <Tag von={gefahr.located === false ? 'input' : 'api'} icon />
                 {t(gefahr.receiptActionId != null && (
                   <button
                     className="chip"

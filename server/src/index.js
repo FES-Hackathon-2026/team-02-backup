@@ -10,6 +10,7 @@ import Fastify from 'fastify'
 
 import { firebaseEnabled, firebaseProjectId } from './auth/firebase.js'
 import { ROOT } from './db.js'
+import assistantRoutes from './routes/assistant.js'
 import contentRoutes from './routes/content.js'
 import fesRoutes from './routes/fes.js'
 import marketWriteRoutes from './routes/market-write.js'
@@ -43,6 +44,7 @@ await app.register(multipart, { limits: { fileSize: 1_500_000, files: 1 } })
 await app.register(metaRoutes)
 await app.register(sessionRoutes)
 await app.register(contentRoutes)
+await app.register(assistantRoutes)
 await app.register(photoRoutes)
 await app.register(foodRoutes)
 
