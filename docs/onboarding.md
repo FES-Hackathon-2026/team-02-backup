@@ -1,9 +1,11 @@
 # Splash and onboarding
 
-The startup splash uses a rotating return loop around the existing leaf icon. It appears once per app load for 1.4 seconds, or until session loading finishes if that takes longer. Reduced-motion users have no extra delay or animation. Navigation inside the app does not restart the animation.
+The startup splash uses the ReMain mark: a reusable box inside blue-and-gold returning arrows. The arrows rotate around the box. It appears once per app load for 1.4 seconds, or until session loading finishes if that takes longer. Reduced-motion users have no extra delay or animation. Navigation inside the app does not restart the animation.
 
-Onboarding currently appears on every launch or full refresh, including for signed-in users. It ignores previously saved completion. Next, Back, progress dots and Skip are native buttons. Completing or skipping dismisses it until the next launch; navigation within the app does not show it again. The introduction does not change the URL, so invitation parameters and deep links survive. Signed-in users continue to their destination; signed-out users continue to sign-in.
+The introduction has three steps: Scan, Pass it on, and Plan a collection. Each uses a short heading and one sentence. Completion is saved under `remain.introduced.v2`, so existing users see the revised introduction once. Add `?onboarding=1` to replay on every full refresh of that URL. Next, Back, progress dots and Skip are native buttons. The introduction does not change the URL, so invitation parameters and deep links survive. Signed-in users continue to their destination; signed-out users continue to Google sign-in.
 
-Settings → View introduction replays all three steps and returns to Settings. German and English use the existing language picker and reviewed catalog; all colors follow the current theme. Illustrations use local SVG and the existing icon family, with no remote image dependency.
+German and English use the existing language picker and reviewed catalog; screen colors follow the current theme. Illustrations use local SVG and the existing icon family, with no remote image dependency.
 
-Validation: production build, localization suite and `npm run test:onboarding --prefix app` pass. The onboarding suite verifies stored completion, blocked storage, bilingual initial rendering, progress semantics and splash accessibility. Browser control was unavailable; visual review and interactive navigation on devices remain unverified.
+The splash, onboarding header and sign-in share `app/src/assets/remain-mark.svg`. Run `npm run icons --prefix app` after changing it to regenerate the favicon, Android/PWA icons and Apple touch icon. Manifest and HTML icon references include a cache version; increment it when replacing the artwork.
+
+Validation commands: production build, localization suite and `npm run test:onboarding --prefix app`. The onboarding suite checks the legacy completion helper, blocked storage, bilingual initial rendering, progress semantics and splash accessibility. Browser control was unavailable; interactive navigation on devices remains unverified.

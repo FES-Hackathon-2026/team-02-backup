@@ -87,7 +87,7 @@ if (existsSync(dist)) {
 app.log.info(
   firebaseEnabled()
     ? `auth: Google-Anmeldung aktiv, Firebase-Projekt „${firebaseProjectId()}"`
-    : 'auth: nur Gast-Anmeldung (FIREBASE_PROJECT_ID ist nicht gesetzt)',
+    : 'auth: Anmeldung gesperrt — FIREBASE_PROJECT_ID für Google-Anmeldung fehlt',
 )
 
 const result = seed()

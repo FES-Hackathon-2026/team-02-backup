@@ -5,9 +5,9 @@ import LanguagePicker from '../components/LanguagePicker'
 import { t } from '../lib/i18n'
 
 const steps = [
-  { eyebrow: 'ERKENNEN', title: 'Ein Foto. Ein nächster Schritt.', body: 'Scanne einen Gegenstand und finde heraus, wie du ihn weitergeben, reparieren oder richtig entsorgen kannst.', detail: 'Foto aufnehmen oder aus deiner Galerie wählen.' },
-  { eyebrow: 'WEITERVERWENDEN', title: 'Vielleicht braucht es jemand noch.', body: 'Entdecke Dinge in deiner Nähe, gib eigene weiter oder finde Hilfe bei einer Reparatur.', detail: 'Dein Reparaturmarkt. Direkt in der Nachbarschaft.' },
-  { eyebrow: 'GEMEINSAM PLANEN', title: 'Deine Abholung im Blick.', body: 'Über deine Mitteilungen findest du passende kommende Transporte. Ist keiner dabei, kannst du eine Abholung buchen.', detail: 'Termine und Neuigkeiten an einem Ort.' },
+  { title: 'Scannen', body: 'Finde heraus, wohin es gehört oder wer es noch brauchen kann.' },
+  { title: 'Weitergeben', body: 'Biete Dinge an oder finde Hilfe beim Reparieren.' },
+  { title: 'Abholung planen', body: 'Prüfe kommende Transporte in deinen Mitteilungen oder buche eine Abholung.' },
 ] as const
 
 function Illustration({ step }: { step: number }) {
@@ -24,7 +24,6 @@ function Illustration({ step }: { step: number }) {
         </svg>
         <span className="welcome-scan-line" />
       </div>
-      <div className="welcome-art-label"><Icon name="scan" size={22} /><span>{t('Neues Leben für alte Dinge')}</span></div>
     </> : step === 1 ? <>
       <div className="welcome-item welcome-item-back"><Icon name="wrench" size={60} /><span>{t('Reparieren')}</span></div>
       <div className="welcome-item welcome-item-front"><Icon name="cup" size={74} /><span>{t('Weitergeben')}</span></div>
@@ -34,7 +33,7 @@ function Illustration({ step }: { step: number }) {
       <div className="welcome-route-line" />
       <span className="welcome-route-pin"><Icon name="pin" size={32} /></span>
       <div className="welcome-truck"><Icon name="truck" size={105} stroke={1.3} /></div>
-      <div className="welcome-notice"><span className="welcome-notice-icon"><Icon name="bell" size={24} /></span><span><strong>{t('Deine Mitteilungen')}</strong><small>{t('Passende Transporte entdecken')}</small></span></div>
+      <div className="welcome-notice"><span className="welcome-notice-icon"><Icon name="bell" size={24} /></span><span><strong>{t('Mitteilungen')}</strong></span></div>
     </>}
   </div>
 }
@@ -53,15 +52,13 @@ export default function Onboarding({ onComplete }: { onComplete: () => void }) {
     <section className="welcome-content" key={step}>
       <Illustration step={step} />
       <div className="welcome-copy">
-        <p className="welcome-eyebrow">{t(current.eyebrow)}</p>
         <h1 ref={heading} tabIndex={-1}>{t(current.title)}</h1>
         <p className="welcome-description">{t(current.body)}</p>
-        <p className="welcome-detail"><Icon name="check" size={18} />{t(current.detail)}</p>
       </div>
     </section>
     <footer className="welcome-footer">
       <nav className="welcome-dots" aria-label={t('Einführung')}>
-        {steps.map((item, index) => <button key={item.eyebrow} aria-label={t(item.title)} aria-current={step === index ? 'step' : undefined} onClick={() => setStep(index)}><span /></button>)}
+        {steps.map((item, index) => <button key={item.title} aria-label={t(item.title)} aria-current={step === index ? 'step' : undefined} onClick={() => setStep(index)}><span /></button>)}
       </nav>
       <div className="welcome-actions">
         {step > 0 && <button className="btn" onClick={() => setStep(step - 1)}><Icon name="back" size={20} />{t('Zurück')}</button>}

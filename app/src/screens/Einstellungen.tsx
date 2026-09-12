@@ -92,11 +92,7 @@ export default function Einstellungen() {
         <div className="grow">
           <div className="row" style={{ gap: 7, flexWrap: 'wrap' }}>
             <b className="h3">{me.name}</b>
-            {t(me.provider === 'google' ? (
-              <Label>{t("Google-Konto")}</Label>
-            ) : (
-              <Label tone="warn">{t("ohne Konto")}</Label>
-            ))}
+            <Label>{t('Google-Konto')}</Label>
           </div>
           <div className="xs mut" style={{ marginTop: 3 }}>
             {t(me.email ?? 'Keine E-Mail hinterlegt')}
@@ -106,19 +102,6 @@ export default function Einstellungen() {
             {t("Münzen")}</div>
         </div>
       </div>
-
-      {t(me.provider === 'guest' && (
-        <div className="card sky col" style={{ gap: 9 }}>
-          <div className="row" style={{ gap: 8 }}>
-            <Icon name="info" size={18} style={{ color: 'var(--blue-deep)', flex: 'none' }} />
-            <b className="sm">{t("Dein Fortschritt hängt an diesem Browser")}</b>
-          </div>
-          <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-            {t("Ohne Konto sind ")}{t(me.xp.toLocaleString(getLocale()))} {t(" XP weg, sobald du die Website-Daten löschst oder das Gerät wechselst. Meldest du dich mit Google an, wird dieses Profil übernommen — nichts geht verloren.")}</p>
-          <button className="btn sm" onClick={() => void out()} disabled={busy !== null}>
-            {t("Abmelden und mit Google anmelden")}</button>
-        </div>
-      ))}
 
       {/* --------------------------------------------------------------- */}
       <p className="lbl">{t("Profil")}</p>
@@ -231,9 +214,7 @@ export default function Einstellungen() {
           {t(busy === 'out' ? 'Wird abgemeldet …' : 'Abmelden')}
         </button>
         <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-          {t(me.provider === 'google'
-            ? 'Meldet dich hier und bei Google auf diesem Gerät ab. Dein Fortschritt bleibt am Konto und ist beim nächsten Anmelden wieder da.'
-            : 'Ohne Konto lässt sich diese Sitzung nicht wiederherstellen — der Fortschritt hängt an diesem Browser.')}
+          {t('Meldet dich aus ReMain ab. Dein Fortschritt bleibt am Konto und ist beim nächsten Anmelden wieder da.')}
         </p>
 
         <div className="sep" />
@@ -246,7 +227,7 @@ export default function Einstellungen() {
           <div className="col" style={{ gap: 9 }}>
             <b className="sm">{t("Wirklich löschen?")}</b>
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.5 }}>
-              {t("Profil, XP, Münzen, Belege und eingelöste Gutscheine werden gelöscht und lassen sich nicht wiederherstellen. Gemeldete Quests und Markt-Anzeigen bleiben für die Nachbarschaft stehen, aber ohne deinen Namen.")}{t(me.provider === 'google' && ' Dein Google-Konto selbst bleibt unberührt.')}
+              {t("Profil, XP, Münzen, Belege und eingelöste Gutscheine werden gelöscht und lassen sich nicht wiederherstellen. Gemeldete Quests und Markt-Anzeigen bleiben für die Nachbarschaft stehen, aber ohne deinen Namen.")}{t(' Dein Google-Konto selbst bleibt unberührt.')}
             </p>
             <div className="row" style={{ gap: 9 }}>
               <button className="btn ghost grow" onClick={() => setConfirmDelete(false)} disabled={busy !== null}>

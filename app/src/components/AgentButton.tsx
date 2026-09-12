@@ -19,8 +19,7 @@ import { t } from './../lib/i18n'
  * implies a place you go and this is a way of getting to places. It sits on
  * the right, clear of the raised camera button in the middle.
  *
- * The mascot itself lives in DinoMark, which currently holds a PLACEHOLDER
- * silhouette — see the note there before showing this to FES.
+ * The original vector mascot lives in DinoMark and remains sharp at button size.
  */
 
 interface Destination {
@@ -182,7 +181,7 @@ export default function AgentButton() {
         aria-haspopup="dialog"
         aria-label={t('Fessie — alles auf einen Blick. Zum Verschieben ziehen.')}
       >
-        <DinoMark size={27} />
+        <DinoMark size={46} />
       </button>
 
       {open && (

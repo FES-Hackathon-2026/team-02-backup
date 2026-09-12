@@ -122,22 +122,30 @@ export async function verifyIdToken(idToken) {
     throw new TokenError(explainVerifyFailure(error, idToken))
   }
 
-  // jose checks exp/nbf/iss/aud/alg. These three it does not know about.
-  if (typeof payload.sub !== 'string' || payload.sub === '') {
-    throw new TokenError('Das Anmelde-Token enthält keine Nutzer-ID.')
+  return googleProfileFromClaims(payload)
+}
+
+/** Additional required Firebase claims, evaluated only after signature/issuer/audience checks. */
+export function googleProfileFromClaims(payload) {
+  if (typeof payload.sub !== 'string' || payload.sub.length === 0 || payload.sub.length > 128) {
+    throw new TokenError('Das Anmelde-Token enthält keine gültige Nutzer-ID.')
   }
   const nowSec = Math.floor(Date.now() / 1000)
-  if (typeof payload.auth_time !== 'number' || payload.auth_time > nowSec + 30) {
-    throw new TokenError('Das Anmelde-Token ist noch nicht gültig.')
+  if (typeof payload.exp !== 'number' || !Number.isFinite(payload.exp) || payload.exp <= nowSec - 30 ||
+      typeof payload.iat !== 'number' || !Number.isFinite(payload.iat) || payload.iat > nowSec + 30 ||
+      typeof payload.auth_time !== 'number' || !Number.isFinite(payload.auth_time) || payload.auth_time > nowSec + 30) {
+    throw new TokenError('Das Anmelde-Token ist abgelaufen oder noch nicht gültig.')
   }
-
+  if (payload.firebase?.sign_in_provider !== 'google.com' || payload.email_verified !== true ||
+      typeof payload.email !== 'string' || payload.email.length === 0) {
+    throw new TokenError('Bitte mit einem bestätigten Google-Konto anmelden.')
+  }
   return {
     uid: payload.sub,
-    email: typeof payload.email === 'string' ? payload.email : null,
-    emailVerified: payload.email_verified === true,
+    email: payload.email,
+    emailVerified: true,
     name: typeof payload.name === 'string' ? payload.name.trim() : '',
     picture: typeof payload.picture === 'string' ? payload.picture : null,
-    /** 'google.com' for a Google sign-in — recorded so the UI can name it. */
-    signInProvider: payload.firebase?.sign_in_provider ?? 'unknown',
+    signInProvider: 'google.com',
   }
 }

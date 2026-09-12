@@ -2978,5 +2978,19 @@
   "{0} von {1}": "{0} von {1}",
   "Verstanden": "Verstanden",
   "verifiziert": "verifiziert",
-  "nicht verifiziert": "nicht verifiziert"
+  "nicht verifiziert": "nicht verifiziert",
+  "Keine Verbindung zum Server. Bitte versuche es gleich noch einmal.": "Keine Verbindung zum Server. Bitte versuche es gleich noch einmal.",
+  "Google-Anmeldung ist noch nicht eingerichtet. Bitte versuche es später erneut.": "Google-Anmeldung ist noch nicht eingerichtet. Bitte versuche es später erneut.",
+  "Mit Google übernehmen wir deinen Namen, deine E-Mail-Adresse und dein Profilbild. Deinen Stadtteil wählst du einmal beim ersten Anmelden.": "Mit Google übernehmen wir deinen Namen, deine E-Mail-Adresse und dein Profilbild. Deinen Stadtteil wählst du einmal beim ersten Anmelden.",
+  "Anderes Google-Konto wählen": "Anderes Google-Konto wählen",
+  "Bitte zuerst mit Google anmelden.": "Bitte zuerst mit Google anmelden.",
+  "Bitte mit einem bestätigten Google-Konto anmelden.": "Bitte mit einem bestätigten Google-Konto anmelden.",
+  "Das Anmelde-Token enthält keine gültige Nutzer-ID.": "Das Anmelde-Token enthält keine gültige Nutzer-ID.",
+  "Das Anmelde-Token ist abgelaufen oder noch nicht gültig.": "Das Anmelde-Token ist abgelaufen oder noch nicht gültig.",
+  "Meldet dich aus ReMain ab. Dein Fortschritt bleibt am Konto und ist beim nächsten Anmelden wieder da.": "Meldet dich aus ReMain ab. Dein Fortschritt bleibt am Konto und ist beim nächsten Anmelden wieder da.",
+  "Finde heraus, wohin es gehört oder wer es noch brauchen kann.": "Finde heraus, wohin es gehört oder wer es noch brauchen kann.",
+  "Biete Dinge an oder finde Hilfe beim Reparieren.": "Biete Dinge an oder finde Hilfe beim Reparieren.",
+  "Abholung planen": "Abholung planen",
+  "Prüfe kommende Transporte in deinen Mitteilungen oder buche eine Abholung.": "Prüfe kommende Transporte in deinen Mitteilungen oder buche eine Abholung.",
+  "Weniger wegwerfen.": "Weniger wegwerfen."
 }

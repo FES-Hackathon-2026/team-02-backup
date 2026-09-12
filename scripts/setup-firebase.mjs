@@ -109,8 +109,8 @@ Two things left, both in the Firebase console:
 
   1. Authentication → Sign-in method → Google → Enable
   2. Authentication → Settings → Authorized domains → add the hosts you
-     open the app on (localhost is already there; add your LAN IP for a
-     phone, and your Render domain for the deploy)
+     open the app on (check localhost explicitly, and add your deployed
+     app domain)
 
 Then restart BOTH — VITE_* is compiled in at build time, so a browser
 reload is not enough:
@@ -118,5 +118,5 @@ reload is not enough:
   cd server && npm start
   cd app    && npm run dev
 
-Check: curl localhost:8080/api/auth/config  →  {"google":true,"guest":true}
+Check: curl localhost:8080/api/auth/config  →  {"google":true,"guest":false}
 `)

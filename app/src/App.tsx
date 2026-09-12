@@ -40,7 +40,7 @@ import Vytal from './screens/Vytal'
  * the domain root everywhere else — without a second config.
  */
 /** Marks that this device has seen the introduction. */
-const INTRO_KEY = 'remain.introduced'
+const INTRO_KEY = 'remain.introduced.v2'
 
 export default function App() {
   useLanguage()
@@ -56,7 +56,7 @@ export default function App() {
 
 function Gate() {
   const { me, loading } = useSession()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const [splash, setSplash] = useState(true)
   // Once per device, not once per launch. The intro exists to answer "what
   // is this", and a person who has answered that and come back is being
@@ -67,6 +67,7 @@ function Gate() {
   // it; a browser that refuses storage simply shows the intro again, which
   // is the harmless direction to fail.
   const [introduced, setIntroduced] = useState(() => {
+    if (new URLSearchParams(search).get('onboarding') === '1') return false
     try {
       return localStorage.getItem(INTRO_KEY) !== null
     } catch {

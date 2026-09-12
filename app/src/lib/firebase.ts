@@ -9,7 +9,7 @@
  *      the thing a judge with a phone actually waits for — unaffected.
  *   2. A build with no Firebase project configured must still run. Nothing
  *      here is imported at module scope, so an unconfigured deployment never
- *      downloads the SDK at all and simply shows the guest form.
+ *      downloads the SDK at all and shows a disabled Google sign-in button.
  *
  * The config values below are PUBLIC by design. A Firebase web config is an
  * address, not a credential — Google's docs say so explicitly. What protects
@@ -159,7 +159,13 @@ export async function signInWithGoogle(): Promise<string> {
       // Navigates away. The answer arrives in consumeRedirectResult() on the
       // next load, so nothing after this line runs — the promise that never
       // settles keeps the button in its busy state while the page leaves.
-      await signInWithRedirect(auth, provider)
+      try {
+        await signInWithRedirect(auth, provider)
+      } catch (redirectError) {
+        setFlag(REDIRECT_KEY, false)
+        const redirectCode = codeOf(redirectError)
+        throw new SignInError(redirectCode, describe(redirectCode))
+      }
       return await new Promise<string>(() => {})
     }
     throw new SignInError(code, describe(code))
