@@ -2,7 +2,6 @@ import { useLanguage } from './lib/i18n'
 import { useEffect, useState } from 'react'
 import { SplashScreen } from './components/BrandMark'
 import Onboarding from './screens/Onboarding'
-import { completeOnboarding, hasCompletedOnboarding } from './lib/onboarding'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
@@ -55,7 +54,8 @@ function Gate() {
   const { me, loading } = useSession()
   const { pathname } = useLocation()
   const [splash, setSplash] = useState(true)
-  const [introduced, setIntroduced] = useState(hasCompletedOnboarding)
+  // Preview onboarding on every launch, even with an existing session.
+  const [introduced, setIntroduced] = useState(false)
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const timer = window.setTimeout(() => setSplash(false), reduced ? 0 : 1400)
@@ -64,10 +64,7 @@ function Gate() {
 
   if (splash || loading) return <SplashScreen />
 
-  if (!me && !introduced) return <Onboarding onComplete={() => {
-    completeOnboarding()
-    setIntroduced(true)
-  }} />
+  if (!introduced) return <Onboarding onComplete={() => setIntroduced(true)} />
 
   if (!me) return <Anmelden />
 
