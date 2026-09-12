@@ -34,7 +34,7 @@ Assets bleiben also unberührt.
 ## Einrichten
 
 1. **Backend-Domain prüfen.** In `vercel.json` steht
-   `https://remain.onrender.com`. Steht im Render-Dashboard etwas anderes,
+   `https://remain-mtkz.onrender.com`. Steht im Render-Dashboard etwas anderes,
    hier eintragen — sonst geht jeder `/api`-Aufruf ins Leere.
 
 2. **Projekt anlegen.** vercel.com → New Project → Repo importieren.
