@@ -1,14 +1,17 @@
 import { useNavigate } from 'react-router-dom'
 
-import Icon from '../components/Icon'
+import Icon, { type IconName } from '../components/Icon'
 import Screen from '../components/Screen'
 import { Bar, Coin, Label, Tag, Thumb } from '../components/ui'
 import {
   useApi,
   type FesCalendar,
+  type FoodNearby,
   type MarketItem,
   type Quest,
   type Season,
+  type VytalState,
+  type VytalStatus,
 } from '../lib/client'
 import { useSession } from '../lib/session'
 
@@ -19,6 +22,12 @@ export default function Start() {
   const market = useApi<{ items: MarketItem[] }>('/api/market')
   const season = useApi<Season>('/api/season')
   const kalender = useApi<FesCalendar>('/api/fes/calendar')
+  // The two partner features. Both are secondary to the hero action, so
+  // neither gets a skeleton: a slow or unreachable partner leaves no hole in
+  // the hub, it just contributes no card.
+  const essen = useApi<FoodNearby>('/api/foodsharing/nearby')
+  const mehrweg = useApi<VytalState>('/api/vytal/containers')
+  const vytalStatus = useApi<VytalStatus>('/api/vytal/status')
 
   if (!me) return null
 
@@ -36,6 +45,23 @@ export default function Start() {
   // actually active and what the city managed last week — not a round
   // number picked here. Phase 10 owns both the figure and its formula.
   const city = season.data?.city ?? null
+
+  // The single most worth-doing thing nearby, as the SERVER ranked it — net
+  // effect per minute of effort, not distance. Re-sorting here would quietly
+  // answer a different question than the Essen screen does.
+  const essenTop = essen.data?.items.find((item) => !item.locked) ?? null
+
+  // Vytal only appears once the station is actually connected. An entry point
+  // to a feature that answers 501 is worse than no entry point.
+  const vytalAn = vytalStatus.data?.configured === true
+  const offen = mehrweg.data?.active ?? []
+  const ueberfaellig = offen.some((c) => c.overdue)
+  // The deadline that matters is the nearest one.
+  const naechsteRueckgabe = offen.reduce<number | null>(
+    (soonest, c) =>
+      c.hoursLeft === null ? soonest : soonest === null ? c.hoursLeft : Math.min(soonest, c.hoursLeft),
+    null,
+  )
 
   return (
     <Screen
@@ -146,21 +172,7 @@ export default function Start() {
 
       {naechste && (
         <button className="card tight row" onClick={() => navigate('/kalender')} style={{ gap: 12 }}>
-          <span
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 12,
-              background: 'var(--sky)',
-              color: 'var(--blue-deep)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 'none',
-            }}
-          >
-            <Icon name="calendar" size={21} />
-          </span>
+          <Badge icon="calendar" />
           <span className="grow">
             <span className="sm" style={{ display: 'block', fontWeight: 700 }}>
               {naechste.titel} · {naechste.label}
@@ -168,6 +180,47 @@ export default function Start() {
             <span className="xs mut" style={{ display: 'block' }}>
               {naechste.window} · Abfuhrtermine für {me.district.name}{' '}
               <Tag von="simulated" />
+            </span>
+          </span>
+          <Icon name="chevron" size={20} className="ico" />
+        </button>
+      )}
+
+      {vytalAn && !mehrweg.loading && (
+        <button className="card tight row" onClick={() => navigate('/mehrweg')} style={{ gap: 12 }}>
+          <Badge icon="cup" alert={ueberfaellig} />
+          <span className="grow">
+            <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+              <b className="sm">
+                {mehrweg.error
+                  ? 'Mehrweg'
+                  : offen.length > 0
+                    ? `${offen.length} Mehrweg-Behälter offen`
+                    : 'Mehrweg statt Einweg'}
+              </b>
+              {mehrweg.error && <Label tone="warn">gesperrt</Label>}
+            </span>
+            <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
+              {mehrweg.error ? (
+                // The station is connected, but the token cannot open a
+                // Vytal account yet. Offering a loan here would promise
+                // something the next tap cannot deliver.
+                'Vytal-Konto noch nicht freigeschaltet — Details antippen'
+              ) : offen.length === 0 ? (
+                <>
+                  Behälter an der {mehrweg.data?.station ?? 'ReMain-Station'} ausleihen ·{' '}
+                  {mehrweg.data?.xpPerReturn ?? 20} XP je Rückgabe
+                </>
+              ) : ueberfaellig ? (
+                <b style={{ color: 'var(--alert)' }}>Rückgabe überfällig</b>
+              ) : naechsteRueckgabe === null ? (
+                <>Rückgabe an der {mehrweg.data?.station ?? 'ReMain-Station'}</>
+              ) : naechsteRueckgabe < 48 ? (
+                <>Rückgabe in {Math.max(1, Math.round(naechsteRueckgabe))} Stunden</>
+              ) : (
+                <>Rückgabe in {Math.floor(naechsteRueckgabe / 24)} Tagen</>
+              )}{' '}
+              {!mehrweg.error && <Tag von="api" />}
             </span>
           </span>
           <Icon name="chevron" size={20} className="ico" />
@@ -193,6 +246,53 @@ export default function Start() {
         </div>
 
         <div className="col" style={{ gap: 9 }}>
+          {/* Always present once loaded, with or without an offer to show.
+              A card that only exists when the partner API happens to return
+              something is not an entry point — it is the feature vanishing
+              on stage. Empty and broken both get their own honest sentence. */}
+          {!essen.loading && (
+            <button className="card tight row" onClick={() => navigate('/essen')} style={{ gap: 11 }}>
+              <Thumb
+                icon={
+                  essenTop?.source === 'basket'
+                    ? 'gift'
+                    : essenTop?.source === 'business'
+                      ? 'market'
+                      : 'leaf'
+                }
+              />
+              <span className="grow">
+                <span className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                  <b className="sm">{essenTop ? essenTop.title : 'Essen retten'}</b>
+                  {essenTop?.hoursLeft != null && essenTop.hoursLeft <= 12 && (
+                    <Label tone="warn">
+                      noch {Math.max(1, Math.round(essenTop.hoursLeft))} h
+                    </Label>
+                  )}
+                </span>
+                <span className="xs mut" style={{ display: 'block', marginTop: 2 }}>
+                  {essen.error ? (
+                    'foodsharing antwortet gerade nicht — später nochmal'
+                  ) : essenTop === null ? (
+                    'Gerade nichts Offenes in deiner Nähe'
+                  ) : (
+                    <>
+                      {essenTop.source === 'basket'
+                        ? 'Korb'
+                        : essenTop.source === 'business'
+                          ? 'Geschäft'
+                          : 'Fairteiler'}
+                      {essenTop.distanceKm !== null &&
+                        ` · ${essenTop.distanceKm.toLocaleString('de-DE')} km`}{' '}
+                      <Tag von="api" />
+                    </>
+                  )}
+                </span>
+              </span>
+              <Icon name="chevron" size={19} className="ico" />
+            </button>
+          )}
+
           {quests.loading && (
             <div className="empty">
               <span className="spinner" />
@@ -274,5 +374,31 @@ export default function Start() {
         </button>
       )}
     </Screen>
+  )
+}
+
+/**
+ * The rounded icon tile on a one-line card. Three cards use it, so it lives
+ * here rather than as a third copy of the same twelve inline properties.
+ * `alert` is for a deadline that has already passed — the only case on this
+ * screen where a card raises its voice.
+ */
+function Badge({ icon, alert = false }: { icon: IconName; alert?: boolean }) {
+  return (
+    <span
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        background: alert ? 'var(--alert-soft)' : 'var(--sky)',
+        color: alert ? 'var(--alert)' : 'var(--blue-deep)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 'none',
+      }}
+    >
+      <Icon name={icon} size={21} />
+    </span>
   )
 }
