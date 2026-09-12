@@ -1,6 +1,7 @@
 import { t } from './../lib/i18n'
 import { useState } from 'react'
 
+import DecisionSheet from '../components/DecisionSheet'
 import Icon, { type IconName } from '../components/Icon'
 import Screen from '../components/Screen'
 import { Label, Tag } from '../components/ui'
@@ -8,6 +9,7 @@ import {
   ApiError,
   api,
   useApi,
+  type Coupon,
   type CouponCatalogue,
   type RedeemResult,
 } from '../lib/client'
@@ -44,6 +46,9 @@ export default function Belohnungen() {
 
   if (!me) return null
 
+  // Nothing is spent until this is answered.
+  const [confirm, setConfirm] = useState<Coupon | null>(null)
+
   const data = catalogue.data
 
   async function einloesen(couponId: string) {
@@ -68,7 +73,7 @@ export default function Belohnungen() {
   }
 
   return (
-    <Screen back title={t("Belohnungen")} sub={t("Münzen einlösen")} gap={13}>
+    <Screen back title={t("Belohnungen")} gap={13}>
       {t(catalogue.error && (
         <div className="card tight row" style={{ gap: 10, borderColor: 'var(--alert)' }}>
           <Icon name="info" size={18} className="ico" />
@@ -135,7 +140,7 @@ export default function Belohnungen() {
             <div className="card" style={{ borderColor: 'var(--blue)', background: 'var(--sky2)' }}>
               <div className="between" style={{ marginBottom: 9 }}>
                 <b className="sm">{t(frisch.redemption.title)}</b>
-                <Tag von="simulated" icon />
+                
               </div>
               <Code value={frisch.redemption.code} />
               <p className="xs mut" style={{ margin: '9px 0 0', lineHeight: 1.55 }}>
@@ -163,7 +168,7 @@ export default function Belohnungen() {
             <div className="between" style={{ marginBottom: 10 }}>
               <p className="lbl" style={{ margin: 0 }}>
                 {t("Verfügbar")}</p>
-              <Tag von="simulated" />
+              
             </div>
 
             <div className="col" style={{ gap: 9 }}>
@@ -209,7 +214,7 @@ export default function Belohnungen() {
                   <button
                     className="btn sm"
                     disabled={!c.affordable || busy !== null}
-                    onClick={() => void einloesen(c.id)}
+                    onClick={() => setConfirm(c)}
                     style={
                       c.affordable
                         ? {
@@ -261,11 +266,32 @@ export default function Belohnungen() {
             ))}
           </div>
 
-          <div className="card dashed tight">
+          {/* Folded shut: a standing disclosure, not a thing to read every
+              visit. It opens on a tap and costs no height until then. */}
+          <details className="card dashed tight">
+            <summary className="xs mut">{t("Wie Münzen funktionieren")}</summary>
             <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
               {t(data.note)} {t(" Münzen laufen nicht ab, lassen sich nicht kaufen und nicht übertragen — damit lohnt sich Mitmachen, aber niemand kann sich nach oben kaufen.")}</p>
-          </div>
+          </details>
         </>
+      ))}
+      {t(confirm && (
+        <DecisionSheet title={t("Einlösen?")} onClose={() => setConfirm(null)}>
+          <p>
+            {t(confirm.title)} {t(" kostet ")}{t(confirm.coins)}{' '}
+            {t(confirm.coins === 1 ? 'Münze' : 'Münzen')}{t(". Das lässt sich nicht rückgängig machen.")}
+          </p>
+          <button
+            className="btn primary"
+            disabled={busy !== null}
+            onClick={() => { const id = confirm.id; setConfirm(null); void einloesen(id) }}
+          >
+            {t("Jetzt einlösen")}
+          </button>
+          <button className="btn ghost" onClick={() => setConfirm(null)}>
+            {t("Abbrechen")}
+          </button>
+        </DecisionSheet>
       ))}
     </Screen>
   )

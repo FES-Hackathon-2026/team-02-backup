@@ -4,7 +4,6 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import DecisionSheet from '../components/DecisionSheet'
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
-import { Tag } from '../components/ui'
 import { api, ApiError, useApi, type FesBooking, type FesCategories, type PickupResolution, type ScanResult } from '../lib/client'
 import { STADTTEILE } from '../lib/frankfurt'
 import { useSession } from '../lib/session'
@@ -22,7 +21,14 @@ export default function Abholung() {
   const catalog = useApi<FesCategories>('/api/fes/categories')
   const storageKey = `remain:pickup:${me?.id}:${photoId || 'manual'}`
   const [draft, setDraft] = useState<Draft>(() => {
-    try { const saved = sessionStorage.getItem(storageKey); if (saved) { const parsed = JSON.parse(saved) as Draft; return { ...parsed, address: params.get('address') || parsed.address, districtId: params.get('district') || parsed.districtId } } } catch { /* Storage can be unavailable. */ }
+    // A saved draft beats the defaults, but NOT an explicit query parameter:
+    // the link just followed is newer than whatever was typed here before.
+    // category and volume were missing from this list, so ?category= was
+    // dropped as soon as a draft existed — and a draft is written on every
+    // keystroke, so that meant from the second visit onward. The resolver
+    // needs a collectable category before it will ask for slots at all, which
+    // is why the booking screen could never show a date.
+    try { const saved = sessionStorage.getItem(storageKey); if (saved) { const parsed = JSON.parse(saved) as Draft; return { ...parsed, address: params.get('address') || parsed.address, districtId: params.get('district') || parsed.districtId, category: params.get('category') || parsed.category, volumeM3: Number(params.get('volume') || parsed.volumeM3 || 1) } } } catch { /* Storage can be unavailable. */ }
     let shared: Partial<Draft> = {}
     try { shared = JSON.parse(sessionStorage.getItem(`remain:pickup-cart:${me?.id}:details`) || '{}') as Partial<Draft> } catch { /* No saved details. */ }
     return { contact: shared.contact ?? { fullName: me?.name ?? '', email: '', phone: '', postcode: '', placement: '' }, address: params.get('address') || shared.address || '', districtId: params.get('district') || shared.districtId || me?.district.id || 'bockenheim', category: params.get('category') || state?.scan?.category || state?.category || '',
@@ -92,7 +98,18 @@ export default function Abholung() {
     return () => { cancelled = true; clearTimeout(timer) }
   }, [fingerprint, retry, valid]) // fingerprint includes every resolver input
   const alternative = useApi<{ slots: NonNullable<PickupResolution['slots']> }>(newDate ? `/api/fes/slots?districtId=${encodeURIComponent(draft.districtId)}&volume=${totalVolume}` : null)
-  const slots = newDate ? alternative.data?.slots : result?.state === 'available_slots' ? result.slots : undefined
+  // `needs_address` carries the same slot list as `available_slots` — the
+  // server answers with both whenever the category and district are known.
+  // Rendering only the latter meant arriving without an address showed no
+  // dates at all, so a card promising "Platz buchen" opened a form with
+  // nothing to book. The dates now show either way; the address is still
+  // required to confirm, and the footer button stays disabled until it is
+  // there, which says that far better than an empty panel did.
+  const slots = newDate
+    ? alternative.data?.slots
+    : result?.state === 'available_slots' || result?.state === 'needs_address'
+      ? result.slots
+      : undefined
   const matched = !newDate && result?.state === 'existing_booking'
   const already = result?.state === 'already_booked'
   const chosen = slots?.find(s => s.date === selected && s.available)
@@ -119,7 +136,7 @@ export default function Abholung() {
   }>
     {t(recoverKey && <div className="card sky" role="status"><p>{t(recoveryError || 'Wir prüfen, ob deine letzte Anmeldung gespeichert wurde …')}</p><button className="btn" onClick={() => void recover()}>{t("Anfragestatus prüfen")}</button></div>)}
     {t(submitError && <div className="card" role="alert"><p>{t(submitError)}</p><p className="xs mut">{t("Du kannst dieselbe Anmeldung erneut senden. Doppelte Anfragen werden nur einmal gespeichert.")}</p><button className="btn sm" onClick={() => setRetry(v => v + 1)}>{t("Verfügbarkeit erneut prüfen")}</button></div>)}
-    <div className="between"><span className="lbl">{t("Gemeinsam sammeln")}</span><Tag von="simulated" /></div>
+    <div className="between"><span className="lbl">{t("Gemeinsam sammeln")}</span></div>
     {t(scan.error && <p role="alert">{t(scan.error.message)}</p>)}
     <section className="card pickup-fields"><div className="between"><h2 className="lbl">{t("Abholadresse")}</h2><button className="text-link" disabled={addressEditing && draft.address.trim().length < 5} onClick={() => setAddressEditing(v => !v)}>{t(addressEditing ? 'Fertig' : 'Ändern')}</button></div>
       {t(!addressEditing && <div className="row"><Icon name="pin" size={22} /><div><b>{t(draft.address || 'Adresse ergänzen')}</b><p className="xs mut">{t(STADTTEILE.find(d => d.id === draft.districtId)?.name)} {t(" · ")}{t(draft.contact?.fullName || me?.name)}</p></div></div>)}
@@ -161,18 +178,19 @@ export default function Abholung() {
         <p className="xs mut">{t(already ? 'Dieses Objekt ist bereits zugeordnet. Keine neue Buchung nötig.' : 'Dein bestehender Termin passt. Das Objekt wird erst nach deiner Bestätigung hinzugefügt.')}</p>
         {t(matched && <button className="btn sm" onClick={() => { setNewDate(true); setSelected('') }}>{t("Anderen Termin wählen")}</button>)}</>)}
       {t((result?.state === 'available_slots' || newDate) && <p className="xs mut">{t(newDate ? 'Wähle einen anderen Termin.' : 'Kein passender bestehender Termin. Der früheste freie Termin ist vorausgewählt.')}</p>)}
+        {t(result?.state === 'needs_address' && !newDate && <p className="xs mut">{t("Diese Termine fahren deinen Stadtteil an. Für die Buchung fehlt noch deine Adresse.")}</p>)}
       {t(newDate && <button className="btn sm" onClick={() => setNewDate(false)}>{t("Bestehenden Termin verwenden")}</button>)}
       {t(alternative.loading && <p>{t("Alternative Termine laden …")}</p>)}
       {t(alternative.error && <button className="btn" onClick={alternative.reload}>{t("Termine erneut laden")}</button>)}
       <div className="col" style={{ gap: 8 }}>{t(slots?.map(s => <button key={s.date} className="card tight pickup-slot" disabled={!s.available} aria-pressed={selected === s.date} onClick={() => setSelected(s.date)}>
-        <b>{t(s.periodLabel || s.label)}</b><span className="xs mut" style={{ display: 'block' }}>{t(s.available ? `Gemeinsame Tour · ${s.vehicle} · Ankunftsfenster folgt` : s.reason)}</span></button>))}</div>
+        <b>{t(s.periodLabel || s.label)}</b><span className="xs mut" style={{ display: 'block' }}>{t(s.available ? 'Gemeinsame Tour' : s.reason)}</span></button>))}</div>
       {t((result?.state === 'no_availability' || (newDate && alternative.data && !alternative.data.slots.some(s => s.available))) && <p>{t("Im angebotenen Zeitraum ist kein Transport frei. Bitte später erneut prüfen oder eine passende Abgabestelle wählen.")}</p>)}
       {t(error && <div role="alert"><p>{t(error)}</p><button className="btn" onClick={() => setRetry(v => v + 1)}>{t("Erneut prüfen")}</button></div>)}
     </div>
     <details className="card tight"><summary>{t("So funktioniert die Sammeltour")}</summary><p className="sm">{t("Du wählst einen Zeitraum. Nach Buchungsschluss planen wir die gemeinsame Tour und teilen dein Ankunftsfenster und den Bereitstellzeitpunkt mit.")}</p><p className="xs mut">{t("In ReMain eingetragen, nicht bei FES gebucht. Termine und Kapazität sind simuliert. Erinnerungen erscheinen in deinen Mitteilungen.")}</p></details>
     <button className="btn" onClick={() => navigate('/kalender')}>{t("Meine Termine im Kalender")}</button>
     {t(review && <DecisionSheet title={t(matched ? 'Zur Sammeltour hinzufügen?' : 'Anfrage bestätigen?')} busy={busy} onClose={() => setReview(false)}>
-      <Tag von="simulated" /><p>{t(others.length + 1)} {t(others.length === 0 ? 'Gegenstand' : 'Gegenstände')} {t(" · ")}{t(totalVolume.toLocaleString(getLocale()))} {t(" m³")}<br />{draft.address}<br />{t(matched ? result?.pickup?.label : chosen?.periodLabel || chosen?.label)}</p>
+      <p>{t(others.length + 1)} {t(others.length === 0 ? 'Gegenstand' : 'Gegenstände')} {t(" · ")}{t(totalVolume.toLocaleString(getLocale()))} {t(" m³")}<br />{draft.address}<br />{t(matched ? result?.pickup?.label : chosen?.periodLabel || chosen?.label)}</p>
       {t(!matched && chosen?.closesLocal && <p className="sm">{t("Buchungsschluss: ")}{t(chosen.closesLocal.slice(0, 10).split('-').reverse().join('.'))} {t(" · 23:59 Uhr. Das genaue Ankunftsfenster folgt nach gemeinsamer Tourplanung.")}</p>)}
       <p className="xs mut">{t("Eine Anfrage pro Adresse und Zeitraum. Belohnt wird die Anmeldung, nicht die Anzahl der Gegenstände.")}</p>
       <p className="sm mut">{t("Dieser Schritt speichert die Anmeldung in ReMain. Er beauftragt keine echte FES-Abholung.")}</p>

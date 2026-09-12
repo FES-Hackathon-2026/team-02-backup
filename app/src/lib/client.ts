@@ -148,6 +148,9 @@ export interface Place {
   website: string | null
   phone: string | null
   source: string
+  /** Repair Cafés carry these; OSM rows do not. */
+  email: string | null
+  infoUrl: string | null
   distanceKm?: number
 }
 
@@ -255,11 +258,27 @@ export interface MarketHandover {
   complete: boolean
 }
 
-export interface RepairShop {
+/**
+ * One Frankfurt Repair Café — a place that fixes things with you, for free,
+ * on a handful of evenings a month.
+ *
+ * `openingHours` is prose, not OSM syntax, and it is often null: several of
+ * the eight only announce dates on their own site. That is why `infoUrl` and
+ * `email` are part of the record rather than decoration — for half of these
+ * cafés they are the only way to find out when to turn up.
+ */
+export interface RepairCafe {
   id: string
   name: string
   addr: string | null
+  postcode: string | null
   openingHours: string | null
+  operator: string | null
+  website: string | null
+  email: string | null
+  infoUrl: string | null
+  lat: number
+  lon: number
   distanceKm: number
 }
 
@@ -278,7 +297,7 @@ export interface MarketDetail {
   handover: MarketHandover
   /** set once this person has been credited — links to the receipt */
   receiptActionId: number | null
-  repairShops: RepairShop[]
+  repairCafes: RepairCafe[]
   attribution: string
   /** only on a write: what just happened, in German */
   message?: string
@@ -580,15 +599,7 @@ export interface FoodLock {
   nextStep: string | null
 }
 
-/** One of the team's two foodsharing test users. */
-export interface FoodUser {
-  id: number
-  name: string | null
-  isDefault: boolean
-  isVerified: boolean
-  status: string
-}
-
+/** The one foodsharing account the app acts as, as the API describes it. */
 export interface FoodState {
   tier: 'confirmed'
   source: string
@@ -597,7 +608,6 @@ export interface FoodState {
     display_name: string | null
     verification: { status: string; is_verified: boolean; next_step: string | null }
   }
-  users: FoodUser[]
   lock: FoodLock | null
 }
 

@@ -78,6 +78,8 @@ export default async function contentRoutes(app) {
       website: p.website,
       phone: p.phone,
       source: p.source,
+      email: p.email ?? null,
+      infoUrl: p.info_url ?? null,
     }))
 
     const places = byDistance(
@@ -88,10 +90,23 @@ export default async function contentRoutes(app) {
       num(limit, 60),
     )
 
+    // Credit only what is actually in this answer. Naming OpenStreetMap on a
+    // list of Repair Cafés would be a false citation in both directions: the
+    // cafés are not OSM's, and the ODbL notice belongs to rows that are.
+    const sources = new Set(places.map((p) => p.source))
+    const CREDIT = {
+      openstreetmap: '© OpenStreetMap contributors (ODbL)',
+      'repaircafe.org': 'Repair-Café-Verzeichnis: repaircafe.org · Koordinaten: OpenStreetMap (ODbL)',
+    }
+
     return {
       places,
       total: shaped.length,
-      attribution: '© OpenStreetMap contributors (ODbL)',
+      attribution:
+        [...sources]
+          .map((s) => CREDIT[s])
+          .filter(Boolean)
+          .join(' · ') || CREDIT.openstreetmap,
     }
   })
 

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
+import RepairCafeCard from '../components/RepairCafeCard'
 import Screen from '../components/Screen'
 import { Label, Tag, Thumb } from '../components/ui'
 import {
@@ -17,7 +18,29 @@ import {
   type MarketMine,
   type MarketMineItem,
   type Place,
+  type RepairCafe,
 } from '../lib/client'
+
+/**
+ * A Repair Café arrives here as a `Place` row, because it lives in the same
+ * table as the Wertstoffhöfe and rides the same distance sort. The only real
+ * difference is that `distanceKm` is optional on a place and required on a
+ * café — /api/places omits it when no position was given.
+ */
+const alsCafe = (p: Place): RepairCafe => ({
+  id: p.id,
+  name: p.name,
+  addr: p.addr,
+  postcode: p.postcode,
+  openingHours: p.openingHours,
+  operator: p.operator,
+  website: p.website,
+  email: p.email,
+  infoUrl: p.infoUrl,
+  lat: p.lat,
+  lon: p.lon,
+  distanceKm: p.distanceKm ?? NaN,
+})
 import { stadtteil } from '../lib/frankfurt'
 import { useMe } from '../lib/session'
 
@@ -142,10 +165,13 @@ export default function Markt() {
   // Always loaded, not only on the tab: a handover waiting on this person is
   // the one thing they must not have to go looking for.
   const meine = useApi<MarketMine>('/api/market/mine')
-  // The other half of the marketplace: who can actually fix it. Real shops.
-  const betriebe = useApi<{ places: Place[] }>(
+  // The other half of the marketplace: where it can actually be fixed. All
+  // eight Frankfurt Repair Cafés — a wide radius because there are eight of
+  // them in the whole city, and the nearest one is worth knowing about even
+  // when it is across the river.
+  const betriebe = useApi<{ places: Place[]; attribution: string }>(
     modus === 'betriebe'
-      ? `/api/places?kind=reparatur&lat=${pos.lat}&lon=${pos.lon}&r=12&limit=40`
+      ? `/api/places?kind=reparaturcafe&lat=${pos.lat}&lon=${pos.lon}&r=30&limit=40`
       : null,
   )
   const katalog = useApi<MarketCatalogue>('/api/market/defects')
@@ -183,7 +209,6 @@ export default function Markt() {
         </button>
       }
     >
-      <p className="sm mut" style={{ margin: 0 }}>{t("Gebrauchtes finden, kostenlos weitergeben oder reparieren lassen.")}</p>
 
       <Segment modus={modus} onChange={setModus} offen={wartetAufDich || undefined} />
 
@@ -229,11 +254,6 @@ export default function Markt() {
 
       {t(modus === 'betriebe' && (
         <>
-          <p className="xs mut" style={{ lineHeight: 1.5, margin: 0 }}>
-            {t(betriebe.data?.places.length ?? 0)} {t(" Reparaturbetriebe im Umkreis von 12 km.")}{t(' ')}
-            <Tag von="api">{t("OpenStreetMap")}</Tag>
-          </p>
-
           {t(betriebe.loading && (
             <div className="empty">
               <span className="spinner" />
@@ -242,22 +262,13 @@ export default function Markt() {
 
           <div className="col" style={{ gap: 9 }}>
             {t(betriebe.data?.places.map((p) => (
-              <div key={p.id} className="card tight row" style={{ gap: 11, display: 'flex' }}>
-                <span className="thumb" style={{ width: 38, height: 38, flex: 'none' }}>
-                  <Icon name="wrench" size={19} />
-                </span>
-                <span className="grow">
-                  <b className="sm" style={{ display: 'block' }}>
-                    {p.name}
-                  </b>
-                  <span className="xs mut">
-                    {t(p.addr ?? 'Adresse nicht hinterlegt')}
-                    {t(p.distanceKm !== undefined && ` · ${p.distanceKm.toLocaleString(getLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`)}
-                  </span>
-                </span>
-              </div>
+              <RepairCafeCard key={p.id} cafe={alsCafe(p)} />
             )))}
           </div>
+
+          {t(betriebe.data?.attribution && (
+            <p className="xs mut" style={{ margin: 0 }}>{t(betriebe.data.attribution)}</p>
+          ))}
         </>
       ))}
 
@@ -301,7 +312,7 @@ function Segment({
   const tabs: [Modus, string][] = [
     ['suchen', 'Entdecken'],
     ['meine', offen ? `Meine · ${offen}` : 'Meine'],
-    ['betriebe', 'Reparatur'],
+    ['betriebe', 'Repair Cafés'],
   ]
 
   return (
@@ -543,7 +554,7 @@ function AnbietenSheet({
         </div>
 
         <p className="xs mut" style={{ marginTop: 0, lineHeight: 1.5 }}>
-          {t("Kostenlos abzugeben. Gutgeschrieben wird erst, wenn ihr beide die Übergabe bestätigt.")}</p>
+          {t("Kostenlos abzugeben. Punkte nach beidseitiger Bestätigung.")}</p>
 
         <div className="col" style={{ gap: 14 }}>
           <label className="col" style={{ gap: 6 }}>
@@ -575,7 +586,7 @@ function AnbietenSheet({
           </div>
 
           <div className="col" style={{ gap: 6 }}>
-            <span className="lbl">{t("Was fehlt? Ein Tag, kein Aufsatz.")}</span>
+            <span className="lbl">{t("Was fehlt?")}</span>
             <div className="chips">
               {t(defekte.map((d) => (
                 <button
@@ -623,7 +634,7 @@ function AnbietenSheet({
               <span className="xs mut">
                 {t(photoId
                   ? 'Wird verkleinert übertragen — ohne EXIF.'
-                  : 'Hilft enorm. Optional.')}
+                  : 'Optional')}
               </span>
             </div>
             <button

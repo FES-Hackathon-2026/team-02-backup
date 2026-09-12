@@ -1,4 +1,4 @@
-import { all, id, now, one, run, tx } from '../db.js'
+import { all, distanceKm, id, now, one, run, tx } from '../db.js'
 import { addDays, formatDe, today, localTimestamp } from '../integrations/fes/dates.js'
 import * as provider from '../integrations/fes/pickup.js'
 import { requireUser } from '../session.js'
@@ -107,10 +107,39 @@ export default async function lifecycleRoutes(app) {
     if (!record) return reply.code(404).send({ error: 'unknown_request', message: 'Diese Anfrage wurde noch nicht gespeichert.' })
     return { pickup: pickupShape(one('SELECT * FROM pickups WHERE id=?', record.pickup_id)) }
   })
+  /**
+   * The next collection tour that still has room in this person's Stadtteil,
+   * with the ground it actually covers.
+   *
+   * The radius is not a decorative number. We hold Stadtteil centres but no
+   * boundaries, so the catchment is estimated as HALF THE DISTANCE TO THE
+   * NEAREST NEIGHBOURING CENTRE — the point where the next Stadtteil's own
+   * tour becomes the closer one. That is computed from the real coordinates
+   * in the districts table rather than picked, which is why it can be drawn
+   * on a map without claiming more than it knows. It is still an estimate
+   * and the client labels it as one.
+   */
   app.get('/api/fes/opportunity', async (req, reply) => {
     const user = requireUser(req, reply); if (!user) return
     const offered = decorateSlots(provider.slots(user.district_id, 1))
-    return { slot: offered.slots.find(s => s.available) ?? null, district: one('SELECT name FROM districts WHERE id=?', user.district_id)?.name }
+
+    const home = one('SELECT id, name, lat, lon FROM districts WHERE id=?', user.district_id)
+    let radiusKm = null
+    if (home) {
+      const others = all('SELECT lat, lon FROM districts WHERE id <> ?', home.id)
+        .map((d) => distanceKm(home, d))
+        .filter((km) => km > 0)
+        .sort((a, b) => a - b)
+      // Clamped: a dense inner-city Stadtteil should still show a circle you
+      // can see, and an outlying one should not swallow half the city.
+      if (others.length > 0) radiusKm = Math.round(Math.min(3, Math.max(0.8, others[0] / 2)) * 10) / 10
+    }
+
+    return {
+      slot: offered.slots.find((s) => s.available) ?? null,
+      district: home?.name,
+      area: home ? { id: home.id, name: home.name, lat: home.lat, lon: home.lon, radiusKm } : null,
+    }
   })
   app.post('/api/fes/resolve', async (req, reply) => {
     const user = requireUser(req, reply); if (!user) return

@@ -2,6 +2,7 @@ import { useLanguage } from './lib/i18n'
 import { useEffect, useState } from 'react'
 import { SplashScreen } from './components/BrandMark'
 import Onboarding from './screens/Onboarding'
+
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
@@ -38,6 +39,9 @@ import Vytal from './screens/Vytal'
  * BASE_URL covers both hosting shapes — a repository subpath on Pages and
  * the domain root everywhere else — without a second config.
  */
+/** Marks that this device has seen the introduction. */
+const INTRO_KEY = 'remain.introduced'
+
 export default function App() {
   useLanguage()
   return (
@@ -55,7 +59,30 @@ function Gate() {
   const { pathname } = useLocation()
   const [splash, setSplash] = useState(true)
   // Preview onboarding on every launch, even with an existing session.
-  const [introduced, setIntroduced] = useState(false)
+  // Once per device, not once per launch. The intro exists to answer "what
+  // is this", and a person who has answered that and come back is being
+  // asked to sit through it again — the fastest way to make a good intro
+  // feel like an obstacle. Skip counts as seen: skipping IS the answer.
+  //
+  // localStorage rather than the session, so closing the tab does not reset
+  // it; a browser that refuses storage simply shows the intro again, which
+  // is the harmless direction to fail.
+  const [introduced, setIntroduced] = useState(() => {
+    try {
+      return localStorage.getItem(INTRO_KEY) !== null
+    } catch {
+      return false
+    }
+  })
+
+  const finishIntro = () => {
+    try {
+      localStorage.setItem(INTRO_KEY, '1')
+    } catch {
+      /* it will introduce itself again next time */
+    }
+    setIntroduced(true)
+  }
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const timer = window.setTimeout(() => setSplash(false), reduced ? 0 : 1400)
@@ -64,7 +91,7 @@ function Gate() {
 
   if (splash || loading) return <SplashScreen />
 
-  if (!introduced) return <Onboarding onComplete={() => setIntroduced(true)} />
+  if (!introduced) return <Onboarding onComplete={finishIntro} />
 
   if (!me) return <Anmelden />
 

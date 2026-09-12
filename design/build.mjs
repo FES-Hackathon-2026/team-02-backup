@@ -48,6 +48,11 @@ const P = {
   mail: '<rect x="3.4" y="5.6" width="17.2" height="12.8" rx="2.6"/><path d="m3.9 7.4 7 4.8a2 2 0 0 0 2.2 0l7-4.8"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"/>',
   moon: '<path d="M20.2 14.3A8.4 8.4 0 0 1 9.7 3.8a8.4 8.4 0 1 0 10.5 10.5z"/>',
+  // A dinosaur, in OUR line: same 24-grid, same 1.7 stroke, same round caps
+  // as every other glyph. Deliberately a generic sauropod silhouette rather
+  // than a copy of the FES mascot — the nod is to the idea, not the artwork.
+  dino: '<path d="M17.1 4.4a3 3 0 0 1 0 6h-2.4a6.8 6.8 0 0 0-6.8 6.8"/><path d="M7.9 17.2H6.4a4.4 4.4 0 0 1-4-2.6 4.4 4.4 0 0 0 3.3-3.2"/><path d="M14.7 10.4a6 6 0 0 1 5.9 6"/><path d="M10.2 17.4v3.2M17 16.6v4"/><circle cx="16.2" cy="6.9" r="0.85"/>',
+  mic: '<rect x="9" y="2.8" width="6" height="11.4" rx="3"/><path d="M5.6 11.4a6.4 6.4 0 0 0 12.8 0"/><path d="M12 17.8v3.4"/><path d="M8.8 21.2h6.4"/>',
   link: '<path d="M10.4 13.6a3.8 3.8 0 0 0 5.7.4l2.3-2.3a3.8 3.8 0 0 0-5.4-5.4l-1.3 1.3"/><path d="M13.6 10.4a3.8 3.8 0 0 0-5.7-.4l-2.3 2.3a3.8 3.8 0 0 0 5.4 5.4l1.3-1.3"/>',
 }
 const icon = (name, size = 22, sw = 1.7) =>

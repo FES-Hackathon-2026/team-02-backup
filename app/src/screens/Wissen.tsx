@@ -113,7 +113,7 @@ export default function Wissen() {
                 <h1 className="h1" style={{ fontSize: 22 }}>{t(eintrag.bin)}</h1>
                 <span className="row" style={{ gap: 6, marginTop: 7, flexWrap: 'wrap' }}>
                   <Label>{t(ROUTE_LABEL[eintrag.route] ?? eintrag.route)}</Label>
-                  <Tag von="simulated" icon />
+                  
                 </span>
               </span>
             </div>

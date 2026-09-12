@@ -46,11 +46,16 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_google_uid
   ON users(google_uid) WHERE google_uid IS NOT NULL;
 
--- Real Frankfurt facilities from OpenStreetMap. Not invented, not editable
--- by the app — refreshed by scripts/fetch-places.mjs.
+-- Real Frankfurt facilities. Not invented, not editable by the app —
+-- refreshed by scripts/fetch-places.mjs from OpenStreetMap, plus the eight
+-- Repair Cafés in server/data/repair-cafes.json, which OSM does not know.
+--
+-- `source` is therefore load-bearing rather than decorative: the ODbL
+-- attribution belongs to the OSM rows, and the cafés carry repaircafe.org
+-- instead. /api/places names whichever sources are actually in the answer.
 CREATE TABLE IF NOT EXISTS places (
-  id             TEXT PRIMARY KEY,   -- "node/123456"
-  kind           TEXT NOT NULL,      -- wertstoffhof | glascontainer | altkleider | entsorgung | reparatur | secondhand
+  id             TEXT PRIMARY KEY,   -- "node/123456", or "repaircafe/<ort>"
+  kind           TEXT NOT NULL,      -- wertstoffhof | glascontainer | altkleider | entsorgung | reparatur | reparaturcafe | secondhand
   name           TEXT NOT NULL,
   lat            REAL NOT NULL,
   lon            REAL NOT NULL,
@@ -61,7 +66,12 @@ CREATE TABLE IF NOT EXISTS places (
   is_fes         INTEGER NOT NULL DEFAULT 0,
   website        TEXT,
   phone          TEXT,
-  source         TEXT NOT NULL DEFAULT 'openstreetmap'
+  source         TEXT NOT NULL DEFAULT 'openstreetmap',
+  -- A Repair Café is run by people, not opening hours: the way in is an
+  -- address and a mail address, and `info_url` is the listing that learns
+  -- of a changed date before we do.
+  email          TEXT,
+  info_url       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS places_kind ON places(kind);
