@@ -744,7 +744,188 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
    but that number used to sit at body size beside a 64px tile — which read
    as a caption next to an ornament rather than the headline it is. Bigger
    tile, bigger figure, more room around both. */
-.home-progress { gap: 16px; padding: 19px 17px; align-items: center; }
+/* One card, two tiers: the level row, then the week underneath it. They were
+   two stacked cards saying two halves of the same thing. */
+.home-progress { display: flex; flex-direction: column; gap: 14px; padding: 19px 17px; }
+.home-progress-top { gap: 16px; align-items: center; }
+
+/* The weekly bar inside that card — a button with no frame of its own. */
+.weekly-inline { width: 100%; padding: 0; border: 0; background: none; text-align: left; }
+.weekly-inline .between { margin-bottom: 7px; }
+
+/* Three doors, one line, square. No subtitles on purpose: the label is the
+   destination, and anything more turns a row of choices back into a list of
+   sentences. aspect-ratio keeps them square at every width. */
+.quick-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+
+/* `.card.quick-tile`, not `.quick-tile`: button.card sets display:block and
+   text-align:left at (0,1,1), which outranks a single class — so the flex
+   centering here silently did nothing and the icon sat top-left. Two classes
+   win it back honestly, without !important.
+
+   Height comes from the content, not from aspect-ratio: a third of a phone
+   width is ~110px, and a square that tall around a 23px icon is mostly empty
+   box. Padding gives a comfortable 86px tap target that still grows if a
+   label wraps in another language. */
+.card.quick-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 86px;
+  padding: 14px 8px;
+  text-align: center;
+  color: var(--blue-deep);
+}
+.card.quick-tile svg { color: inherit; }
+
+/* The hover tip, for pointers and keyboards only.
+   Tapping opens the sheet instead — a touch device has no hover, and a
+   tooltip that needs a press-and-hold is a tooltip nobody finds. So this is
+   the fast path for a mouse, never the only path to the same words: the
+   sentence also rides on aria-label, and the sheet says it in full. */
+.card.quick-tile { position: relative; }
+.card.quick-tile::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: 190px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--card);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s ease;
+}
+@media (hover: hover) {
+  .card.quick-tile:hover::after { opacity: 1; }
+}
+.card.quick-tile:focus-visible::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .card.quick-tile::after { transition: none; }
+}
+.card.quick-tile .xs { color: var(--ink2); font-weight: 650; line-height: 1.25; }
+
+/* A service that exists but is not open yet. Shown rather than hidden,
+   because "coming" is information and an empty grid is not — but visibly
+   inert, so nobody taps it twice wondering what broke. */
+.card.quick-tile[aria-disabled='true'] {
+  opacity: .45;
+  color: var(--ink3);
+  cursor: default;
+}
+
+/* The share card, as the achievement will read once it is out of the app. */
+.share-card {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 18px 22px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, var(--sky) 0%, var(--sky2) 62%);
+  border: 1px solid var(--sky-line);
+  text-align: center;
+}
+
+/* Rays behind the medal. One slow turn on open, then still. */
+.share-card-burst {
+  position: absolute;
+  top: -58px;
+  left: 50%;
+  width: 210px;
+  height: 210px;
+  margin-left: -105px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    var(--blue) 0deg 6deg,
+    transparent 6deg 18deg
+  );
+  opacity: .17;
+  animation: share-turn 1.1s ease-out both;
+}
+
+.share-card-icon {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  color: var(--blue-deep);
+  box-shadow: 0 6px 16px rgba(31, 92, 130, .18);
+  animation: share-pop .42s cubic-bezier(.2, 1.5, .4, 1) .1s both;
+}
+
+.share-card-kicker {
+  position: relative;
+  color: var(--blue-deep);
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.share-card .h2,
+.share-card .mut { position: relative; }
+.share-card-tag { position: relative; color: var(--blue-deep); font-weight: 650; }
+
+/* The network row. Even weight, even size, brand colour on the mark only —
+   the label stays in the app's ink so four coloured words do not fight each
+   other. Wraps to two rows on a narrow phone rather than scrolling, because
+   a share target you have to scroll to find is one nobody uses. */
+.share-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+.share-target {
+  flex: 1 1 0;
+  min-width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 66px;
+  padding: 10px 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  text-decoration: none;
+}
+.share-target .xs { color: var(--ink2); font-weight: 600; }
+.share-target:hover { border-color: var(--sky-line2); background: var(--sky2); }
+
+/* Last and quietest: the fallback, not the offer. */
+.share-copy { width: 100%; margin-top: 2px; }
+
+@keyframes share-turn {
+  from { transform: rotate(-26deg); opacity: 0; }
+  to { transform: rotate(0deg); opacity: .17; }
+}
+@keyframes share-pop {
+  from { transform: scale(.55); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* The card, without the entrance. */
+@media (prefers-reduced-motion: reduce) {
+  .share-card-burst, .share-card-icon { animation: none; }
+}
 .home-progress .level-water { width: 84px; height: 84px; border-radius: 24px; }
 .home-progress .level-water-badge { width: 31px; height: 31px; font-size: 15px; bottom: -4px; right: -4px; }
 .home-xp { display: block; font-size: 31px; line-height: 1.05; color: var(--blue-deep); }
@@ -807,14 +988,64 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .impact-details > summary { color: var(--blue-deep); font-size: 14px; }
 .badge-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .badge-card { text-align: center; min-width: 0; }
+/* State and action share one centred row under the note, rather than each
+   claiming a line of its own. */
+/* A matched pair.
+   The tag is 26px tall with a 6px radius, .btn.sm is 40px with 12px — side
+   by side that read as two unrelated things rather than one control group.
+   Both are pinned to 40px here, the height this project already uses for a
+   small control, and given equal width so neither leads. */
+.badge-foot {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 9px;
+}
+.badge-foot > * {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.badge-foot .btn.sm { width: auto; padding: 0 10px; }
+.badge-foot .tag { min-height: 40px; padding: 0 10px; }
 .badge-card summary { display: flex; flex-direction: column; gap: 8px; align-items: center; }
 .badge-card summary .sm { font-size: 13px; }
 .district-goal { text-align: center; background: radial-gradient(ellipse at center, var(--sky), var(--card)); padding: 24px; }
 .district-goal strong { font-size: 40px; color: var(--blue-deep); display: block; margin-top: 10px; }
 .pickup-fields .pickup-fields { display: flex; flex-direction: column; gap: 10px; }
-.pickup-slot { padding-left: 38px; position: relative; }
-.pickup-slot:before { content: ''; width: 16px; height: 16px; border: 1px solid var(--blue); border-radius: 50%; position: absolute; left: 12px; top: 16px; }
-.pickup-slot[aria-pressed=true]:before { background: var(--blue-deep); box-shadow: inset 0 0 0 3px var(--card); }
+/* A grid, not padding plus an absolute dot.
+   `.pickup-slot` is one class and `.card.tight` is two, so the padding-left
+   that used to reserve room for the marker never won — the dot sat on top of
+   the first letter of every date. A grid column cannot be overridden by the
+   card's own padding and cannot overlap by construction. */
+.card.pickup-slot {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  align-items: start;
+  column-gap: 12px;
+}
+.card.pickup-slot::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1px solid var(--blue);
+  border-radius: 50%;
+  flex: none;
+}
+.card.pickup-slot[aria-pressed='true']::before {
+  background: var(--blue-deep);
+  box-shadow: inset 0 0 0 3px var(--card);
+}
+/* The row's own children share the second column. */
+.card.pickup-slot > * { grid-column: 2; }
+/* Date leads, the rest recedes: eight rows of equal-weight text is a wall. */
+.card.pickup-slot b { font-size: 14px; }
+.card.pickup-slot .xs { font-size: 12px; margin-top: 2px; }
 .tab-fab svg { color: inherit; }
 .quiz-question { border: 0; padding: 0; margin: 0; min-width: 0; }
 .quiz-question legend { font-weight: 700; padding: 0 0 8px; }
@@ -822,7 +1053,31 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .quiz-answer input { accent-color: var(--blue-deep); flex: none; }
 .level-bonus { background: var(--gold-soft); color: var(--gold-ink); border-radius: 16px; padding: 15px; text-align: center; font-weight: 700; }
 
-.market-photo { display: flex; flex-direction: column; gap: 5px; max-width: 45%; }
+/* A fixed square that never grows: the listing is a row, and a thumbnail
+   that can take 45% of the width is what let one long title sit beside a
+   huge picture and the next sit beside a small one. */
+.market-photo { display: flex; flex-direction: column; gap: 6px; flex: none; }
+/* The badge anchors to the PICTURE. Anchored to .market-photo it sat on top
+   of the licence credit on the detail screen, where that credit is a sibling
+   below the image rather than beside it. */
+.market-photo-frame { position: relative; display: block; line-height: 0; }
+.market-photo img { display: block; }
+
+/* "Beispiel" / "Kein Foto", over the corner of the picture rather than
+   under it. Dark plate so it reads on any photograph. */
+.market-photo-badge {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  padding: 2px 6px;
+  border-radius: 7px;
+  background: rgba(9, 16, 22, .74);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1.5;
+}
 .market-photo img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 15px; background: var(--sky); }
 .photo-credit { overflow-wrap: anywhere; line-height: 1.4; }
 
@@ -883,6 +1138,8 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 .market-offer-title { font-size: 17px; font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; color: var(--ink); }
 .market-offer-price { font-size: 14px; font-weight: 600; color: var(--blue-deep); }
 .market-offer .market-photo { margin-top: 2px; }
+.market-offer .market-offer-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.market-offer .grow { min-width: 0; }
 @media (prefers-reduced-motion: reduce) { .market-offer { transition: none; } }
 
 /* Reserve space for the route icon; the text action takes the remaining width. */
