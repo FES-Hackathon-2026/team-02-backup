@@ -22,9 +22,18 @@ npm-debug.log*
 yarn-error.log*
 *.log
 
-node_modules/
-data/
-.env
+# The SQLite database and its write-ahead log. seed() rebuilds it on every
+# boot and the photos live inside it as BLOBs — machine-local, never committed.
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+server/data/scan-corrections.jsonl
+
+# Everything else under server/data IS committed, and must stay that way:
+# seed.js reads districts.json and places.json with an unguarded readFileSync
+# before app.listen, so a checkout without them cannot boot at all. That is
+# what scripts/fetch-places.mjs means by "run this once and commit the result".
+# A bare `data/` rule used to swallow all of it.
 
 # unpacked GTFS — 154 MB, rebuilt by scripts/build-mobility-data.mjs
 .cache/

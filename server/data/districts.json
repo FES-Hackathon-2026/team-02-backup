@@ -1,0 +1,324 @@
+[
+ {
+  "id": "altstadt",
+  "name": "Altstadt",
+  "bezirk": 1,
+  "lat": 50.1106,
+  "lon": 8.6823
+ },
+ {
+  "id": "innenstadt",
+  "name": "Innenstadt",
+  "bezirk": 1,
+  "lat": 50.1132,
+  "lon": 8.6817
+ },
+ {
+  "id": "bahnhofsviertel",
+  "name": "Bahnhofsviertel",
+  "bezirk": 1,
+  "lat": 50.1077,
+  "lon": 8.6686
+ },
+ {
+  "id": "gutleutviertel",
+  "name": "Gutleutviertel",
+  "bezirk": 1,
+  "lat": 50.1029,
+  "lon": 8.6617
+ },
+ {
+  "id": "gallus",
+  "name": "Gallus",
+  "bezirk": 1,
+  "lat": 50.1042,
+  "lon": 8.6363
+ },
+ {
+  "id": "westend-sued",
+  "name": "Westend-Süd",
+  "bezirk": 2,
+  "lat": 50.1156,
+  "lon": 8.6597
+ },
+ {
+  "id": "westend-nord",
+  "name": "Westend-Nord",
+  "bezirk": 2,
+  "lat": 50.1275,
+  "lon": 8.6612
+ },
+ {
+  "id": "nordend-west",
+  "name": "Nordend-West",
+  "bezirk": 3,
+  "lat": 50.1257,
+  "lon": 8.6742
+ },
+ {
+  "id": "nordend-ost",
+  "name": "Nordend-Ost",
+  "bezirk": 3,
+  "lat": 50.1265,
+  "lon": 8.6935
+ },
+ {
+  "id": "ostend",
+  "name": "Ostend",
+  "bezirk": 4,
+  "lat": 50.1141,
+  "lon": 8.7062
+ },
+ {
+  "id": "bornheim",
+  "name": "Bornheim",
+  "bezirk": 4,
+  "lat": 50.1279,
+  "lon": 8.7091
+ },
+ {
+  "id": "sachsenhausen-nord",
+  "name": "Sachsenhausen-Nord",
+  "bezirk": 5,
+  "lat": 50.1023,
+  "lon": 8.6857
+ },
+ {
+  "id": "sachsenhausen-sued",
+  "name": "Sachsenhausen-Süd",
+  "bezirk": 5,
+  "lat": 50.0871,
+  "lon": 8.6829
+ },
+ {
+  "id": "oberrad",
+  "name": "Oberrad",
+  "bezirk": 5,
+  "lat": 50.0972,
+  "lon": 8.7225
+ },
+ {
+  "id": "niederrad",
+  "name": "Niederrad",
+  "bezirk": 5,
+  "lat": 50.0836,
+  "lon": 8.6318
+ },
+ {
+  "id": "flughafen",
+  "name": "Flughafen",
+  "bezirk": 5,
+  "lat": 50.0379,
+  "lon": 8.5622
+ },
+ {
+  "id": "bockenheim",
+  "name": "Bockenheim",
+  "bezirk": 2,
+  "lat": 50.1226,
+  "lon": 8.6385
+ },
+ {
+  "id": "schwanheim",
+  "name": "Schwanheim",
+  "bezirk": 6,
+  "lat": 50.0803,
+  "lon": 8.5904
+ },
+ {
+  "id": "griesheim",
+  "name": "Griesheim",
+  "bezirk": 6,
+  "lat": 50.0947,
+  "lon": 8.6008
+ },
+ {
+  "id": "roedelheim",
+  "name": "Rödelheim",
+  "bezirk": 7,
+  "lat": 50.1268,
+  "lon": 8.6099
+ },
+ {
+  "id": "hausen",
+  "name": "Hausen",
+  "bezirk": 7,
+  "lat": 50.1367,
+  "lon": 8.6284
+ },
+ {
+  "id": "praunheim",
+  "name": "Praunheim",
+  "bezirk": 7,
+  "lat": 50.1481,
+  "lon": 8.6163
+ },
+ {
+  "id": "heddernheim",
+  "name": "Heddernheim",
+  "bezirk": 8,
+  "lat": 50.1583,
+  "lon": 8.6395
+ },
+ {
+  "id": "niederursel",
+  "name": "Niederursel",
+  "bezirk": 8,
+  "lat": 50.1698,
+  "lon": 8.6357
+ },
+ {
+  "id": "kalbach-riedberg",
+  "name": "Kalbach-Riedberg",
+  "bezirk": 12,
+  "lat": 50.1846,
+  "lon": 8.6489
+ },
+ {
+  "id": "ginnheim",
+  "name": "Ginnheim",
+  "bezirk": 9,
+  "lat": 50.1444,
+  "lon": 8.6539
+ },
+ {
+  "id": "dornbusch",
+  "name": "Dornbusch",
+  "bezirk": 9,
+  "lat": 50.1418,
+  "lon": 8.6703
+ },
+ {
+  "id": "eschersheim",
+  "name": "Eschersheim",
+  "bezirk": 9,
+  "lat": 50.1562,
+  "lon": 8.6584
+ },
+ {
+  "id": "eckenheim",
+  "name": "Eckenheim",
+  "bezirk": 10,
+  "lat": 50.1502,
+  "lon": 8.6832
+ },
+ {
+  "id": "preungesheim",
+  "name": "Preungesheim",
+  "bezirk": 10,
+  "lat": 50.1565,
+  "lon": 8.6939
+ },
+ {
+  "id": "bonames",
+  "name": "Bonames",
+  "bezirk": 10,
+  "lat": 50.1755,
+  "lon": 8.6663
+ },
+ {
+  "id": "berkersheim",
+  "name": "Berkersheim",
+  "bezirk": 10,
+  "lat": 50.1749,
+  "lon": 8.6876
+ },
+ {
+  "id": "frankfurter-berg",
+  "name": "Frankfurter Berg",
+  "bezirk": 10,
+  "lat": 50.1683,
+  "lon": 8.6744
+ },
+ {
+  "id": "riederwald",
+  "name": "Riederwald",
+  "bezirk": 11,
+  "lat": 50.1279,
+  "lon": 8.7305
+ },
+ {
+  "id": "seckbach",
+  "name": "Seckbach",
+  "bezirk": 11,
+  "lat": 50.1425,
+  "lon": 8.7284
+ },
+ {
+  "id": "fechenheim",
+  "name": "Fechenheim",
+  "bezirk": 11,
+  "lat": 50.1234,
+  "lon": 8.7566
+ },
+ {
+  "id": "bergen-enkheim",
+  "name": "Bergen-Enkheim",
+  "bezirk": 16,
+  "lat": 50.1595,
+  "lon": 8.7723
+ },
+ {
+  "id": "nieder-erlenbach",
+  "name": "Nieder-Erlenbach",
+  "bezirk": 13,
+  "lat": 50.1987,
+  "lon": 8.7069
+ },
+ {
+  "id": "harheim",
+  "name": "Harheim",
+  "bezirk": 14,
+  "lat": 50.1957,
+  "lon": 8.6805
+ },
+ {
+  "id": "nieder-eschbach",
+  "name": "Nieder-Eschbach",
+  "bezirk": 15,
+  "lat": 50.1873,
+  "lon": 8.6656
+ },
+ {
+  "id": "hoechst",
+  "name": "Höchst",
+  "bezirk": 6,
+  "lat": 50.0999,
+  "lon": 8.5514
+ },
+ {
+  "id": "nied",
+  "name": "Nied",
+  "bezirk": 6,
+  "lat": 50.1049,
+  "lon": 8.5837
+ },
+ {
+  "id": "sindlingen",
+  "name": "Sindlingen",
+  "bezirk": 6,
+  "lat": 50.0863,
+  "lon": 8.5254
+ },
+ {
+  "id": "zeilsheim",
+  "name": "Zeilsheim",
+  "bezirk": 6,
+  "lat": 50.0966,
+  "lon": 8.5077
+ },
+ {
+  "id": "unterliederbach",
+  "name": "Unterliederbach",
+  "bezirk": 6,
+  "lat": 50.1072,
+  "lon": 8.5387
+ },
+ {
+  "id": "sossenheim",
+  "name": "Sossenheim",
+  "bezirk": 6,
+  "lat": 50.1179,
+  "lon": 8.5695
+ }
+]
