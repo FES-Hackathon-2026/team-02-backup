@@ -8,6 +8,7 @@ import multipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
 import Fastify from 'fastify'
 
+import { firebaseEnabled, firebaseProjectId } from './auth/firebase.js'
 import { ROOT } from './db.js'
 import contentRoutes from './routes/content.js'
 import fesRoutes from './routes/fes.js'
@@ -75,6 +76,15 @@ if (existsSync(dist)) {
 } else {
   app.log.warn('app/dist not found — API only. Run `npm run build` in app/ to serve the client.')
 }
+
+// Said out loud at boot, because the alternative is discovering it from a
+// rejected sign-in — and the id is read once, here, so a stale process is
+// the usual reason a "correct" .env still fails.
+app.log.info(
+  firebaseEnabled()
+    ? `auth: Google-Anmeldung aktiv, Firebase-Projekt „${firebaseProjectId()}"`
+    : 'auth: nur Gast-Anmeldung (FIREBASE_PROJECT_ID ist nicht gesetzt)',
+)
 
 const result = seed()
 app.log.info(

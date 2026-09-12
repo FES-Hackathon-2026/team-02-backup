@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose'
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from 'jose'
 
 /**
  * Firebase ID token verification — without the Admin SDK.
@@ -46,6 +46,56 @@ export class TokenError extends Error {
 }
 
 /**
+ * Turns a jose failure into a sentence that names the actual mistake.
+ *
+ * The default was `ERR_JWT_CLAIM_VALIDATION_FAILED`, which is true and
+ * useless: it is the same code whether the projects disagree, the clock is
+ * wrong, or the token is an hour old. The project mismatch is the one
+ * everybody hits — two ids in two different files, one of them usually a
+ * server that was not restarted — and it is invisible from the code alone.
+ *
+ * `aud` is read back with decodeJwt, which does NOT verify anything. That is
+ * fine here: this runs only after verification already failed, and the value
+ * is used for one error message, never for a decision.
+ *
+ * Exported only so a test can hand it a real jose error: a self-signed token
+ * fails at the signature stage and never reaches the claim check.
+ */
+export function explainVerifyFailure(error, idToken) {
+  const code = error?.code ?? 'unknown'
+
+  if (code === 'ERR_JWT_CLAIM_VALIDATION_FAILED' && (error.claim === 'aud' || error.claim === 'iss')) {
+    let got = 'unbekannt'
+    try {
+      const claims = decodeJwt(idToken)
+      got = (Array.isArray(claims.aud) ? claims.aud[0] : claims.aud) ?? 'unbekannt'
+    } catch {
+      /* unreadable token — the generic half of the sentence still holds */
+    }
+    return (
+      `Das Token gehört zu einem anderen Firebase-Projekt: angemeldet wurde bei „${got}", ` +
+      `der Server erwartet „${projectId}". Beide müssen gleich sein — ` +
+      `VITE_FIREBASE_PROJECT_ID in app/.env und FIREBASE_PROJECT_ID in server/.env. ` +
+      `Danach den Server NEU STARTEN; er liest die Projekt-ID nur beim Start.`
+    )
+  }
+
+  if (code === 'ERR_JWT_EXPIRED') {
+    return 'Das Anmelde-Token ist abgelaufen. Bitte noch einmal anmelden.'
+  }
+
+  if (code === 'ERR_JWKS_NO_MATCHING_KEY' || code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
+    return 'Die Signatur des Anmelde-Tokens stammt nicht von Google.'
+  }
+
+  if (code === 'ERR_JWT_CLAIM_VALIDATION_FAILED') {
+    return `Das Anmelde-Token ist ungültig (Feld „${error.claim ?? '?'}").`
+  }
+
+  return `Das Anmelde-Token ist ungültig (${code}).`
+}
+
+/**
  * Verifies an ID token and returns the profile inside it.
  * Throws TokenError on anything that is not a valid, current token.
  */
@@ -69,7 +119,7 @@ export async function verifyIdToken(idToken) {
       clockTolerance: 30,
     }))
   } catch (error) {
-    throw new TokenError(`Das Anmelde-Token ist ungültig (${error.code ?? error.message}).`)
+    throw new TokenError(explainVerifyFailure(error, idToken))
   }
 
   // jose checks exp/nbf/iss/aud/alg. These three it does not know about.
