@@ -121,9 +121,7 @@ export default function Integrationen() {
                             {t("echt")}</Tag>
                         ) : status === 'pending' ? (
                           <Label tone="warn">{t("Zugang fehlt")}</Label>
-                        ) : (
-                          <Tag von="simulated" icon />
-                        ))}
+                        ) : null)}
                       </div>
                       <p className="xs mut" style={{ margin: 0, lineHeight: 1.55 }}>
                         {t(i.what)}
