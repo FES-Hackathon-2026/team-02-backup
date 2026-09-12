@@ -31,6 +31,7 @@ export interface MapMarker {
 }
 
 interface Props {
+  ariaLabel?: string
   centre: { lat: number; lon: number }
   markers: MapMarker[]
   /** the device's own position, drawn as a dot rather than a pin */
@@ -96,6 +97,7 @@ export default function Map({
   height = 240,
   still = false,
   zoom = 13,
+  ariaLabel = 'Karte mit den offenen Quests',
 }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
@@ -208,7 +210,7 @@ export default function Map({
     <div
       ref={box}
       role="application"
-      aria-label="Karte mit den offenen Quests"
+      aria-label={ariaLabel}
       style={{
         height,
         width: '100%',

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import { api, ApiError, type ScanMode, type ScanResult } from '../lib/client'
@@ -147,6 +147,7 @@ function lageAusFehler(err: unknown): KameraLage {
  */
 export default function Scan() {
   const navigate = useNavigate()
+  const [params] = useSearchParams()
   const videoRef = useRef<HTMLVideoElement>(null)
   const kameraRef = useRef<HTMLInputElement>(null)
   const galerieRef = useRef<HTMLInputElement>(null)
@@ -290,7 +291,7 @@ export default function Scan() {
 
       // The answer travels with the navigation, so the result screen paints
       // immediately; it can refetch from /api/scan/:photoId on a reload.
-      navigate(`/erkannt/${id}`, { state: { scan: ergebnis } })
+      navigate(params.get('pickupCart') === '1' && !ergebnis.hazard ? `/abholung?photo=${encodeURIComponent(id)}` : `/erkannt/${id}`, { state: { scan: ergebnis } })
     } catch (err) {
       setFehler(
         err instanceof ApiError

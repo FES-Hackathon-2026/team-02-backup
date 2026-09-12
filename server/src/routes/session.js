@@ -62,6 +62,8 @@ export default async function sessionRoutes(app) {
     const { userId } = request.body ?? {}
     const target = one('SELECT * FROM users WHERE id = ?', userId)
     if (!target) return reply.code(404).send({ error: 'unknown_user' })
+    // Public demo switching must never grant access to private driver manifests.
+    if (target.role === 'driver') return reply.code(403).send({ error: 'restricted_role' })
     setSession(reply, target.id)
     return publicUser(target)
   })

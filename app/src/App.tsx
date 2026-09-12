@@ -2,6 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { SessionProvider, useSession } from './lib/session'
 import Abholung from './screens/Abholung'
+import AbholungDetail from './screens/AbholungDetail'
+import Mitteilungen from './screens/Mitteilungen'
+import Touren from './screens/Touren'
 import Anmelden from './screens/Anmelden'
 import Belohnungen from './screens/Belohnungen'
 import Erkannt from './screens/Erkannt'
@@ -71,6 +74,9 @@ function Gate() {
       <Route path="/nachweis/:actionId" element={<Nachweis />} />
       <Route path="/erkannt/:photoId" element={<Erkannt />} />
       <Route path="/abholung" element={<Abholung />} />
+      <Route path="/abholung/:pickupId" element={<AbholungDetail />} />
+      <Route path="/mitteilungen" element={<Mitteilungen />} />
+      <Route path="/touren" element={<Touren />} />
       <Route path="/wissen" element={<Wissen />} />
       <Route path="/markt/:id" element={<MarktDetail />} />
       <Route path="/quests/:id/nachweis" element={<QuestProof />} />

@@ -430,6 +430,10 @@ export interface FesCategories {
 }
 
 export interface FesSlot {
+  periodStart?: string
+  periodEnd?: string
+  periodLabel?: string
+  closesLocal?: string
   date: string
   label: string
   weekday: string
@@ -451,6 +455,7 @@ export interface FesSlots {
 }
 
 export interface FesPickup {
+  window?: string
   id: string
   address: string
   districtId: string
@@ -1272,4 +1277,27 @@ export interface QuestHazardRefusal {
   hazard: HazardInfo
   routes: ScanRoute[]
   next: string
+}
+
+export interface PickupResolution {
+  state: 'needs_address' | 'already_booked' | 'existing_booking' | 'available_slots' | 'no_availability'
+  pickup?: FesPickup
+  candidates?: FesPickup[]
+  slots?: FesSlot[]
+  source: string
+}
+export interface PickupDetail {
+  pickup: FesPickup
+  items: { id: string; category: string; categoryName: string; volumeM3: number; photoId: string | null }[]
+  window: string
+  instructions: string[]
+  reminders: boolean
+  actionId: number | null
+  tour?: { id: string; status: string; periodStart: string; periodEnd: string; periodLabel: string; closesLocal: string; area: string; centre: { lat: number; lon: number }; stops: number; utilization: number; eta: string | null; note: string }
+  contact?: { fullName: string; email: string; phone: string; postcode: string; placement: string } | null
+  note: string
+}
+export interface PickupNotices {
+  notifications: { id: string; pickupId: string; kind: string; message: string; read: boolean; at: string }[]
+  unread: number
 }

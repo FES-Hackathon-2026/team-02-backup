@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import Icon from '../components/Icon'
+import ScanTransport from '../components/ScanTransport'
 import Screen from '../components/Screen'
 import { Bar, Coin, Label, Tag, Thumb } from '../components/ui'
 import {
@@ -277,6 +278,7 @@ export default function Erkannt() {
         <Bar value={scan.confidence * 100} />
       </div>
 
+      {scan.mode === 'sperrmuell' && <ScanTransport scan={scan} />}
       {herkunft}
       {warum}
 

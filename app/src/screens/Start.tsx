@@ -2,10 +2,12 @@ import { useNavigate } from 'react-router-dom'
 
 import Icon from '../components/Icon'
 import Screen from '../components/Screen'
+import CollectionOpportunity from '../components/CollectionOpportunity'
 import { Bar, Coin, Label, Tag, Thumb } from '../components/ui'
 import {
   useApi,
   type FesCalendar,
+  type PickupNotices,
   type MarketItem,
   type Quest,
   type Season,
@@ -19,6 +21,7 @@ export default function Start() {
   const market = useApi<{ items: MarketItem[] }>('/api/market')
   const season = useApi<Season>('/api/season')
   const kalender = useApi<FesCalendar>('/api/fes/calendar')
+  const notices = useApi<PickupNotices>('/api/fes/notifications')
 
   if (!me) return null
 
@@ -43,11 +46,22 @@ export default function Start() {
       sub={`Level ${me.level} · ${me.district.name}`}
       tabs
       action={
-        <button className="icobtn" onClick={() => void signOut()} aria-label="Abmelden">
+        <button className="icobtn" onClick={() => navigate('/mitteilungen')} aria-label="Mitteilungen">
           <Icon name="bell" size={21} />
         </button>
       }
     >
+      <div className="between">
+        <button className="btn sm" onClick={() => navigate('/mitteilungen')}>Mitteilungen {notices.data?.unread ? `(${notices.data.unread})` : ''}</button>
+        <button className="btn sm" onClick={() => void signOut()}>Abmelden</button>
+      </div>
+      {kalender.data?.dates.find(d => d.own) && <button className="card sky" onClick={() => navigate(`/abholung/${kalender.data!.dates.find(d => d.own)!.pickupId}`)}>
+        <div className="between"><b>Deine nächste Abholung</b><Tag von="simulated" /></div>
+        <p className="sm">{kalender.data.dates.find(d => d.own)!.label} · {kalender.data.dates.find(d => d.own)!.window}</p>
+        <span className="xs mut">Details, Gegenstände und Erinnerungen</span>
+      </button>}
+      <CollectionOpportunity />
+      <button className="btn" onClick={() => navigate('/touren')}>{me.role === 'driver' ? 'Meine Sammeltouren' : 'Fahrer:innen-Ansicht · Demo'}</button>
       {/* progress — the only place the reward colour appears on this screen */}
       <div className="card row" style={{ gap: 14 }}>
         <div

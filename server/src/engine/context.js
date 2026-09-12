@@ -20,7 +20,12 @@ const REF_TABLES = new Set([
 
 export function loadRef(refTable, refId) {
   if (!refTable || !refId || !REF_TABLES.has(refTable)) return null
-  return one(`SELECT * FROM ${refTable} WHERE id = ?`, refId) ?? null
+  const ref = one(`SELECT * FROM ${refTable} WHERE id = ?`, refId) ?? null
+  if (refTable === 'pickups' && ref) {
+    const original = one('SELECT category, volume_m3, slot_date, reference FROM pickup_registration_snapshots WHERE pickup_id=?', refId)
+    return original ? { ...ref, ...original } : ref
+  }
+  return ref
 }
 
 /**

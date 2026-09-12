@@ -175,6 +175,7 @@ function Zeile({
   onStorno: () => void
 }) {
   const [offen, setOffen] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <div className="card tight">
@@ -205,6 +206,7 @@ function Zeile({
       {termin.own && (
         <>
           <div className="sep" style={{ margin: '11px 0' }} />
+          <button className="btn sm" style={{ marginBottom: 10 }} onClick={() => navigate(`/abholung/${termin.pickupId}`)}>Details und Erinnerungen</button>
           <div className="between">
             <span className="xs mut">
               Referenz <b style={{ color: 'var(--ink)' }}>{termin.reference}</b>
