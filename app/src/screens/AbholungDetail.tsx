@@ -35,7 +35,7 @@ export default function AbholungDetail() {
     {t(data.error && <div role="alert"><p>{t(data.error.message)}</p><button className="btn" onClick={data.reload}>{t("Erneut laden")}</button></div>)}
     {t(message && <p className="card sky sm" role="status">{t(message)}</p>)}
     {t(data.data && p && <>
-      <div className="card sky"><div className="between"><h1 className="h2">{t(data.data.tour?.status === 'collecting' ? data.data.tour.periodLabel : p.label)}</h1><Tag von="simulated" /></div>
+      <div className="card sky"><div className="between"><h1 className="h2">{t(data.data.tour?.status === 'collecting' ? data.data.tour.periodLabel : p.label)}</h1></div>
         <p>{t(data.data.tour ? data.data.tour.eta ? `${data.data.tour.eta} Uhr · geschätzte Ankunft` : 'Anfrage eingegangen · Ankunftsfenster folgt' : data.data.window)}<br />{p.address}</p><b>{t(p.status === 'booked' ? 'In ReMain eingetragen' : p.status === 'cancelled' ? 'Storniert' : 'Als abgeholt markiert')}</b>
         <p className="xs mut">{t(data.data.note)}</p></div>
       {t(data.data.tour && <div className="card"><h2 className="h2">{t("Gemeinsame Tour · ")}{t(data.data.tour.area)}</h2>

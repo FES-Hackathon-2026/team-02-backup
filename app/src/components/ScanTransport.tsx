@@ -2,7 +2,6 @@ import { t } from './../lib/i18n'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, type PickupResolution, type ScanResult } from '../lib/client'
-import { Tag } from './ui'
 import Icon from './Icon'
 
 export default function ScanTransport({ scan }: { scan: ScanResult }) {
@@ -20,7 +19,7 @@ export default function ScanTransport({ scan }: { scan: ScanResult }) {
     return () => { cancelled = true }
   }, [scan.photoId, scan.category, scan.estimatedVolumeM3, retry])
   return <div className="card sky">
-    <div className="between"><h2 className="h2">{t("Deine nächste Abholung")}</h2><Tag von="simulated" /></div>
+    <div className="between"><h2 className="h2">{t("Deine nächste Abholung")}</h2></div>
     <p className="sm pickup-status" role="status" style={{ marginTop: 10 }}>
       {t(error || (result?.pickup ? `${result.pickup.label} · ${result.pickup.window || 'Ankunftsfenster folgt'} · ${result.pickup.address}`
         : result ? 'Abholadresse ergänzen: Wir prüfen zuerst bestehende Termine. Sonst bereiten wir die früheste passende Abholung vor.' : 'Vorhandene Abholung wird geprüft …'))}

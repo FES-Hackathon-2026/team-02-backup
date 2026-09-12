@@ -37,7 +37,26 @@ export default function CollectionOpportunity() {
   const navigate = useNavigate()
   const location = useLocation()
   const offer = useApi<Opportunity>('/api/fes/opportunity')
-  const proceed = () => navigate(`/abholung${location.search}`, { state: location.state })
+  /**
+   * Carry the tour with the tap.
+   *
+   * /abholung only asks the server for slots once `valid` is true, and valid
+   * needs a collectable CATEGORY. Arriving from here with nothing, that is
+   * never satisfied — so the booking panel this card promises could not
+   * render, and the person landed on an address form instead. The district
+   * comes from the catchment we just drew, and the category defaults to the
+   * commonest thing a Sperrmüll tour takes, which the screen's own picker
+   * can still change.
+   *
+   * A photo or scan already in the URL or in router state wins: it is more
+   * specific than anything this card knows.
+   */
+  const proceed = () => {
+    const params = new URLSearchParams(location.search)
+    if (offer.data?.area && !params.has('district')) params.set('district', offer.data.area.id)
+    if (!params.has('category') && !params.has('photo')) params.set('category', 'moebel')
+    navigate(`/abholung?${params}`, { state: location.state })
+  }
 
   if (offer.loading) return <p role="status">{t('Sammeltouren werden geprüft …')}</p>
 
@@ -71,10 +90,7 @@ export default function CollectionOpportunity() {
 
   return (
     <div className="card sky col" style={{ gap: 11 }}>
-      <div className="between">
-        <b className="h3">{t('Sammeltour in deiner Nähe')}</b>
-        <Tag von="simulated" />
-      </div>
+      <b className="h3">{t('Sammeltour in deiner Nähe')}</b>
 
       {/* One line each: when, and how much room is left. */}
       <div className="col" style={{ gap: 3 }}>

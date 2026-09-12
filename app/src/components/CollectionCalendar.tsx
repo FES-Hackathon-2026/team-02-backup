@@ -1,7 +1,6 @@
 import { t, getLocale } from './../lib/i18n'
 import { useState } from 'react'
 import Icon from './Icon'
-import { Tag } from './ui'
 import type { FesCalendarDate } from '../lib/client'
 import { FRAKTION_FARBE } from '../lib/demo'
 
@@ -20,6 +19,6 @@ export default function CollectionCalendar({ dates, selected, onSelect }: {
       {t(days.map(day => { const key = keyOf(day); const events = dates.filter(d => d.date.slice(0, 10) === key); return <button key={key} className={`calendar-day${day.getMonth() !== month.getMonth() ? ' outside' : ''}`} aria-pressed={selected === key} aria-current={today === key ? 'date' : undefined} aria-label={t(`${day.toLocaleDateString(getLocale())}, ${events.length} Termine`)} onClick={() => onSelect(selected === key ? null : key)}>
         {t(day.getDate())}<span className="calendar-dots">{t([...new Set(events.map(e => e.fraktion))].map(f => <i key={f} style={{ background: FRAKTION_FARBE[f] }} />))}</span>
       </button> }))}
-    </div><div className="between"><Tag von="simulated" /><button className="text-link" onClick={() => { setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); onSelect(null) }}>{t("Heute · alle Termine")}</button></div>
+    </div><div className="between"><button className="text-link" onClick={() => { setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); onSelect(null) }}>{t("Heute · alle Termine")}</button></div>
   </section>
 }
