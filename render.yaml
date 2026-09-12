@@ -90,15 +90,11 @@ services:
       - key: VENUE_LON
         value: "8.6821"
 
-      # Vision model for the scan agent. Unset, the server picks whichever
-      # provider has a key and falls back to the offline fixtures when none
-      # does — so setting ANTHROPIC_API_KEY in the dashboard is all it takes
-      # to get real classifications. Set LLM_PROVIDER=mock to force fixtures.
+      # Vision model for the scan agent. Groq is the only provider that looks
+      # at the photo; without GROQ_API_KEY the server falls back to the
+      # offline fixtures and every answer says so. Set LLM_PROVIDER=mock to
+      # force fixtures deliberately.
       - key: LLM_PROVIDER
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: ANTHROPIC_MODEL
         sync: false
       - key: GROQ_API_KEY
         sync: false

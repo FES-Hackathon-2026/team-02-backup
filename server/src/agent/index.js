@@ -2,7 +2,6 @@ import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { all, ROOT, distanceKm, now } from '../db.js'
-import { claudeConfigured, claudeModel, classifyWithClaude } from './claude.js'
 import { asMode, hazardBlock, normalize } from './contract.js'
 import { classifyWithGroq, groqConfigured, groqModel } from './groq.js'
 import { classifyWithMock, fixtureKeys } from './mock.js'
@@ -29,16 +28,17 @@ import { CATEGORIES, HAZARD_XP, MODE_LABEL, isHazard, rankRoutes, routeFor } fro
 export const provider = () => {
   const named = (process.env.LLM_PROVIDER || '').trim().toLowerCase()
   if (named) return named
-  // Groq first: it is the one this project is set up to run on. Claude is
-  // the better eye and takes over the moment LLM_PROVIDER says so.
+  // Groq or nothing. There used to be a second provider behind it; with one
+  // vision model left, a bad key or a renamed model id does not degrade the
+  // answer, it drops straight to fixtures — which is why the provenance of
+  // every answer is on screen and GROQ_VISION_MODEL is worth checking before
+  // a demo.
   if (groqConfigured()) return 'groq'
-  if (claudeConfigured()) return 'claude'
   return 'mock'
 }
 
 /** The providers that actually look at the photo, by name. */
 const VISION = {
-  claude: { run: classifyWithClaude, model: claudeModel },
   groq: { run: classifyWithGroq, model: groqModel },
 }
 
@@ -243,7 +243,6 @@ export function applyCorrection(result, { category, subtype, lat, lon }) {
 export const status = () => ({
   provider: provider(),
   model: VISION[provider()]?.model() ?? 'fixtures',
-  claudeKeyPresent: claudeConfigured(),
   groqKeyPresent: groqConfigured(),
   offlineCapable: true,
   fixtures: fixtureKeys(),
