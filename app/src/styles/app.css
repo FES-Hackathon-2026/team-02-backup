@@ -976,14 +976,19 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 /* FES colours, taken from the palette rather than hard-coded: --gold is the
    reward yellow and --alert the warning red, so the mascot belongs to the
    same set of colours as everything around it and themes with them.
-   The button goes yellow so the dino reads at 27px — a yellow silhouette on
-   a white circle is a pale shape at this size. */
+   The button carries the ground so the dragon reads at 27px — a coloured
+   silhouette on a white circle is a pale shape at this size. */
+/* The same yellow the rest of the app uses.
+   Full-strength --gold appears nowhere else as a surface: every reward chip
+   is --gold-soft under --gold-ink, so a saturated button read as a second,
+   unrelated yellow. This is the coin treatment at button size — soft ground,
+   --gold as the rim so it still reads yellow rather than beige. */
 .agent-fab {
-  background: var(--gold);
+  background: var(--gold-soft);
   border-color: var(--gold);
-  box-shadow: 0 6px 18px rgba(227, 168, 28, .34);
+  box-shadow: 0 6px 18px rgba(227, 168, 28, .26);
 }
-.agent-fab:hover { background: var(--gold); filter: brightness(1.06); }
+.agent-fab:hover { background: var(--gold-soft); filter: brightness(.985); }
 
 /* Draggable, which needs the browser to stop claiming the gesture.
    The global `touch-action: manipulation` lets a touch scroll the page, so a
@@ -998,7 +1003,8 @@ summary { cursor: pointer; min-height: 44px; align-content: center; font-weight:
 }
 .agent-fab:active { cursor: grabbing; }
 .dino-body { fill: var(--alert); }
-.dino-eye { fill: var(--gold); }
+/* The eye is punched out of the red, so it takes the ground's colour. */
+.dino-eye { fill: var(--gold-soft); }
 
 /* On any surface that is not the yellow button, the colours swap back. */
 .dino-mark.on-light .dino-body { fill: var(--gold); }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import Icon, { type IconName } from './Icon'
 import { api } from '../lib/client'
-import { t, getLanguage } from './../lib/i18n'
+import { t, getLanguage, useLanguage } from './../lib/i18n'
 
 /**
  * Fessie, as a conversation.
@@ -32,10 +32,14 @@ interface Line {
   entry?: { id: string; name: string }
   /** how it was answered: an exact rule, the model, or neither */
   source?: 'lookup' | 'model' | 'none'
+  /** an exact rule, in pieces the dictionary can translate one by one */
+  parts?: { name: string; bin: string; why: string }
 }
 
 interface AssistantReply {
   answer: string
+  /** the lookup path returns the pieces, which the dictionary knows */
+  parts?: { name: string; bin: string; why: string }
   entry: { id: string; name: string } | null
   source: 'lookup' | 'model' | 'none'
 }
@@ -70,6 +74,7 @@ function recognitionCtor(): (new () => Recognition) | null {
 
 export default function AgentChat({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
+  const language = useLanguage()
   const [lines, setLines] = useState<Line[]>([
     {
       id: 0,
@@ -101,13 +106,17 @@ export default function AgentChat({ onClose }: { onClose: () => void }) {
     setLines((l) => [...l, { id: l.length, from: 'you', text }])
 
     try {
-      const reply = await api.post<AssistantReply>('/api/assistant', { question: text })
+      const reply = await api.post<AssistantReply>('/api/assistant', {
+        question: text,
+        language,
+      })
       setLines((l) => [
         ...l,
         {
           id: l.length,
           from: 'agent',
           text: reply.answer,
+          parts: reply.parts,
           entry: reply.entry ?? undefined,
           // An exact rule and a sentence a model wrote are different claims,
           // even when the model was holding the rules.
@@ -157,7 +166,11 @@ export default function AgentChat({ onClose }: { onClose: () => void }) {
       <div className="agent-thread" role="log" aria-live="polite">
         {lines.map((l) => (
           <div key={l.id} className={l.from === 'you' ? 'agent-line you' : 'agent-line'}>
-            <p>{t(l.text)}</p>
+            <p>
+              {l.parts
+                ? `${t(l.parts.name)}: ${t(l.parts.bin)}. ${t(l.parts.why)}`
+                : t(l.text)}
+            </p>
             {l.source === 'model' && (
               <span className="agent-source xs">{t('von Fessie formuliert')}</span>
             )}

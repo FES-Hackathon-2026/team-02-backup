@@ -59,6 +59,7 @@ export default async function assistantRoutes(app) {
     if (!user) return
 
     const question = String(request.body?.question ?? '').trim()
+    const language = request.body?.language === 'en' ? 'en' : 'de'
     if (question.length < 2) {
       return reply.code(422).send({
         error: 'empty_question',
@@ -76,15 +77,19 @@ export default async function assistantRoutes(app) {
     const terse = question.split(/\s+/).length <= 3
     const hit = terse ? abc.lookup(question) : null
     if (hit) {
+      // The PARTS, not a sentence. Each of these exists in the client's
+      // dictionary; the sentence they compose into does not, so composing
+      // here would hand the client something it cannot translate.
       return {
         answer: `${hit.name}: ${hit.bin}. ${hit.why}`,
+        parts: { name: hit.name, bin: hit.bin, why: hit.why },
         entry: { id: hit.id, name: hit.name },
         source: 'lookup',
       }
     }
 
     // Stage two: the model, holding our rules and this person's data.
-    const answered = await ask(question, liveContext(user), request.log)
+    const answered = await ask(question, liveContext(user), request.log, language)
     if (answered) {
       const entry = answered.entry ? abc.lookup(answered.entry) : null
       return {

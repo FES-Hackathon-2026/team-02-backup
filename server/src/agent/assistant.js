@@ -82,7 +82,7 @@ function contextBlock(ctx) {
   return parts.length === 0 ? '' : `${NL}${NL}${parts.join(NL + NL)}`
 }
 
-function systemPrompt(ctx) {
+function systemPrompt(ctx, language) {
   return `Du bist Fessie, der Assistent der Frankfurter App ReMain. Du hilfst bei Abfall, Reparatur und Wiederverwendung in Frankfurt am Main.
 
 ENTSORGUNGSREGELN (die einzige Quelle für Tonnen, Höfe und Verbote):
@@ -91,9 +91,10 @@ ${rules()}
 ${FEATURES}${contextBlock(ctx)}
 
 Antworte ausschließlich mit JSON:
-{"answer": "<kurze Antwort auf Deutsch>", "entry": "<Schlüssel aus den Regeln oder null>"}
+{"answer": "<kurze Antwort ${language === 'en' ? 'auf Englisch' : 'auf Deutsch'}>", "entry": "<Schlüssel aus den Regeln oder null>"}
 
 Regeln für deine Antwort:
+- ${language === 'en' ? 'Antworte auf ENGLISCH. Die Regeln oben sind auf Deutsch; übersetze sie in deiner Antwort.' : 'Antworte auf DEUTSCH.'}
 - Höchstens zwei Sätze. Per Du. Einfache Sprache.
 - Geht es um Entsorgung, nimm die Tonne und die Begründung AUS der Liste oben. Erfinde niemals eine Tonne, eine Gebühr oder eine Frist.
 - Setze "entry" auf den Schlüssel, aus dem du geantwortet hast, sonst null.
@@ -107,9 +108,11 @@ Regeln für deine Antwort:
  * @param {string} question
  * @param {{district?: string, calendar?: object[], market?: object[]}} [ctx]
  * @param {object} [log] fastify logger
+ * @param {'de'|'en'} [language] the app's current language — the answer
+ *   follows it, while the RULES stay German and get translated by the model
  * @returns {Promise<{answer: string, entry: string|null}|null>}
  */
-export async function ask(question, ctx, log) {
+export async function ask(question, ctx, log, language = 'de') {
   if (!assistantConfigured()) return null
   if (typeof question !== 'string' || question.trim().length < 2) return null
 
@@ -133,7 +136,7 @@ export async function ask(question, ctx, log) {
         max_tokens: 700,
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: systemPrompt(ctx) },
+          { role: 'system', content: systemPrompt(ctx, language) },
           { role: 'user', content: question.slice(0, 400) },
         ],
       }),
