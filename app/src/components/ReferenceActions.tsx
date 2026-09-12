@@ -14,7 +14,13 @@ export interface Progression {
   quiz: { xp: number; completed: boolean }
   latestLevelBonus: { xp: number; actionId: number } | null
 }
-export function WeeklyGoal() {
+/**
+ * `bare` drops the card chrome so the weekly bar can sit INSIDE the level
+ * card rather than beside it as a second box. Same data, same sheet on tap —
+ * only the frame changes, which is why it is a prop and not a second
+ * component that would drift from this one.
+ */
+export function WeeklyGoal({ bare = false }: { bare?: boolean } = {}) {
   const data = useApi<Progression>('/api/progression')
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
@@ -22,7 +28,7 @@ export function WeeklyGoal() {
   if (!data.data) return null
   const weekly = data.data.weekly
   return <>
-    <button className="card tight" onClick={() => setOpen(true)}><div className="between" style={{ marginBottom: 9 }}><b className="sm">{t("Wochenziel · ")}{t(Math.min(weekly.count, weekly.goal))}{t("/")}{t(weekly.goal)}</b><Coin>{t("+")}{t(weekly.xp)}</Coin></div><Bar value={weekly.count} max={weekly.goal} /></button>
+    <button className={bare ? 'weekly-inline' : 'card tight'} onClick={() => setOpen(true)}><div className="between" style={{ marginBottom: 9 }}><b className="sm">{t("Wochenziel · ")}{t(Math.min(weekly.count, weekly.goal))}{t("/")}{t(weekly.goal)}</b><Coin>{t("+")}{t(weekly.xp)}</Coin></div><Bar value={weekly.count} max={weekly.goal} /></button>
     {t(open && <DecisionSheet title={t("Dein Wochenziel")} onClose={() => setOpen(false)}><p>{t("Fünf bewertete Aktionen in einer Kalenderwoche bringen einmalig 30 Bonus-XP. Bonusgutschriften zählen nicht als zusätzliche Aktionen. Die Woche beginnt montags in Frankfurt.")}</p><p className="sm">{t(weekly.earned ? 'Geschafft! Der Bonus ist bereits gutgeschrieben.' : `Noch ${Math.max(0, weekly.goal - weekly.count)} Aktionen bis zum Bonus.`)}</p><button className="btn primary" onClick={() => { setOpen(false); navigate('/wirkung') }}>{t("Deine Wirkung ansehen")}</button></DecisionSheet>)}
   </>
 }
